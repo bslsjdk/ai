@@ -22,3 +22,15 @@ struct MlxSafetensorsInfo {
 };
 
 bool mlx_safetensors_probe(const std::string & path, MlxSafetensorsInfo & out, std::string & error);
+
+struct MlxQuantInfo {
+    bool valid = false;
+    uint32_t bits = 0;
+    uint32_t group_size = 0;
+    uint64_t quantized_weight_count = 0;
+    uint64_t scale_count = 0;
+    uint64_t bias_count = 0;
+};
+bool mlx_infer_affine4(const MlxSafetensorsInfo & info, MlxQuantInfo & out, std::string & error);
+bool mlx_read_tensor_range(const std::string & path, const MlxTensorInfo & tensor,
+                           uint64_t relative_offset, void * dst, size_t bytes, std::string & error);
