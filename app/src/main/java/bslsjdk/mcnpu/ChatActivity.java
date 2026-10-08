@@ -113,7 +113,7 @@ public final class ChatActivity extends Activity {
 
         if (!NpuRuntime.isReady()) {
             addBubble("system",
-                    "本地 NPU 尚未启动。先点顶部模型名称选择本地 Ornith-1.5-9B 模型文件。");
+                    "本地 NPU 尚未启动。先点顶部模型名称导入唯一的 Ornith-1.5-9B-MLX-4bit 模型文件。");
             saveHistory();
             return;
         }
@@ -121,7 +121,7 @@ public final class ChatActivity extends Activity {
         String modelPath = getSharedPreferences(PREFS, MODE_PRIVATE).getString(MODEL_PATH, "");
         if (modelPath.isEmpty() || !Ornith15Runtime.isLoaded()) {
             addBubble("system",
-                    "MCNPU 已在线，但尚未加载 Ornith-1.5-9B。点击顶部“Ornith AI”选择本地模型文件。");
+                    "MCNPU 已在线，但尚未加载 Ornith-1.5-9B。点击顶部“Ornith AI”导入唯一的本地模型文件。");
             saveHistory();
             return;
         }
