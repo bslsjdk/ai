@@ -292,7 +292,7 @@ bool ornith15_attention_step(
             for(const auto &seg:segments) {
                 for(uint32_t t=0;t<seg.length;t++)
                     max_score[h]=std::max(max_score[h],
-                        half_to_float(seg.values[(size_t)h*seg.length+t]);
+                        half_to_float(seg.values[(size_t)h*seg.length+t]));
             }
             for(const auto &seg:segments) {
                 float sum=0.0f;
