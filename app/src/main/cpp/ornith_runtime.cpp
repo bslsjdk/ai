@@ -76,9 +76,11 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
     std::string error;
     if (!mlx_safetensors_probe(path, info, error))
         return "ERR ORNITH15_MLX " + error;
-    // This is a format probe/loader boundary. No full 5GB mapping or expansion
-    // is performed here; tensor payloads remain on disk until the real tiled
-    // MLX-4bit kernel consumes them.
+    MlxQuantInfo q;
+    if (!mlx_infer_affine4(info, q, error))
+        return "ERR ORNITH15_MLX " + error;
+    // Metadata/format validation only. Do not mark the model runnable until
+    // the tiled MLX-4bit inference kernel is wired to MCNPU.
     g.arch = "qwen3_5";
     g.blocks = 32;
     g.hidden = 4096;
@@ -89,18 +91,18 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
     g.path = path;
     g.context = requested;
     g.fileBytes = info.file_bytes;
-    g.loaded = true;
+    g.loaded = false;
     return "OK ORNITH15_RUNTIME/1 format=MLX_SAFE_TENSORS_4BIT"
            " arch=qwen3_5 layers=32 hidden=4096 vocab=248320"
            " context=" + std::to_string(requested) +
            " file_bytes=" + std::to_string(info.file_bytes) +
            " header_bytes=" + std::to_string(info.header_bytes) +
            " tensors=" + std::to_string(info.tensor_count) +
+           " affine4=bits4_group64 weight_triplets=" + std::to_string(q.quantized_weight_count) +
            " quantized_marked=" + std::to_string(info.quantized_tensor_count) +
            " " + info.quantization_summary +
            " npu=" + mcnpu_backend_status() +
            " inference=MLX4BIT_PROBE_ONLY";
-}
 
 static std::string loadModel(const std::string &path, uint64_t requested) {
     if (path.size() >= 11 && path.compare(path.size()-11, 11, ".safetensors") == 0)
