@@ -235,6 +235,7 @@ jobs:
           # The APK uploaded here is the one just built in this run, so deleting the
           # previous release loses nothing.
           gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" 2>/dev/null || true
           gh release create "$TAG" "$APK" \
             --title "$TITLE" --notes-file build/release-notes.md
           gh release view "$TAG" --json tagName,isPrerelease,assets
