@@ -124,12 +124,12 @@ Ornith-1.5-9B-MLX-4bit：
 ### Full Attention
 - K is token-major [kv_head][token][head_dim].
 - QK uses a QNN FP16 MatMul graph with transpose_in1, eliminating host-side K repacking for ring segments.
-- V remains token-major and is consumed by the existing FP16 AV path.
+- Full-attention Q is scaled by 1/sqrt(256) = 1/16 after q/k normalization and RoPE, matching the current Qwen3.5 reference.
 - QNN MatMul graph cache lifetime budget is 32 graphs. With N buckets 32..65536, QK and AV can create up to 24 distinct FP16 shapes during one 64K replay; production INT8 projection adds a small number of shapes.
 - Wrapped-ring correctness and non-full early-window correctness must not depend on the segment starting at slot zero.
 
 ### I/O
-- Safetensors reads use a thread-local persistent ifstream rather than reopening the ~5 GiB model for every tile.
+- Safetensors reads use a thread-local persistent ifstream rather than reopening the ~5 GiB model for every tile. Full-K production tiles are read as contiguous blocks instead of row-by-row seeks.
 - Affine4 tile reads are counted during generation so real decode weight traffic can be measured instead of inferred from total model file size.
 
 ### Correctness repairs
