@@ -90,6 +90,61 @@ bool ornith15_executor_validate(const MlxSafetensorsInfo &info,
         if(t.dtype=="U32"&&t.shape.size()==2&&t.name.size()>=7&&
            t.name.compare(t.name.size()-7,7,".weight")==0) ++affine;
     if(!affine){error="no_affine4_weights";return false;}
+
+    auto has=[&](const std::string &name)->bool {
+        return find_tensor(info,name)!=nullptr;
+    };
+    const std::string prefix="language_model.model.";
+    const char *globalRequired[] = {
+        "language_model.model.embed_tokens.weight",
+        "language_model.model.embed_tokens.scales",
+        "language_model.model.embed_tokens.biases",
+        "language_model.lm_head.weight",
+        "language_model.lm_head.scales",
+        "language_model.lm_head.biases",
+        "language_model.model.norm.weight"
+    };
+    for(const char *name:globalRequired) {
+        if(!has(name)) { error=std::string("required_tensor_missing=")+name; return false; }
+    }
+    for(uint32_t i=0;i<cfg.num_layers;i++) {
+        const std::string b=prefix+"layers."+std::to_string(i)+".";
+        const std::string common[] = {
+            b+"input_layernorm.weight",
+            b+"post_attention_layernorm.weight",
+            b+"mlp.gate_proj.weight", b+"mlp.gate_proj.scales", b+"mlp.gate_proj.biases",
+            b+"mlp.up_proj.weight", b+"mlp.up_proj.scales", b+"mlp.up_proj.biases",
+            b+"mlp.down_proj.weight", b+"mlp.down_proj.scales", b+"mlp.down_proj.biases"
+        };
+        for(const auto &name:common) {
+            if(!has(name)) { error="required_tensor_missing="+name; return false; }
+        }
+        if(plan[i].type==Ornith15LayerType::LinearAttention) {
+            const std::string linear[] = {
+                b+"linear_attn.in_proj_qkv.weight", b+"linear_attn.in_proj_qkv.scales", b+"linear_attn.in_proj_qkv.biases",
+                b+"linear_attn.in_proj_z.weight", b+"linear_attn.in_proj_z.scales", b+"linear_attn.in_proj_z.biases",
+                b+"linear_attn.in_proj_b.weight", b+"linear_attn.in_proj_b.scales", b+"linear_attn.in_proj_b.biases",
+                b+"linear_attn.in_proj_a.weight", b+"linear_attn.in_proj_a.scales", b+"linear_attn.in_proj_a.biases",
+                b+"linear_attn.A_log", b+"linear_attn.dt_bias", b+"linear_attn.conv1d.weight",
+                b+"linear_attn.norm.weight",
+                b+"linear_attn.out_proj.weight", b+"linear_attn.out_proj.scales", b+"linear_attn.out_proj.biases"
+            };
+            for(const auto &name:linear) {
+                if(!has(name)) { error="required_tensor_missing="+name; return false; }
+            }
+        } else {
+            const std::string attn[] = {
+                b+"self_attn.q_proj.weight", b+"self_attn.q_proj.scales", b+"self_attn.q_proj.biases",
+                b+"self_attn.k_proj.weight", b+"self_attn.k_proj.scales", b+"self_attn.k_proj.biases",
+                b+"self_attn.v_proj.weight", b+"self_attn.v_proj.scales", b+"self_attn.v_proj.biases",
+                b+"self_attn.o_proj.weight", b+"self_attn.o_proj.scales", b+"self_attn.o_proj.biases",
+                b+"self_attn.q_norm.weight", b+"self_attn.k_norm.weight"
+            };
+            for(const auto &name:attn) {
+                if(!has(name)) { error="required_tensor_missing="+name; return false; }
+            }
+        }
+    }
     return true;
 }
 
