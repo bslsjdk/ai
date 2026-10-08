@@ -2,6 +2,7 @@
 #include <fstream>
 #include <cstdint>
 #include <algorithm>
+#include <cstring>
 
 namespace {
 static bool u32(std::ifstream &f,uint32_t &v){
