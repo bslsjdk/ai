@@ -23,6 +23,8 @@ struct Ornith35TextConfig {
     uint32_t vocab_size = 248320;
     uint32_t context_length = 262144;
     float rms_norm_eps = 1.0e-6f;
+    uint32_t rope_theta = 1000000;
+    uint32_t rotary_dim = 64;
 };
 
 struct Ornith35LayerPlan {
