@@ -152,6 +152,93 @@ bool ornith35_executor_init_runtime(const Ornith35TextConfig &cfg,
     return true;
 }
 
+bool ornith35_executor_forward_token(const std::string &model_path,
+                                       const MlxSafetensorsInfo &info,
+                                       const Ornith35TextConfig &cfg,
+                                       uint32_t token_id,
+                                       uint32_t position,
+                                       Ornith35LayerRuntime &runtime,
+                                       Ornith35DecoderStep &step,
+                                       std::string &error) {
+    if (!ornith35_executor_validate(info, cfg, error)) return false;
+    if (token_id >= cfg.vocab_size) { error="token_id_oob"; return false; }
+    if (runtime.initialized_layers != cfg.num_layers) {
+        if (!ornith35_executor_init_runtime(cfg, std::min<uint32_t>(cfg.context_length, 4096u), runtime, error))
+            return false;
+    }
+
+    const std::string prefix="language_model.model.";
+    const MlxTensorInfo *emb=find_tensor(info,prefix+"embed_tokens.weight");
+    if(!emb || emb->shape.size()!=2 || emb->shape[0]!=cfg.vocab_size ||
+       emb->shape[1]*8ull!=cfg.hidden_size) {
+        error="embedding_shape_mismatch";
+        return false;
+    }
+
+    std::vector<float> hidden;
+    if(!mlx_read_affine4_row(model_path,info,emb->name,token_id,hidden,error)) return false;
+    if(hidden.size()!=cfg.hidden_size){ error="embedding_decode_size"; return false; }
+
+    const auto plan=ornith35_make_layer_plan();
+    Ornith35ExecutorStats stats;
+    for(uint32_t i=0;i<cfg.num_layers;i++) {
+        const std::string lb="language_model.model.layers."+std::to_string(i)+".";
+        const MlxTensorInfo *iw=tx(info,lb+"input_layernorm.weight");
+        const MlxTensorInfo *pw=tx(info,lb+"post_attention_layernorm.weight");
+        if(!iw || !pw) { error="layer_norm_weight_missing_"+std::to_string(i); return false; }
+
+        std::vector<float> normw;
+        if(!read_vec(model_path,*iw,cfg.hidden_size,normw,error)) return false;
+        std::vector<float> residual=hidden;
+        zero_centered_rms(hidden.data(),cfg.hidden_size,normw,cfg.rms_norm_eps);
+
+        std::fill(runtime.work_b.begin(),runtime.work_b.end(),0.0f);
+        bool ok=false;
+        if(plan[i]==Ornith35LayerType::LinearAttention) {
+            ok=ornith35_executor_run_delta_layer(model_path,info,cfg,i,hidden.data(),
+                                                 runtime.work_b.data(),runtime.delta[i],
+                                                 stats,error);
+        } else {
+            ok=ornith35_executor_run_attention_layer(model_path,info,cfg,i,hidden.data(),
+                                                      runtime.work_b.data(),runtime.attention[i],
+                                                      position,stats,error);
+        }
+        if(!ok) return false;
+
+        for(uint32_t d=0;d<cfg.hidden_size;d++) hidden[d]=residual[d]+runtime.work_b[d];
+
+        residual=hidden;
+        if(!read_vec(model_path,*pw,cfg.hidden_size,normw,error)) return false;
+        zero_centered_rms(hidden.data(),cfg.hidden_size,normw,cfg.rms_norm_eps);
+        std::fill(runtime.work_b.begin(),runtime.work_b.end(),0.0f);
+        if(!ornith35_executor_apply_mlp(model_path,info,cfg,i,hidden.data(),
+                                         runtime.work_b.data(),stats,error)) return false;
+        for(uint32_t d=0;d<cfg.hidden_size;d++) hidden[d]=residual[d]+runtime.work_b[d];
+        stats.layers_done=i+1;
+    }
+
+    const MlxTensorInfo *fw=tx(info,prefix+"norm.weight");
+    if(!fw) { error="final_norm_weight_missing"; return false; }
+    std::vector<float> finalw;
+    if(!read_vec(model_path,*fw,cfg.hidden_size,finalw,error)) return false;
+    zero_centered_rms(hidden.data(),cfg.hidden_size,finalw,cfg.rms_norm_eps);
+
+    const std::string lm_name=prefix+"lm_head.weight";
+    step.logits.resize(cfg.vocab_size);
+    Ornith35ProjectionStats ps;
+    if(!ornith35_run_projection_token(model_path,info,lm_name,hidden.data(),cfg.hidden_size,
+                                      step.logits.data(),cfg.vocab_size,ps)) {
+        error=ps.status;
+        return false;
+    }
+    stats.npu_calls+=ps.npu_calls;
+    step.hidden=std::move(hidden);
+    step.position=position;
+    step.stats=stats;
+    step.stats.status="OK ORNITH35_FULL_TOKEN_FORWARD";
+    return true;
+}
+
 bool ornith35_executor_apply_mlp(const std::string &model_path,
                                   const MlxSafetensorsInfo &info,
                                   const Ornith35TextConfig &cfg,
