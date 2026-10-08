@@ -1,4 +1,4 @@
-package bslsjdk.mcnpu;
+package bslsjdk.ornithnpu;
 
 import android.content.pm.PackageManager;
 import rikka.shizuku.Shizuku;

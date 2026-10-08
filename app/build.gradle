@@ -1,7 +1,7 @@
 plugins { id "com.android.application" }
 
 android {
-    namespace "bslsjdk.mcnpu"
+    namespace "bslsjdk.ornithnpu"
     compileSdk 35
     ndkVersion "27.0.12077973"
     defaultConfig {
@@ -9,14 +9,7 @@ android {
         // a release APK signed with a different key - "signatures do not match" blocks
         // the install outright, and there is no way past it except uninstalling first.
         //
-        // namespace is deliberately left as bslsjdk.mcnpu. It is the code identity:
-        // it sets the Java package, the R class and, critically, the JNI symbol names
-        // that mcnpu.cpp exports (Java_bslsjdk_mcnpu_NpuRuntime_*). Changing it here
-        // would require renaming every JNI entry point in C++, and a mismatch fails
-        // at runtime with UnsatisfiedLinkError, which the compiler cannot catch.
-        //
-        // applicationId and namespace are allowed to differ - one is the install
-        // identity, the other the code identity - so this change is self-contained.
+        // namespace and applicationId intentionally share the same stable Ornith NPU package identity.
         applicationId "bslsjdk.ornithnpu"
         minSdk 30
         targetSdk 35

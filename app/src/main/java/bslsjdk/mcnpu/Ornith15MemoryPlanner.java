@@ -1,4 +1,4 @@
-package bslsjdk.mcnpu;
+package bslsjdk.ornithnpu;
 
 /**
  * Pure arithmetic planner for Ornith-1.5-9B long-context state.
