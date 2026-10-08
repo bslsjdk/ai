@@ -35,7 +35,10 @@ bool ornith15_run_projection_tile(
 
     std::fill(output,output+(size_t)m*n,0.0f);
     std::vector<int8_t> qa, qw, qc;
-    const uint32_t row_tile=32, col_tile=32, k_tile=64;
+    // Use the largest empirically stable HTP V73 buckets to keep the
+    // per-token projection call count practical. M stays 32 for decode-time
+    // padding; K/N use 1024-byte-aligned buckets observed to be stable.
+    const uint32_t row_tile=32, col_tile=1024, k_tile=1024;
     for(uint32_t r0=0;r0<m;r0+=row_tile) {
         const uint32_t mr=std::min(row_tile,m-r0);
         for(uint32_t n0=0;n0<n;n0+=col_tile) {
