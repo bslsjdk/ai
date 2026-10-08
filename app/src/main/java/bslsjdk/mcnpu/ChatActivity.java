@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.view.Gravity;
@@ -17,7 +16,6 @@ import android.widget.Toast;
 import android.net.Uri;
 import android.content.Intent;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -27,12 +25,20 @@ public final class ChatActivity extends Activity {
     private static final String HISTORY = "history";
     private static final String MODEL_PATH = "model_path";
     private static final int PICK_MODEL = 4201;
+    private static final int MAX_CONTEXT_MESSAGES = 8;
+    private static final int MAX_CONTEXT_CHARS = 12000;
+
     private LinearLayout messages;
     private ScrollView scroll;
     private EditText input;
     private TextView runtimeState;
     private TextView statusLine;
     private final Handler main = new Handler(Looper.getMainLooper());
+
+    private final AgentToolRegistry toolRegistry = new AgentToolRegistry();
+    private final AgentExecutor agentExecutor =
+            new AgentExecutor(toolRegistry, task -> { }, 8);
+    private volatile boolean generating;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -86,6 +92,8 @@ public final class ChatActivity extends Activity {
     }
 
     private void sendMessage() {
+        if (generating) return;
+
         String text = input.getText().toString().trim();
         if (text.isEmpty()) return;
 
@@ -102,18 +110,55 @@ public final class ChatActivity extends Activity {
 
         String modelPath = getSharedPreferences(PREFS, MODE_PRIVATE).getString(MODEL_PATH, "");
         if (modelPath.isEmpty() || !Ornith15Runtime.isLoaded()) {
-            addBubble("system", "MCNPU 已在线，但尚未加载 Ornith-1.5-9B。点击顶部“Ornith AI”选择本地模型文件。");
+            addBubble("system",
+                    "MCNPU 已在线，但尚未加载 Ornith-1.5-9B。点击顶部“Ornith AI”选择本地模型文件。");
             saveHistory();
             return;
         }
-        final String prompt = text;
+
+        final AgentTask task = new AgentTask(text);
+        task.workspace = "chat";
+        task.state = AgentTask.State.THINKING;
+        final String prompt = buildAgentPrompt(text);
+
+        generating = true;
+        statusLine.setText("Ornith-1.5-9B · 思考中 · MCNPU");
         new Thread(() -> {
-            String reply = Ornith15Runtime.generate(prompt, 256);
-            String shown = reply != null && reply.startsWith("OK ORNITH15_GENERATE/1 text=")
-                    ? reply.substring("OK ORNITH15_GENERATE/1 text=".length())
-                    : reply;
-            main.post(() -> { addBubble("assistant", shown == null ? "推理失败" : shown); saveHistory(); });
-        }, "ornith-generate").start();
+            String reply = null;
+            try {
+                reply = Ornith15Runtime.generate(prompt, 256);
+                task.state = (reply != null && reply.startsWith("OK ORNITH15_GENERATE/1"))
+                        ? AgentTask.State.FINAL : AgentTask.State.FAILED;
+                task.steps++;
+            } catch (Throwable t) {
+                task.state = AgentTask.State.FAILED;
+                reply = "ERR ORNITH15_RUNTIME " + t.getClass().getSimpleName();
+            }
+            final String result = reply;
+            main.post(() -> {
+                String shown = result != null && result.startsWith("OK ORNITH15_GENERATE/1 text=")
+                        ? result.substring("OK ORNITH15_GENERATE/1 text=".length())
+                        : result;
+                addBubble("assistant", shown == null ? "推理失败" : shown);
+                saveHistory();
+                generating = false;
+                updateRuntimeState();
+            });
+        }, "ornith-agent").start();
+    }
+
+    private String buildAgentPrompt(String current) {
+        String raw = getSharedPreferences(PREFS, MODE_PRIVATE).getString(HISTORY, "[]");
+        try {
+            JSONArray history = new JSONArray(raw);
+            String recent = AgentContext.buildRecent(history, MAX_CONTEXT_MESSAGES);
+            if (recent.length() > MAX_CONTEXT_CHARS)
+                recent = recent.substring(recent.length() - MAX_CONTEXT_CHARS);
+            if (recent.isEmpty()) return current;
+            return "Conversation context:\n" + recent + "\nuser: " + current;
+        } catch (Throwable ignored) {
+            return current;
+        }
     }
 
     private void chooseModel() {
@@ -137,20 +182,28 @@ public final class ChatActivity extends Activity {
                 if (!dir.exists() && !dir.mkdirs()) throw new java.io.IOException("无法创建模型目录");
                 String sourceName = uri.getLastPathSegment();
                 String lower = sourceName == null ? "" : sourceName.toLowerCase(java.util.Locale.ROOT);
-                String dstName = lower.endsWith(".safetensors") ? "ornith-1.5-9b-mlx-4bit.safetensors" : "ornith-1.5-9b.gguf";
+                String dstName = lower.endsWith(".safetensors")
+                        ? "ornith-1.5-9b-mlx-4bit.safetensors"
+                        : "ornith-1.5-9b.gguf";
                 File dst = new File(dir, dstName);
                 try (java.io.InputStream in = getContentResolver().openInputStream(uri);
                      FileOutputStream out = new FileOutputStream(dst)) {
                     if (in == null) throw new java.io.IOException("无法打开模型文件");
-                    byte[] buf = new byte[1024 * 1024]; int n;
+                    byte[] buf = new byte[1024 * 1024];
+                    int n;
                     while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
                 }
                 String r = Ornith15Runtime.load(dst.getAbsolutePath(), 65536);
                 if (!r.startsWith("OK ORNITH15_RUNTIME/1")) throw new java.io.IOException(r);
-                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(MODEL_PATH, dst.getAbsolutePath()).apply();
-                main.post(() -> { statusLine.setText("Ornith-1.5-9B · 本地模型已识别 · MCNPU"); Toast.makeText(this, "模型文件已识别", Toast.LENGTH_SHORT).show(); });
+                getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                        .putString(MODEL_PATH, dst.getAbsolutePath()).apply();
+                main.post(() -> {
+                    statusLine.setText("Ornith-1.5-9B · 本地模型已识别 · MCNPU");
+                    Toast.makeText(this, "模型文件已识别", Toast.LENGTH_SHORT).show();
+                });
             } catch (Throwable t) {
-                main.post(() -> Toast.makeText(this, "模型加载失败: " + t.getMessage(), Toast.LENGTH_LONG).show());
+                main.post(() -> Toast.makeText(
+                        this, "模型加载失败: " + t.getMessage(), Toast.LENGTH_LONG).show());
             }
         }, "ornith-model-load").start();
     }
