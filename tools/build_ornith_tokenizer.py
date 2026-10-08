@@ -59,8 +59,12 @@ def main() -> int:
     model = data.get("model") or {}
     vocab = model.get("vocab") or {}
     merges = model.get("merges") or []
+    if model.get("type") != "BPE":
+        raise ValueError(f"unexpected tokenizer model type: {model.get('type')!r}")
     if not isinstance(vocab, dict):
         raise ValueError("tokenizer model.vocab is not an object")
+    if len(vocab) != 248320:
+        raise ValueError(f"unexpected Ornith-1.5 vocab size: {len(vocab)}")
 
     max_id = max((int(v) for v in vocab.values()), default=-1)
     tokens = [b""] * (max_id + 1)
