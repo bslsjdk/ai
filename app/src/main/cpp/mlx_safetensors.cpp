@@ -425,11 +425,11 @@ MlxNpuTileResult mlx_affine4_npu_matmul_tile(
         }
     }
 
-    float so=1.0f;
+    float npuScale=0.0f;
     r.status=mcnpu_backend_matmul_int8(
-        qa.data(), qw.data(), qc.data(), m, k, n, so);
+        qa.data(), qw.data(), qc.data(), m, k, n, npuScale);
     if(r.status.rfind("OK",0)!=0) return r;
-    r.ok=true; r.scale=sa*sw*so;
+    r.ok=true; r.scale=npuScale*(sa*sw/1.0e-6f);
     r.status += " path=MLX_AFFINE4_TILE_NPU";
     return r;
 }
