@@ -166,3 +166,70 @@ bool ornith35_executor_run_attention_layer(const std::string &model_path,
     stats.npu_calls+=ps.npu_calls;
     return true;
 }
+
+
+bool ornith35_executor_run_delta_layer(const std::string &model_path,
+                                       const MlxSafetensorsInfo &info,
+                                       const Ornith35TextConfig &cfg,
+                                       uint32_t layer_index,
+                                       const float *hidden,
+                                       float *out,
+                                       Ornith35DeltaState &state,
+                                       Ornith35ExecutorStats &stats,
+                                       std::string &error) {
+    if(!hidden||!out||layer_index>=cfg.num_layers){error="delta_args";return false;}
+    const std::string b="language_model.model.layers."+std::to_string(layer_index)+".linear_attn.";
+    std::vector<float> qkv(8192),z(4096),ba(64),q(2048),k(2048),v(4096),beta(32),a(32),decay(32),core(4096),normw(128);
+    Ornith35ProjectionStats ps;
+    if(!ornith35_run_projection_token(model_path,info,b+"in_proj_qkv.weight",hidden,4096,qkv.data(),8192,ps)){error=ps.status;return false;}
+    stats.npu_calls+=ps.npu_calls;
+    if(!ornith35_run_projection_token(model_path,info,b+"in_proj_z.weight",hidden,4096,z.data(),4096,ps)){error=ps.status;return false;}
+    stats.npu_calls+=ps.npu_calls;
+    if(!ornith35_run_projection_token(model_path,info,b+"in_proj_b.weight",hidden,4096,beta.data(),32,ps)){error=ps.status;return false;}
+    stats.npu_calls+=ps.npu_calls;
+    if(!ornith35_run_projection_token(model_path,info,b+"in_proj_a.weight",hidden,4096,a.data(),32,ps)){error=ps.status;return false;}
+    stats.npu_calls+=ps.npu_calls;
+
+    const auto *at=tx(info,b+"A_log"), *dt=tx(info,b+"dt_bias");
+    if(!at||!dt||!read_vec(model_path,*at,32,decay,error)) return false;
+    std::vector<float> dtv;
+    if(!read_vec(model_path,*dt,32,dtv,error)) return false;
+    for(uint32_t i=0;i<32;i++){
+        beta[i]=1.0f/(1.0f+std::exp(-beta[i]));
+        float sp=std::log1p(std::exp(std::min(a[i]+dtv[i],20.0f)));
+        decay[i]=-std::exp(decay[i])*sp;
+    }
+
+    const auto *ct=tx(info,b+"conv1d.weight");
+    if(!ct){error="conv1d_weight_not_found";return false;}
+    size_t conv_elems=1; for(auto d:ct->shape) conv_elems*=d;
+    if(conv_elems!=8192u*4u){error="conv1d_shape";return false;}
+    std::vector<float> cw; if(!read_vec(model_path,*ct,(uint32_t)conv_elems,cw,error)) return false;
+    if(state.conv.size()!=8192u*4u) state.conv.assign(8192u*4u,0.0f);
+    std::vector<float> conv(8192);
+    for(uint32_t ch=0;ch<8192;ch++){
+        float y=0.0f;
+        float *hist=state.conv.data()+(size_t)ch*4;
+        for(uint32_t j=0;j<3;j++) hist[j+1]=hist[j];
+        hist[0]=qkv[ch];
+        for(uint32_t j=0;j<4;j++) y+=hist[j]*cw[(size_t)ch*4+j];
+        conv[ch]=y/(1.0f+std::exp(-y));
+    }
+    std::copy(conv.begin(),conv.begin()+2048,q.begin());
+    std::copy(conv.begin()+2048,conv.begin()+4096,k.begin());
+    std::copy(conv.begin()+4096,conv.end(),v.begin());
+
+    if(!ornith35_deltanet_step(state,q.data(),k.data(),v.data(),beta.data(),decay.data(),16,32,128,128,core,error)) return false;
+    const auto *nw=tx(info,b+"norm.weight");
+    if(nw && nw->shape.size()==1 && nw->shape[0]==128) {
+        if(!read_vec(model_path,*nw,128,normw,error)) return false;
+    } else std::fill(normw.begin(),normw.end(),1.0f);
+    for(uint32_t h=0;h<32;h++){
+        float ss=0.0f; for(uint32_t d=0;d<128;d++){float x=core[h*128+d];ss+=x*x;}
+        float inv=1.0f/std::sqrt(ss/128.0f+cfg.rms_norm_eps);
+        for(uint32_t d=0;d<128;d++){float x=core[h*128+d]*inv*normw[d]; float g=z[h*128+d]; core[h*128+d]=x*(g/(1.0f+std::exp(-g)));}
+    }
+    if(!ornith35_run_projection_token(model_path,info,b+"out_proj.weight",core.data(),4096,out,4096,ps)){error=ps.status;return false;}
+    stats.npu_calls+=ps.npu_calls;
+    return true;
+}
