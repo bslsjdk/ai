@@ -119,9 +119,8 @@ static std::string generateMlxModel(const std::string &prompt, int maxTokens) {
     if (!g.tokenizer.loaded) return "ERR ORNITH15_RUNTIME tokenizer_not_loaded";
 
     const std::string chat =
-        "<|im_start|>system\\nYou are Ornith, a helpful local assistant.<|im_end|>\\n"
         "<|im_start|>user\\n" + prompt + "<|im_end|>\\n"
-        "<|im_start|>assistant\\n";
+        "<|im_start|>assistant\\n<think>\\n";
     std::vector<int32_t> ids;
     std::string error;
     if (!ornith15_tokenizer_encode(g.tokenizer, chat, ids, error) || ids.empty())
@@ -204,6 +203,13 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
     g.mlx_loaded = true;
     g.loaded = true;
     const std::string npuProbe = mlx_affine4_npu_probe(g.path, g.mlx_info);
+    if (npuProbe.rfind("OK MLX_NPU_PROBE/1", 0) != 0) {
+        g.mlx_loaded = false;
+        g.loaded = false;
+        g.mlx_runtime = Ornith15LayerRuntime{};
+        g.tokenizer = Ornith15Tokenizer{};
+        return "ERR ORNITH15_MLX npu_probe=" + npuProbe;
+    }
     return "OK ORNITH15_RUNTIME/1 format=MLX_SAFE_TENSORS_4BIT"
            " arch=qwen3_5 layers=32 hidden=4096 vocab=248320"
            " context=" + std::to_string(requested) +
@@ -225,6 +231,11 @@ static std::string loadModel(const std::string &path, uint64_t requested) {
         if (g.model) { llama_model_free(g.model); g.model=nullptr; }
         g.loaded=false;
     }
+    g.mlx_loaded = false;
+    g.mlx_info = MlxSafetensorsInfo{};
+    g.mlx_cfg = Ornith15TextConfig{};
+    g.mlx_runtime = Ornith15LayerRuntime{};
+    g.tokenizer = Ornith15Tokenizer{};
 #endif
     std::ifstream f(path, std::ios::binary|std::ios::ate);
     if(!f) return "ERR ORNITH15_RUNTIME open_failed";
