@@ -72,7 +72,7 @@ Ornith-1.5-9B-MLX-4bit：
 - 聊天入口已收敛为单一本地 Ornith-1.5-9B-MLX-4bit 导入路径，不提供模型列表、Provider、API、Endpoint 或云端回退。
 - 新增官方 tokenizer.json → 紧凑 OTK2 sidecar 的 CI 构建工具，并在 APK 构建前自动生成 tokenizer 资产。
 - Native MLX 路径已从 PROBE_ONLY 接到真实 token forward/generate 入口；加载阶段仍要求真实 QNN HTP V73 tile probe 成功后才报告 loaded。
-- Safetensors 权重保持 tile/streaming 读取，不整体加载约 5GB 模型文件；全注意力 cache 当前明确限制为 4096-token 有界窗口。
+- Safetensors 权重保持 tile/streaming 读取，不整体加载约 5GB 模型文件；full-attention cache 第一阶段为 65536-token FP16 有界窗口，模型原生仍为 262144。
 - MLX affine4 到 QNN int8 的动态缩放链已补回 QNN 固定 0.001 输入尺度，并加入 CPU/NPU tile 误差诊断。
 - 大矩阵投影主 tile 已提升到 32 x 4096 x 4096 桶；LM head 末尾不满 4096 的行会零填充后执行。
 - 已补齐 Ornith-1.5 的关键 tensor 布局校验，并修正官方 `language_model.lm_head.weight` 路径。
