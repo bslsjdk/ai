@@ -1853,6 +1853,12 @@ std::string mcnpu_backend_matmul_int8(
     return runMatMulInt8Buf(a, b, c, m, k, n, scaleC);
 }
 
+std::string mcnpu_backend_matmul_fp16(
+        const uint16_t* a, const uint16_t* b, uint16_t* c,
+        uint32_t m, uint32_t k, uint32_t n) {
+    return runMatMulFp16Buf(a, b, c, m, k, n);
+}
+
 
 extern "C" JNIEXPORT jboolean JNICALL Java_bslsjdk_mcnpu_NpuRuntime_nativeInit(JNIEnv* e,jclass,jstring jq,jstring jw){
     if(!jq || !jw) return JNI_FALSE;
