@@ -1,5 +1,6 @@
 #include "mlx_safetensors.h"
 #include <algorithm>
+#include <atomic>
 #include <cctype>
 #include <cmath>
 #include <chrono>
@@ -11,6 +12,10 @@
 #include <utility>
 
 namespace {
+std::atomic<uint64_t> g_affine4_read_bytes{0};
+std::atomic<uint64_t> g_affine4_read_count{0};
+std::atomic<uint64_t> g_affine4_read_us{0};
+
 bool is_ws(char c) { return c==' ' || c=='\t' || c=='\r' || c=='\n'; }
 
 void skip_ws(const std::string &s, size_t &p) { while (p<s.size() && is_ws(s[p])) ++p; }
@@ -300,13 +305,18 @@ bool mlx_read_affine4_tile(const std::string & path,
     // from repeatedly opening/closing the 5-GB model file.
     if(!open_model_reader(path)){ error="open_failed"; return false; }
     std::ifstream &f=g_model_reader.file;
+    uint64_t tileReadBytes = 0;
+    const auto tileRead0 = std::chrono::steady_clock::now();
     auto read_open = [&](const MlxTensorInfo &t, uint64_t rel, void *dst, size_t bytes)->bool {
         const uint64_t tensor_bytes=t.data_end-t.data_begin;
         if(rel>tensor_bytes || bytes>tensor_bytes-rel){ error="tensor_range_oob"; return false; }
         f.clear();
         f.seekg((std::streamoff)(t.data_begin+rel),std::ios::beg);
         if(!f){ error="seek_failed"; return false; }
-        return bytes==0 || (bool)f.read(reinterpret_cast<char*>(dst),(std::streamsize)bytes);
+        if(bytes==0) return true;
+        if(!f.read(reinterpret_cast<char*>(dst),(std::streamsize)bytes)){ error="read_failed"; return false; }
+        tileReadBytes += bytes;
+        return true;
     };
 
     const size_t rowBytes=(size_t)w->shape[1]*sizeof(uint32_t);
@@ -338,7 +348,28 @@ bool mlx_read_affine4_tile(const std::string & path,
             return false;
         }
     }
+    const uint64_t elapsedUs = (uint64_t)std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now() - tileRead0).count();
+    g_affine4_read_bytes.fetch_add(tileReadBytes, std::memory_order_relaxed);
+    g_affine4_read_count.fetch_add(1, std::memory_order_relaxed);
+    g_affine4_read_us.fetch_add(elapsedUs, std::memory_order_relaxed);
     return true;
+}
+
+bool mlx_reset_affine4_io_stats() {
+    g_affine4_read_bytes.store(0, std::memory_order_relaxed);
+    g_affine4_read_count.store(0, std::memory_order_relaxed);
+    g_affine4_read_us.store(0, std::memory_order_relaxed);
+    return true;
+}
+
+std::string mlx_affine4_io_status() {
+    const auto bytes = g_affine4_read_bytes.load(std::memory_order_relaxed);
+    const auto count = g_affine4_read_count.load(std::memory_order_relaxed);
+    const auto us = g_affine4_read_us.load(std::memory_order_relaxed);
+    return "reads=" + std::to_string(count) +
+           " bytes=" + std::to_string(bytes) +
+           " read_us=" + std::to_string(us);
 }
 
 
