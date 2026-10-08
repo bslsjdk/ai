@@ -134,6 +134,7 @@ static std::string generateMlxModel(const std::string &prompt, int maxTokens) {
     g.last_first_token_us = 0;
     g.last_decode_us = 0;
     g.last_generation_memory.clear();
+    mlx_reset_affine4_io_stats();
 
     const auto tokenize0 = std::chrono::steady_clock::now();
     const std::string chat =
@@ -454,7 +455,8 @@ Java_bslsjdk_mcnpu_Ornith15Runtime_nativeInfo(JNIEnv* env,jclass) {
           " last_prefill_us="+std::to_string(g.last_prefill_us)+
           " last_first_token_us="+std::to_string(g.last_first_token_us)+
           " last_decode_us="+std::to_string(g.last_decode_us)+
-          " last_gen_mem="+(g.last_generation_memory.empty() ? ornith15_memory_status() : g.last_generation_memory)
+          " last_gen_mem="+(g.last_generation_memory.empty() ? ornith15_memory_status() : g.last_generation_memory)+
+          " affine4_io="+mlx_affine4_io_status()
         : "OK ORNITH15_RUNTIME/1 loaded=false";
     return env->NewStringUTF(s.c_str());
 }
