@@ -97,3 +97,12 @@ Ornith-1.5-9B-MLX-4bit：
 - 每次修复先确认仓库是 `bslsjdk/ai`。
 - 每次涉及模型名称、架构或配置时，先核对官方模型资料或仓库 config。
 - 修复完成后优先检查编译引用、头文件引用、CMake 源文件列表和 Java/JNI 调用链。
+## 2026-10-08 长上下文 Native 第一阶段落地
+- full-attention resident KV 已从 FP32 改为 IEEE-754 FP16，最大驻留窗口提升到 **65536 tokens**。
+- Ornith15 runtime 对第一阶段上下文硬上限为 65536；模型官方原生上限仍为 262144，后续更高上下文必须采用更省内存的方案，不能直接把 FP16 KV 线性放大。
+- 64K/8 个 full-attention 层的 K+V FP16 cache 约占 2 GiB；executor 增加运行时状态预算上限 3 GiB，为 QNN、activation、tokenizer 与其他 native 状态保留余量。
+- 新增 QNN FP16 MatMul bridge，full-attention 的 Q×Kᵀ 与 softmax×V 已切换到 HTP FP16 MatMul，不再用 CPU 对 64K KV 做完整点积乘法。
+- attention cache 改为 K=[kv_head][head_dim][token]、V=[kv_head][token][head_dim]，可直接向 QNN 提供连续矩阵区段；ring wrap 时最多拆成两个 segment。
+- 新的 attention reset 不再清零整块 KV，重置只清逻辑 token 计数；旧槽位在逻辑窗口外不会被读取，避免每次请求写扫约 2 GiB。
+- Java ChatActivity 当前历史预算提升到 32 条最近窗口 / 150000 字符上限；AgentContext 使用用户优先的 origin/spine/relevant/recent，并做保守 token 估算，当前用户消息始终单独置于最后。
+- 64K full-attention 的实际设备速度与 FP16 MatMul 形状稳定性仍需要真实手机验证；GitHub Actions 最近 job 仍在 steps 创建前秒退，不能替代设备验证。
