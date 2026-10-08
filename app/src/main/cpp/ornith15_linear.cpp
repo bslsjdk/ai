@@ -83,7 +83,8 @@ bool ornith15_run_projection_tile(
     const float * input,
     uint32_t m, uint32_t k,
     float * output, uint32_t n,
-    Ornith15ProjectionStats & stats) {
+    Ornith15ProjectionStats & stats,
+    uint32_t logical_rows) {
     if(!input || !output || !m || !k || !n) { stats.status="ERR invalid_args"; return false; }
     if(!mcnpu_backend_ready()) { stats.status="ERR "+mcnpu_backend_status(); return false; }
     if(k%64u || n%32u || m%32u) { stats.status="ERR tile_alignment_m32_n32_k64"; return false; }
