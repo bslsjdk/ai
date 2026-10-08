@@ -430,6 +430,21 @@ MlxNpuTileResult mlx_affine4_npu_matmul_tile(
         qa.data(), qw.data(), qc.data(), m, k, n, npuScale);
     if(r.status.rfind("OK",0)!=0) return r;
     r.ok=true; r.scale=npuScale*(sa*sw/1.0e-6f);
+
+    float max_abs=0.0f, max_rel=0.0f;
+    for(uint32_t i=0;i<m;i++) {
+        for(uint32_t j=0;j<n;j++) {
+            float ref=0.0f;
+            for(uint32_t d=0;d<k;d++)
+                ref += activation[(size_t)i*k+d] * wf[(size_t)j*k+d];
+            const float got=(float)qc[(size_t)i*n+j]*r.scale;
+            const float abs_err=std::fabs(got-ref);
+            max_abs=std::max(max_abs,abs_err);
+            max_rel=std::max(max_rel,abs_err/(std::fabs(ref)+1.0e-4f));
+        }
+    }
+    r.max_abs_error=max_abs;
+    r.max_relative_error=max_rel;
     r.status += " path=MLX_AFFINE4_TILE_NPU";
     return r;
 }
