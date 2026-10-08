@@ -372,6 +372,8 @@ std::string mlx_affine4_npu_probe(const std::string & path,
         return "OK MLX_NPU_PROBE/1 tensor="+w.name+
                " shape=32x64x32 elapsed_us="+std::to_string(us)+
                " decoded_checksum="+std::to_string(checksum)+
+               " max_abs_error="+std::to_string(result.max_abs_error)+
+               " max_relative_error="+std::to_string(result.max_relative_error)+
                " npu="+result.status;
     }
     return "ERR MLX_NPU_PROBE no_compatible_affine4_tensor";
