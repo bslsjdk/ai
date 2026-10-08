@@ -160,7 +160,7 @@ static std::string loadModel(const std::string &path, uint64_t requested) {
            " context="+std::to_string(requested)+
            " file_bytes="+std::to_string(g.fileBytes)+
            " npu="+mcnpu_backend_status()+
-           " ggml_backend=MCNPU_ACCEl_MUL_MAT_F32_QNN "+
+           " ggml_backend=MCNPU_ACCEL_MUL_MAT_F32_QNN "+
            " inference=LLAMA_SCHEDULER_MCNPU_READY";
 }
 
