@@ -5,6 +5,12 @@
 
 enum class Ornith35LayerType { LinearAttention, FullAttention };
 
+struct Ornith35LayerPlan {
+    uint32_t index = 0;
+    Ornith35LayerType type = Ornith35LayerType::LinearAttention;
+    std::string prefix;
+};
+
 struct Ornith35TextConfig {
     uint32_t hidden_size = 4096;
     uint32_t intermediate_size = 12288;
@@ -25,5 +31,6 @@ struct Ornith35TextConfig {
     bool attention_output_gate = true;
 };
 
-std::vector<Ornith35LayerType> ornith35_make_layer_plan();
+std::vector<Ornith35LayerPlan> ornith35_make_layer_plan();
+const char *ornith35_layer_type_name(Ornith35LayerType type);
 bool ornith35_validate_config(const Ornith35TextConfig &cfg, std::string &error);
