@@ -59,6 +59,10 @@ bool ornith35_deltanet_step(
         std::copy(k + (size_t)hk * kd, k + (size_t)(hk + 1) * kd, kn.begin());
         l2_normalize(qn.data(), kd);
         l2_normalize(kn.data(), kd);
+        // Qwen3.5 scales normalized Q by 1/sqrt(head_k_dim) before
+        // the recurrent read. K is left unit-normalized.
+        const float q_scale = 1.0f / std::sqrt((float)kd);
+        for (uint32_t d = 0; d < kd; ++d) qn[d] *= q_scale;
 
         float *S = s.state.data() + (size_t)h * kd * vd;
         const float decay = std::exp(decay_log[h]);
