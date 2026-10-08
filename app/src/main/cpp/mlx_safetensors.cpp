@@ -267,13 +267,25 @@ bool mlx_read_affine4_tile(const std::string & path,
     const size_t packedPerRow=(size_t)cols/8u;
     out.rows=rows; out.cols=cols; out.tensor_name=w->name;
     out.packed_weight.resize((size_t)rows*packedPerRow);
+
+    // Reuse one file descriptor for the entire tile. Reopening the 5-GB
+    // model for every row caused avoidable open/close overhead.
+    std::ifstream f(path,std::ios::binary);
+    if(!f){ error="open_failed"; return false; }
+    auto read_open = [&](const MlxTensorInfo &t, uint64_t rel, void *dst, size_t bytes)->bool {
+        const uint64_t tensor_bytes=t.data_end-t.data_begin;
+        if(rel>tensor_bytes || bytes>tensor_bytes-rel){ error="tensor_range_oob"; return false; }
+        f.clear();
+        f.seekg((std::streamoff)(t.data_begin+rel),std::ios::beg);
+        if(!f){ error="seek_failed"; return false; }
+        return bytes==0 || (bool)f.read(reinterpret_cast<char*>(dst),(std::streamsize)bytes);
+    };
+
     const size_t rowBytes=(size_t)w->shape[1]*sizeof(uint32_t);
-    for(uint32_t r=0;r<rows;r++) {
+    for(uint32_t r=0;r<rows;r++){
         const uint64_t off=(uint64_t)(row0+r)*rowBytes+(uint64_t)(col0/8u)*sizeof(uint32_t);
-        if(!mlx_read_tensor_range(path,*w,off,
-                                   out.packed_weight.data()+(size_t)r*packedPerRow,
-                                   packedPerRow*sizeof(uint32_t),error))
-            return false;
+        if(!read_open(*w,off,out.packed_weight.data()+(size_t)r*packedPerRow,
+                      packedPerRow*sizeof(uint32_t))) return false;
     }
 
     const size_t scalarBytes=sc->dtype=="F32"?4u:2u;
@@ -283,14 +295,9 @@ bool mlx_read_affine4_tile(const std::string & path,
     std::vector<unsigned char> rawB(rawS.size());
     const size_t scaleRowBytes=(size_t)sc->shape[1]*scalarBytes;
     for(uint32_t r=0;r<rows;r++) {
-        const uint64_t off=(uint64_t)(row0+r)*scaleRowBytes+
-                           (uint64_t)group0*scalarBytes;
-        if(!mlx_read_tensor_range(path,*sc,off,
-                                   rawS.data()+(size_t)r*groups*scalarBytes,
-                                   groups*scalarBytes,error) ||
-           !mlx_read_tensor_range(path,*bi,off,
-                                   rawB.data()+(size_t)r*groups*scalarBytes,
-                                   groups*scalarBytes,error))
+        const uint64_t off=(uint64_t)(row0+r)*scaleRowBytes+(uint64_t)group0*scalarBytes;
+        if(!read_open(*sc,off,rawS.data()+(size_t)r*groups*scalarBytes,groups*scalarBytes) ||
+           !read_open(*bi,off,rawB.data()+(size_t)r*groups*scalarBytes,groups*scalarBytes))
             return false;
     }
     out.scales.resize((size_t)rows*groups);
