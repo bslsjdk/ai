@@ -194,7 +194,7 @@ bool ornith35_executor_forward_token(const std::string &model_path,
 
         std::fill(runtime.work_b.begin(),runtime.work_b.end(),0.0f);
         bool ok=false;
-        if(plan[i]==Ornith35LayerType::LinearAttention) {
+        if (plan[i].type == Ornith35LayerType::LinearAttention) {
             ok=ornith35_executor_run_delta_layer(model_path,info,cfg,i,hidden.data(),
                                                  runtime.work_b.data(),runtime.delta[i],
                                                  stats,error);
