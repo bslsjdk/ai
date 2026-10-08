@@ -35,3 +35,13 @@ bool ornith35_run_projection_token(
     float * output,
     uint32_t n,
     Ornith35ProjectionStats & stats);
+
+struct Ornith35MlpStats {
+    uint32_t projection_calls = 0;
+    bool npu = false;
+    std::string status;
+};
+
+bool ornith35_run_mlp(const float *hidden, float *out, uint32_t hidden_size,
+                      uint32_t intermediate_size, const std::string &layer_prefix,
+                      const MlxSafetensorsInfo &model, Ornith35MlpStats &stats);
