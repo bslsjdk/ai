@@ -219,3 +219,15 @@ Ornith-1.5-9B-MLX-4bit：
 
 - `nativeInfo()` 和 MLX load 返回值现在报告真实的 `effective_attention_window`，不再把用户请求的 `context` 直接冒充实际 full-attention resident window。内存预算不足时两者可以不同，这是预期行为。
 - 该真实窗口来自实际 `Ornith15AttentionState.window_tokens`，与 runtime memory planner 最终批准的大小一致。
+
+## 2026-10-08 build-fix pass (continued)
+- GitHub Actions runs 318-322 and earlier 317 fail at hosted-runner startup with `steps=[]`; job logs return `BlobNotFound`. This is distinct from source compilation and persisted even after pinning the workflow from `ubuntu-latest` to `ubuntu-22.04`.
+- CI workflow hardening: added per-branch concurrency cancellation and an early `gradle :app:compileReleaseJavaWithJavac --no-daemon --stacktrace` resource/Java compile gate before heavy native/model staging.
+- Confirmed Android resource references in MainActivity: every current `R.id.*` and `R.layout.*` reference resolves to an existing XML resource.
+- Fixed a real Java compile error: MainActivity uses `FileOutputStream` and now imports `java.io.FileOutputStream`.
+- Fixed a real native compile error in ornith15_executor.cpp: seven accidental `hidden.data()` references inside `ornith15_executor_forward_token()` now correctly use `step.hidden.data()`.
+- Fixed a real native compile-order error in ornith_runtime.cpp: `llama.h` is included before declaring `ggml_backend_reg_t mcnpu_ggml_backend_reg(void)` when `MCNPU_HAS_LLAMA` is enabled.
+- Fixed Ornith chat-template construction so actual newline characters are emitted instead of literal backslash-n sequences.
+- Fixed runtime reinitialization lifecycle: `ornith15_executor_init_runtime()` no longer discards already prepared static layer weights/final norm when rebuilding recurrent/KV runtime state for the same loaded model.
+- Latest code HEAD after this pass: `82f4b8e1b1ad1323fb0d2867e12c359521cba346`.
+- Do not claim compilation has passed until a workflow job reaches actual steps and produces compiler output.
