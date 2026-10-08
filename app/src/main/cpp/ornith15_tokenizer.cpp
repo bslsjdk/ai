@@ -30,8 +30,9 @@ static bool str32(std::ifstream &f, std::string &s) {
 }
 static void rebuild_indexes(Ornith15Tokenizer &out) {
     out.bytes_to_id.clear();
+    out.bytes_to_id.reserve(out.tokens.size() * 2u);
     for (size_t i = 0; i < out.tokens.size(); ++i) {
-        if (out.tokens[i].size() == 1 && out.tokens[i][0] >= 0)
+        if (!out.tokens[i].empty())
             out.bytes_to_id.emplace(out.tokens[i], (int32_t)i);
     }
 }
