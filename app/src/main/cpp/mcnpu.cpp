@@ -1504,7 +1504,11 @@ std::string runMatMulInt8Buf(const int8_t* Ain,const int8_t* Bin,int8_t* Cout,ui
         Buse=Bp.data();
     }
 
-    const uint64_t key=((uint64_t)Mb<<42)|((uint64_t)Kb<<21)|(uint64_t)Nb;
+    // Keep FP16 attention graphs in a distinct cache namespace from the
+    // diagnostic FP32 MatMul graphs. Reusing an FP32 descriptor with half-float
+    // buffers would corrupt the graph's tensor interpretation.
+    const uint64_t key=((uint64_t)Mb<<42)|((uint64_t)Kb<<21)|
+                       (uint64_t)Nb|(1ULL<<62);
     Runtime::MatMulGraph* mg=nullptr;
     // Tracks whether this call reused a graph, so the EXEC line can say so.
     // It has to be declared here: the graphCached in runBatchXform is a different
