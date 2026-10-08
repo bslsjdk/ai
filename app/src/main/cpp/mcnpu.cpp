@@ -1580,26 +1580,8 @@ std::string runMatMulInt8Buf(const int8_t* Ain,const int8_t* Bin,int8_t* Cout,ui
         op.v1.numOfOutputs=1;
         op.v1.outputTensors=&mg->c;
 
-        Qnn_Scalar_t transpose0{};
-        Qnn_Scalar_t transpose1{};
-        Qnn_Param_t transposeParams[2]{};
-        if (transposeB) {
-            transpose0.dataType=QNN_DATATYPE_UINT_32;
-            transpose0.uint32Value=0;
-            transpose1.dataType=QNN_DATATYPE_UINT_32;
-            transpose1.uint32Value=1;
-            transposeParams[0].paramType=QNN_PARAMTYPE_SCALAR;
-            transposeParams[0].name=QNN_OP_MAT_MUL_PARAM_TRANSPOSE_IN0;
-            transposeParams[0].scalarParam=transpose0;
-            transposeParams[1].paramType=QNN_PARAMTYPE_SCALAR;
-            transposeParams[1].name=QNN_OP_MAT_MUL_PARAM_TRANSPOSE_IN1;
-            transposeParams[1].scalarParam=transpose1;
-            op.v1.numOfParams=2;
-            op.v1.params=transposeParams;
-        } else {
-            op.v1.numOfParams=0;
-            op.v1.params=nullptr;
-        }
+        // The int8 buffer path always uses the calibrated A[m,k] * B[k,n]
+        // layout. Transposed-B graphs belong to the FP16 attention path below.
         rc=f.graphAddNode(mg->graph,op);
         if(rc!=QNN_SUCCESS){
             g.matMulGraphs8.erase(key);
