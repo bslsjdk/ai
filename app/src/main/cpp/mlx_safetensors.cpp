@@ -425,3 +425,30 @@ MlxNpuTileResult mlx_affine4_npu_matmul_tile(
     r.status += " path=MLX_AFFINE4_TILE_NPU";
     return r;
 }
+
+
+bool mlx_read_affine4_row(const std::string &path, const MlxSafetensorsInfo &info,
+                          const std::string &weight_name, uint32_t row,
+                          std::vector<float> &out, std::string &error) {
+    const MlxTensorInfo *w = find_tensor(info, weight_name);
+    if (!w || w->dtype != "U32" || w->shape.size() != 2) {
+        error = "row_weight_not_found";
+        return false;
+    }
+    const uint64_t k64 = w->shape[1] * 8ull;
+    if (k64 == 0 || k64 > UINT32_MAX || k64 % 64ull != 0 || row >= w->shape[0]) {
+        error = "row_bad_shape";
+        return false;
+    }
+    MlxAffine4Tile tile;
+    if (!mlx_read_affine4_tile(path, info, weight_name, row, 1, 0,
+                               (uint32_t)k64, tile, error)) return false;
+    out.resize((size_t)k64);
+    if (!mlx_decode_affine4_tile(tile.packed_weight.data(), tile.packed_weight.size(),
+                                 tile.scales.data(), tile.biases.data(), 1, (size_t)k64,
+                                 64, out.data(), out.size())) {
+        error = "row_decode_failed";
+        return false;
+    }
+    return true;
+}
