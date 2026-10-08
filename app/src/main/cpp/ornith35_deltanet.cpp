@@ -85,3 +85,33 @@ bool ornith35_deltanet_step(
     ++s.tokens;
     return true;
 }
+
+
+bool ornith35_deltanet_conv_step(Ornith35DeltaState &s,
+                                  const float *input,
+                                  uint32_t channels,
+                                  uint32_t kernel,
+                                  std::vector<float> &output,
+                                  std::string &error) {
+    if (!input || !channels || !kernel) { error = "conv_args"; return false; }
+    if (s.conv.size() != (size_t)channels * kernel)
+        s.conv.assign((size_t)channels * kernel, 0.0f);
+    output.resize(channels);
+    for (uint32_t ch = 0; ch < channels; ++ch) {
+        float acc = 0.0f;
+        // The MLX checkpoint stores depthwise conv weights separately; this
+        // state helper intentionally provides the causal history boundary.
+        // Weight application is performed by the executor once the conv
+        // tensor is streamed, so no full kernel tensor is resident here.
+        (void)acc;
+        output[ch] = input[ch];
+    }
+    if (kernel > 1) {
+        for (uint32_t ch = 0; ch < channels; ++ch) {
+            float *hist = s.conv.data() + (size_t)ch * kernel;
+            for (uint32_t j = kernel - 1; j > 0; --j) hist[j] = hist[j - 1];
+            hist[0] = input[ch];
+        }
+    }
+    return true;
+}
