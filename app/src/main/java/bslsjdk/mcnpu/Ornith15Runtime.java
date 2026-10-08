@@ -17,8 +17,11 @@ public final class Ornith15Runtime {
     public static synchronized String load(String modelPath, long contextTokens) {
         if (modelPath == null || modelPath.isEmpty())
             return "ERR ORNITH15_RUNTIME null_model";
-        if (contextTokens <= 0 || contextTokens > 262144)
-            return "ERR ORNITH15_RUNTIME context=" + contextTokens;
+        // First long-context stage: real 64K resident attention KV. The model
+        // itself advertises 262K, but larger resident KV would violate the phone
+        // memory ceiling with the current FP16 cache design.
+        if (contextTokens <= 0 || contextTokens > 65536)
+            return "ERR ORNITH15_RUNTIME context=" + contextTokens + " first_stage_max=65536";
 
         File f = new File(modelPath);
         if (!f.isFile() || f.length() <= 0)
