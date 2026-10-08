@@ -92,6 +92,7 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
     g.context = requested;
     g.fileBytes = info.file_bytes;
     g.loaded = false;
+    const std::string npuProbe = mlx_affine4_npu_probe(path, info);
     return "OK ORNITH15_RUNTIME/1 format=MLX_SAFE_TENSORS_4BIT"
            " arch=qwen3_5 layers=32 hidden=4096 vocab=248320"
            " context=" + std::to_string(requested) +
@@ -102,6 +103,7 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
            " quantized_marked=" + std::to_string(info.quantized_tensor_count) +
            " " + info.quantization_summary +
            " npu=" + mcnpu_backend_status() +
+           " weight_npu_probe=" + npuProbe +
            " inference=MLX4BIT_PROBE_ONLY";
 
 static std::string loadModel(const std::string &path, uint64_t requested) {
