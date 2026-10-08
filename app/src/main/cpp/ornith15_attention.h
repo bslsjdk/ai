@@ -8,6 +8,8 @@ struct Ornith15AttentionState {
     uint32_t kv_heads = 4;
     uint32_t head_dim = 256;
     uint64_t tokens = 0;
+    // Ring-buffer window. Logical positions may exceed the bounded resident cache.
+    uint32_t window_tokens = 0;
     std::vector<float> keys;
     std::vector<float> values;
 };
