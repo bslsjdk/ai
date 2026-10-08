@@ -26,3 +26,10 @@ bool ornith35_deltanet_step(
     uint32_t key_dim, uint32_t value_dim,
     std::vector<float> &out,
     std::string &error);
+
+bool ornith35_deltanet_conv_step(Ornith35DeltaState &s,
+                                  const float *input,
+                                  uint32_t channels,
+                                  uint32_t kernel,
+                                  std::vector<float> &output,
+                                  std::string &error);
