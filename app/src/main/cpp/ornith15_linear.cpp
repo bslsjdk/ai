@@ -88,7 +88,11 @@ bool ornith15_run_projection_tile(
     if(!mcnpu_backend_ready()) { stats.status="ERR "+mcnpu_backend_status(); return false; }
     if(k%64u || n%32u || m%32u) { stats.status="ERR tile_alignment_m32_n32_k64"; return false; }
 
-    std::fill(output,output+(size_t)m*n,0.0f);
+    const uint32_t active_rows = logical_rows ? std::min(logical_rows,m) : m;
+    if(active_rows==0 || active_rows>m) { stats.status="ERR logical_rows"; return false; }
+    // Decode-time M=32 only needs the logical rows. Keeping the caller buffer
+    // at active_rows*n is especially important for the 248320-column LM head.
+    std::fill(output,output+(size_t)active_rows*n,0.0f);
     std::vector<int8_t> qa, qw, qc;
     // Use the largest empirically stable HTP V73 buckets to keep the
     // per-token projection call count practical. M stays 32 for decode-time
@@ -97,8 +101,6 @@ bool ornith15_run_projection_tile(
     // buckets. Keeping both matrix axes at 4096 dramatically cuts graph-execute
     // count without materializing the full 5-GB model.
     const uint32_t row_tile=32, k_tile=4096;
-    const uint32_t active_rows = logical_rows ? std::min(logical_rows,m) : m;
-    if(active_rows==0 || active_rows>m) { stats.status="ERR logical_rows"; return false; }
     for(uint32_t r0=0;r0<m;r0+=row_tile) {
         const uint32_t mr=std::min(row_tile,m-r0);
         const uint32_t col_tile=projection_col_tile(n);
@@ -166,7 +168,7 @@ bool ornith15_run_projection_tile(
                 // (LM head is 248320 rows, i.e. 60 full tiles + 2560 real columns).
                 for(uint32_t i=0;i<mr;i++)
                     for(uint32_t j=0;j<actual_nn;j++)
-                        output[(size_t)(r0+i)*n+n0+j]+=((float)qc[(size_t)i*nn+j])*so;
+                        output[(size_t)i*n+n0+j]+=((float)qc[(size_t)i*nn+j])*so;
                 stats.tiles++; stats.npu_calls++;
             }
         }
@@ -183,7 +185,8 @@ bool ornith15_run_projection_token(
     uint32_t k,
     float * output,
     uint32_t n,
-    Ornith15ProjectionStats & stats) {
+    Ornith15ProjectionStats & stats,
+    uint32_t logical_rows) {
     if (!input || !output || !k || !n) {
         stats.status = "ERR invalid_args";
         return false;
@@ -199,7 +202,7 @@ bool ornith15_run_projection_token(
         source = padded.data();
     }
 
-    std::vector<float> tmp((size_t)32 * np, 0.0f);
+    std::vector<float> tmp((size_t)np, 0.0f);
     Ornith15ProjectionStats inner;
     if (!ornith15_run_projection_tile(
             model_path, info, weight_name,

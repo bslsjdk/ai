@@ -115,7 +115,7 @@ Ornith-1.5-9B-MLX-4bit：
 - 真机 64K 的 VmRSS/VmHWM/VmPeak、PSS、TTFT、prefill、decode tok/s 和 QNN staging 内存。
 - 64K 长上下文下 full-attention QK/AV 的实际 HTP 稳定性与图缓存内存。
 - 目前 runtime 仍使用 FP16 resident KV；Q8 K/Q8 V、Q8 K/Q5 V 只是 probe/planner 研究路径，尚未成为生产 KV。
-- 大矩阵 projection 仍保持按 token 的 Safetensors tile/streaming 读取，但本轮已去掉每个 tile 约 64 MiB 的 F32 权重展开，改为 packed affine4 直接转置量化到 INT8；小型静态 norm/A_log/dt/conv 权重也改为模型加载时一次读取并跨 token 复用。这样同时降低峰值内存与 CPU/I/O 搬运，但 hot-tile 跨 token 复用与最终 decode tok/s 仍必须用真机 profiler 实测。
+- 大矩阵 projection 仍保持按 token 的 Safetensors tile/streaming 读取，但本轮已去掉每个 tile 约 64 MiB 的 F32 权重展开，改为 packed affine4 直接转置量化到 INT8；小型静态 norm/A_log/dt/conv 权重也改为模型加载时一次读取并跨 token 复用；单 token projection 还去掉了 LM-head 的约 32 MiB F32 输出临时矩阵，只保留一行逻辑输出。这样同时降低峰值内存与 CPU/I/O 搬运，但 hot-tile 跨 token 复用与最终 decode tok/s 仍必须用真机 profiler 实测。
 
 ## 当前工作方式
 用户只用手机/MT 管理器，不会直接维护复杂 C++ 工程。
@@ -176,3 +176,7 @@ Ornith-1.5-9B-MLX-4bit：
 - affine4 大矩阵 tile 不再先完整解码成约 64 MiB 的 F32 权重矩阵再量化；直接从 packed U32 affine4 + scales/biases 生成转置 INT8 B 矩阵，降低 CPU 临时内存和内存带宽。
 - 单 token projection 已避免为已对齐 K 维创建多余的 32xK F32 输入填充，只保留必要的 M=32 输出桶。
 - 以上改动仍需真实 Android/QNN 设备验证，尤其要测 decode tok/s、TTFT、RSS/HWM/PSS 和 HTP graph staging；代码通过静态结构检查不等于编译通过。
+
+## 2026-10-08 LM-head 临时内存修复
+
+单 token projection 的 M=32 是为了命中 HTP bucket，但调用方只消费第 0 行。当前实现让 projection tile 在 logical_rows=1 时只清零和写入 1×N 逻辑输出，LM-head 不再分配完整 32×248320 F32 输出缓冲；这是内存和速度优化，不改变 NPU 图的 M=32 bucket。
