@@ -16,7 +16,7 @@
         <package android:name="com.aiunit.aon" />
         <intent><action android:name="oplus.intent.action.AIUNIT_SERVICE" /></intent>
     </queries>
-    <application android:allowBackup="false" android:label="MC NPU" android:supportsRtl="true">
+    <application android:allowBackup="false" android:label="Ornith NPU" android:supportsRtl="true">
         <meta-data android:name="com.oplus.aiunit.auth_style" android:value="0" />
         <uses-native-library android:name="libcdsprpc.so" android:required="false" />
         <uses-native-library android:name="libadsprpc.so" android:required="false" />
@@ -37,7 +37,7 @@
         </activity>
         <receiver android:name=".NpuWakeReceiver" android:exported="true" android:enabled="true">
             <intent-filter>
-                <action android:name="bslsjdk.mcnpu.action.WAKE" />
+                <action android:name="bslsjdk.ornithnpu.action.WAKE" />
             </intent-filter>
         </receiver>
         <provider
@@ -50,7 +50,7 @@
         <service android:name=".NpuService" android:exported="false" android:foregroundServiceType="specialUse"
             android:stopWithTask="false">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="persistent NPU compute service for Minecraft acceleration" />
+                android:value="persistent Ornith NPU compute service for Minecraft acceleration" />
         </service>
     </application>
 </manifest>
