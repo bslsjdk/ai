@@ -7,6 +7,19 @@
 #include <vector>
 
 namespace {
+static uint32_t projection_col_tile(uint32_t n) {
+    // Choose the largest stable bucket that does not exceed 4096. Small
+    // projections such as beta/alpha (32 outputs) must not trigger a 4096-wide
+    // matmul just because the largest matrix benefits from it.
+    if (n <= 32u) return 32u;
+    if (n <= 64u) return 64u;
+    if (n <= 128u) return 128u;
+    if (n <= 256u) return 256u;
+    if (n <= 512u) return 512u;
+    if (n <= 1024u) return 1024u;
+    if (n <= 2048u) return 2048u;
+    return 4096u;
+}
 static bool quantize_i8(const float *src, size_t count, std::vector<int8_t> &dst, float &scale) {
     float mx=0.0f;
     for(size_t i=0;i<count;i++) mx=std::max(mx,std::fabs(src[i]));
@@ -41,9 +54,10 @@ bool ornith15_run_projection_tile(
     // Decode-time M is only 32, while K/N can use the larger measured HTP
     // buckets. Keeping both matrix axes at 4096 dramatically cuts graph-execute
     // count without materializing the full 5-GB model.
-    const uint32_t row_tile=32, col_tile=4096, k_tile=4096;
+    const uint32_t row_tile=32, k_tile=4096;
     for(uint32_t r0=0;r0<m;r0+=row_tile) {
         const uint32_t mr=std::min(row_tile,m-r0);
+        const uint32_t col_tile=projection_col_tile(n);
         for(uint32_t n0=0;n0<n;n0+=col_tile) {
             const uint32_t actual_nn=std::min(col_tile,n-n0);
             if(mr!=32 || actual_nn==0) { stats.status="ERR nonbucket_edge"; return false; }
