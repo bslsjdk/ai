@@ -215,3 +215,7 @@ Ornith-1.5-9B-MLX-4bit：
 - GGUF/llama.cpp 兼容后端的 `src0 × src1` 参数顺序已修正为 activation × weight，防止旧兼容路径返回错误矩阵。
 - 当前 CI 仍在 job steps 建立前失败，最新运行没有有效 compile steps/logs；因此 Java/C++/APK 仍不能标记为“已编译通过”。
 - 当前下一性能重点仍是 affine4 projection streaming I/O。目标是以 profiler 数据驱动有界复用/预取，而不是把多 GB 权重整体常驻，必须同时守住 <4 GiB runtime RAM 与可接受 decode 速度。
+## 2026-10-08 effective-window reporting
+
+- `nativeInfo()` 和 MLX load 返回值现在报告真实的 `effective_attention_window`，不再把用户请求的 `context` 直接冒充实际 full-attention resident window。内存预算不足时两者可以不同，这是预期行为。
+- 该真实窗口来自实际 `Ornith15AttentionState.window_tokens`，与 runtime memory planner 最终批准的大小一致。
