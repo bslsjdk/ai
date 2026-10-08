@@ -126,11 +126,14 @@ static std::string generateMlxModel(const std::string &prompt, int maxTokens) {
     std::string error;
     if (!ornith15_tokenizer_encode(g.tokenizer, chat, ids, error) || ids.empty())
         return "ERR ORNITH15_RUNTIME tokenize=" + error;
-    if (ids.size() > g.mlx_cfg.context_length)
-        return "ERR ORNITH15_RUNTIME prompt_context_exceeded";
+    // The model supports 262K positions, but the first phone target is a real
+    // 64K resident attention window. The recurrent layers still carry state
+    // across the whole replay; only full-attention K/V is windowed.
+    if (ids.size() > g.context)
+        return "ERR ORNITH15_RUNTIME prompt_context_exceeded=" + std::to_string(g.context);
 
     if (!ornith15_executor_init_runtime(g.mlx_cfg,
-                                        std::min<uint32_t>(g.mlx_cfg.context_length, 4096u),
+                                        (uint32_t)g.context,
                                         g.mlx_runtime, error))
         return "ERR ORNITH15_RUNTIME runtime_init=" + error;
 
@@ -188,8 +191,11 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
     Ornith15TextConfig cfg;
     if (!ornith15_executor_validate(info, cfg, error))
         return "ERR ORNITH15_MLX executor_preflight=" + error;
-    if (requested > cfg.context_length)
+    if (requested == 0 || requested > cfg.context_length)
         return "ERR ORNITH15_RUNTIME requested_context=" + std::to_string(requested) + " native=262144";
+    constexpr uint64_t MAX_FIRST_STAGE_CONTEXT = 65536ull;
+    if (requested > MAX_FIRST_STAGE_CONTEXT)
+        return "ERR ORNITH15_RUNTIME requested_context=" + std::to_string(requested) + " first_stage_max=65536";
 
 #if MCNPU_HAS_LLAMA
     if (g.sampler) { llama_sampler_free(g.sampler); g.sampler=nullptr; }
@@ -202,7 +208,7 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
         return "ERR ORNITH15_MLX tokenizer=" + error;
     Ornith15LayerRuntime layerRuntime;
     if (!ornith15_executor_init_runtime(cfg,
-                                        std::min<uint32_t>((uint32_t)requested, 4096u),
+                                        (uint32_t)requested,
                                         layerRuntime, error))
         return "ERR ORNITH15_MLX runtime_init=" + error;
 
@@ -230,7 +236,8 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
     return "OK ORNITH15_RUNTIME/1 format=MLX_SAFE_TENSORS_4BIT"
            " arch=qwen3_5 layers=32 hidden=4096 vocab=248320"
            " context=" + std::to_string(requested) +
-           " attention_window=4096"
+           " attention_window=" + std::to_string(requested) +
+           " kv_storage=fp16"
            " file_bytes=" + std::to_string(g.fileBytes) +
            " header_bytes=" + std::to_string(g.mlx_info.header_bytes) +
            " tensors=" + std::to_string(g.mlx_info.tensor_count) +
