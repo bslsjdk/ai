@@ -8,11 +8,20 @@ struct Ornith15AttentionState {
     uint32_t kv_heads = 4;
     uint32_t head_dim = 256;
     uint64_t tokens = 0;
-    // Ring-buffer window. K/V are stored as IEEE-754 half floats to keep a
-    // 64K resident cache comfortably below the 4 GiB process ceiling.
+    // The 64K K/V range is reserved virtually, while physical pages are
+    // faulted in only as tokens are actually written.
     uint32_t window_tokens = 0;
-    std::vector<uint16_t> keys;
-    std::vector<uint16_t> values;
+    uint64_t mapped_elems = 0;
+    uint16_t *keys = nullptr;
+    uint16_t *values = nullptr;
+
+    Ornith15AttentionState() = default;
+    ~Ornith15AttentionState();
+
+    Ornith15AttentionState(const Ornith15AttentionState&) = delete;
+    Ornith15AttentionState& operator=(const Ornith15AttentionState&) = delete;
+    Ornith15AttentionState(Ornith15AttentionState&& other) noexcept;
+    Ornith15AttentionState& operator=(Ornith15AttentionState&& other) noexcept;
 };
 
 bool ornith15_attention_init(Ornith15AttentionState &s, uint32_t max_tokens);
