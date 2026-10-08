@@ -24,6 +24,7 @@ public final class ChatActivity extends Activity {
     private static final String PREFS = "chat";
     private static final String HISTORY = "history";
     private static final String MODEL_PATH = "model_path";
+    private static final String MODEL_FILENAME = "ornith-1.5-9b-mlx-4bit.safetensors";
     private static final int PICK_MODEL = 4201;
     private static final int MAX_CONTEXT_MESSAGES = 8;
     private static final int MAX_CONTEXT_CHARS = 12000;
@@ -63,7 +64,7 @@ public final class ChatActivity extends Activity {
 
         loadHistory();
         updateRuntimeState();
-        findViewById(R.id.chatTitle).setOnClickListener(v -> chooseModel());
+        findViewById(R.id.chatTitle).setOnClickListener(v -> importOrnithModel());
         initLocalRuntime();
     }
 
@@ -161,11 +162,11 @@ public final class ChatActivity extends Activity {
         }
     }
 
-    private void chooseModel() {
+    private void importOrnithModel() {
         try {
             Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             i.addCategory(Intent.CATEGORY_OPENABLE);
-            i.setType("*/*");
+            i.setType("application/octet-stream");
             startActivityForResult(i, PICK_MODEL);
         } catch (Throwable t) {
             Toast.makeText(this, "无法打开模型选择器: " + t.getClass().getSimpleName(), Toast.LENGTH_SHORT).show();
@@ -182,9 +183,9 @@ public final class ChatActivity extends Activity {
                 if (!dir.exists() && !dir.mkdirs()) throw new java.io.IOException("无法创建模型目录");
                 String sourceName = uri.getLastPathSegment();
                 String lower = sourceName == null ? "" : sourceName.toLowerCase(java.util.Locale.ROOT);
-                String dstName = lower.endsWith(".safetensors")
-                        ? "ornith-1.5-9b-mlx-4bit.safetensors"
-                        : "ornith-1.5-9b.gguf";
+                if (!lower.endsWith(".safetensors"))
+                    throw new java.io.IOException("这里只接受 Ornith-1.5-9B-MLX-4bit.safetensors");
+                String dstName = MODEL_FILENAME;
                 File dst = new File(dir, dstName);
                 try (java.io.InputStream in = getContentResolver().openInputStream(uri);
                      FileOutputStream out = new FileOutputStream(dst)) {
@@ -199,11 +200,11 @@ public final class ChatActivity extends Activity {
                         .putString(MODEL_PATH, dst.getAbsolutePath()).apply();
                 main.post(() -> {
                     statusLine.setText("Ornith-1.5-9B · 本地模型已识别 · MCNPU");
-                    Toast.makeText(this, "模型文件已识别", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Ornith-1.5-9B-MLX-4bit 已识别", Toast.LENGTH_SHORT).show();
                 });
             } catch (Throwable t) {
                 main.post(() -> Toast.makeText(
-                        this, "模型加载失败: " + t.getMessage(), Toast.LENGTH_LONG).show());
+                        this, "模型导入失败: " + t.getMessage(), Toast.LENGTH_LONG).show());
             }
         }, "ornith-model-load").start();
     }
