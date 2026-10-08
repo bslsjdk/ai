@@ -292,8 +292,10 @@ void ornith15_executor_reset_runtime(Ornith15LayerRuntime &runtime) {
         s.tokens = 0;
     }
     for (auto &s : runtime.attention) {
-        std::fill(s.keys.begin(), s.keys.end(), 0.0f);
-        std::fill(s.values.begin(), s.values.end(), 0.0f);
+        // Attention slots are valid only inside [first_position, position].
+        // Starting a new replay merely resets the logical count; wiping up to
+        // 2 GiB of FP16 KV would waste seconds of memory bandwidth and is not
+        // required for correctness because old slots are never read.
         s.tokens = 0;
     }
 }
