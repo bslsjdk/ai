@@ -320,23 +320,39 @@ bool mlx_read_affine4_tile(const std::string & path,
     };
 
     const size_t rowBytes=(size_t)w->shape[1]*sizeof(uint32_t);
-    for(uint32_t r=0;r<rows;r++){
-        const uint64_t off=(uint64_t)(row0+r)*rowBytes+(uint64_t)(col0/8u)*sizeof(uint32_t);
-        if(!read_open(*w,off,out.packed_weight.data()+(size_t)r*packedPerRow,
-                      packedPerRow*sizeof(uint32_t))) return false;
-    }
-
     const size_t scalarBytes=sc->dtype=="F32"?4u:2u;
     const size_t group0=col0/64u;
     const size_t groups=cols/64u;
     std::vector<unsigned char> rawS((size_t)rows*groups*scalarBytes);
     std::vector<unsigned char> rawB(rawS.size());
     const size_t scaleRowBytes=(size_t)sc->shape[1]*scalarBytes;
-    for(uint32_t r=0;r<rows;r++) {
-        const uint64_t off=(uint64_t)(row0+r)*scaleRowBytes+(uint64_t)group0*scalarBytes;
-        if(!read_open(*sc,off,rawS.data()+(size_t)r*groups*scalarBytes,groups*scalarBytes) ||
-           !read_open(*bi,off,rawB.data()+(size_t)r*groups*scalarBytes,groups*scalarBytes))
+
+    if (col0==0u && (uint64_t)cols==logicalK) {
+        // Production projection tiles consume the complete K axis. Their
+        // rows/groups are contiguous on disk, so read each tensor in one
+        // sequential block instead of issuing one seek/read per row.
+        const uint64_t woff=(uint64_t)row0*rowBytes;
+        if(!read_open(*w,woff,out.packed_weight.data(),
+                      (size_t)rows*rowBytes)) return false;
+        const uint64_t soff=(uint64_t)row0*scaleRowBytes;
+        const size_t scalarBlock=(size_t)rows*groups*scalarBytes;
+        if(!read_open(*sc,soff,rawS.data(),scalarBlock) ||
+           !read_open(*bi,soff,rawB.data(),scalarBlock))
             return false;
+    } else {
+        // Keep the general sub-column path for diagnostics or future layouts
+        // whose tile does not span the full K axis.
+        for(uint32_t r=0;r<rows;r++){
+            const uint64_t off=(uint64_t)(row0+r)*rowBytes+(uint64_t)(col0/8u)*sizeof(uint32_t);
+            if(!read_open(*w,off,out.packed_weight.data()+(size_t)r*packedPerRow,
+                          packedPerRow*sizeof(uint32_t))) return false;
+        }
+        for(uint32_t r=0;r<rows;r++) {
+            const uint64_t off=(uint64_t)(row0+r)*scaleRowBytes+(uint64_t)group0*scalarBytes;
+            if(!read_open(*sc,off,rawS.data()+(size_t)r*groups*scalarBytes,groups*scalarBytes) ||
+               !read_open(*bi,off,rawB.data()+(size_t)r*groups*scalarBytes,groups*scalarBytes))
+                return false;
+        }
     }
     out.scales.resize((size_t)rows*groups);
     out.biases.resize(out.scales.size());
