@@ -1,5 +1,6 @@
 #include "ornith15_tokenizer.h"
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <fstream>
@@ -106,26 +107,28 @@ bool ornith15_tokenizer_load(const std::string &path,
         out.tokens.resize(n);
         out.scores.resize(n);
         for (uint32_t i = 0; i < n; ++i) {
-            if (!str32(f, out.tokens[i]) || !i32(f, *(reinterpret_cast<int32_t *>(&out.scores[i])))) {
+            int32_t rank = -1;
+            if (!str32(f, out.tokens[i]) || !i32(f, rank)) {
                 // Scores are only integer merge ranks in OTK2. Read the bits
                 // explicitly below on the next pass is not possible, so reject
                 // malformed records cleanly.
                 error = "bad_tokenizer_entry";
                 return false;
             }
+            out.scores[i] = (float)rank;
         }
-        // Re-read integer ranks correctly from a temporary representation is
-        // impossible after the stream advances, therefore OTK2 stores rank in
-        // the float bit pattern. The loader above wrote it by bit-copying.
+        // OTK2 stores integer merge ranks directly.
         out.bos = bos;
         out.eos = eos;
         out.special_text.resize(special_count);
         out.special_ids.resize(special_count);
         for (uint32_t i = 0; i < special_count; ++i) {
-            if (!str32(f, out.special_text[i]) || !u32(f, reinterpret_cast<uint32_t &>(out.special_ids[i]))) {
+            uint32_t sid = 0;
+            if (!str32(f, out.special_text[i]) || !u32(f, sid) || sid >= n) {
                 error = "bad_tokenizer_special";
                 return false;
             }
+            out.special_ids[i] = (int32_t)sid;
         }
         rebuild_indexes(out);
         out.loaded = true;
