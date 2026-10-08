@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <new>
 #include <vector>
 
 namespace {
@@ -111,6 +112,52 @@ static void append_output_rows(std::vector<float> &out,
 }
 }
 
+Ornith15AttentionState::~Ornith15AttentionState() {
+    if (keys) ::operator delete(static_cast<void *>(keys));
+    if (values) ::operator delete(static_cast<void *>(values));
+    keys = nullptr;
+    values = nullptr;
+    mapped_elems = 0;
+    window_tokens = 0;
+}
+
+Ornith15AttentionState::Ornith15AttentionState(Ornith15AttentionState&& other) noexcept
+    : q_heads(other.q_heads),
+      kv_heads(other.kv_heads),
+      head_dim(other.head_dim),
+      tokens(other.tokens),
+      window_tokens(other.window_tokens),
+      mapped_elems(other.mapped_elems),
+      keys(other.keys),
+      values(other.values) {
+    other.tokens = 0;
+    other.window_tokens = 0;
+    other.mapped_elems = 0;
+    other.keys = nullptr;
+    other.values = nullptr;
+}
+
+Ornith15AttentionState& Ornith15AttentionState::operator=(
+        Ornith15AttentionState&& other) noexcept {
+    if (this == &other) return *this;
+    if (keys) ::operator delete(static_cast<void *>(keys));
+    if (values) ::operator delete(static_cast<void *>(values));
+    q_heads = other.q_heads;
+    kv_heads = other.kv_heads;
+    head_dim = other.head_dim;
+    tokens = other.tokens;
+    window_tokens = other.window_tokens;
+    mapped_elems = other.mapped_elems;
+    keys = other.keys;
+    values = other.values;
+    other.tokens = 0;
+    other.window_tokens = 0;
+    other.mapped_elems = 0;
+    other.keys = nullptr;
+    other.values = nullptr;
+    return *this;
+}
+
 bool ornith15_attention_init(Ornith15AttentionState &s, uint32_t max_tokens) {
     constexpr uint32_t MAX_RESIDENT_TOKENS = 65536u;
     if (!max_tokens || max_tokens > MAX_RESIDENT_TOKENS ||
@@ -120,18 +167,27 @@ bool ornith15_attention_init(Ornith15AttentionState &s, uint32_t max_tokens) {
     const uint64_t elems64 = (uint64_t)max_tokens * s.kv_heads * s.head_dim;
     if (elems64 > (uint64_t)std::numeric_limits<size_t>::max())
         return false;
-    const size_t elems = (size_t)elems64;
-    const uint64_t cache_bytes = elems64 * sizeof(uint16_t) * 2ull;
-    std::string mem_error;
-    if (!ornith15_memory_headroom(cache_bytes, "attention_kv", mem_error))
+    const uint64_t cache_bytes = elems64 * sizeof(uint16_t);
+    if (cache_bytes > (uint64_t)std::numeric_limits<size_t>::max())
         return false;
-    // K is laid out [kv_head][head_dim][token] so each K matrix is directly
-    // usable as the [K,N] operand of QNN MatMul. V is laid out
-    // [kv_head][token][head_dim] for the [N,D] operand of the second matmul.
-    s.keys.assign(elems, 0);
-    s.values.assign(elems, 0);
-    s.tokens=0;
-    s.window_tokens=max_tokens;
+
+    // Allocate raw contiguous storage without value-initialising the full 64K
+    // range. Large malloc/new allocations are demand-paged by the platform;
+    // pages become resident only when K/V writes actually touch them.
+    const size_t bytes = (size_t)cache_bytes;
+    void *kraw = ::operator new(bytes, std::nothrow);
+    if (!kraw) return false;
+    void *vraw = ::operator new(bytes, std::nothrow);
+    if (!vraw) {
+        ::operator delete(kraw);
+        return false;
+    }
+
+    s.keys = static_cast<uint16_t *>(kraw);
+    s.values = static_cast<uint16_t *>(vraw);
+    s.mapped_elems = elems64;
+    s.tokens = 0;
+    s.window_tokens = max_tokens;
     return true;
 }
 
@@ -148,7 +204,7 @@ bool ornith15_attention_step(
     if(!q||!k||!v||q_heads!=s.q_heads||kv_heads!=s.kv_heads||
        head_dim!=s.head_dim||(q_heads%kv_heads)!=0||!capacity ||
        expected > (uint64_t)std::numeric_limits<size_t>::max() ||
-       s.keys.size() != (size_t)expected || s.values.size() != (size_t)expected) {
+       !s.keys || !s.values || s.mapped_elems != expected) {
         error="full_attention_shape_mismatch";
         return false;
     }
