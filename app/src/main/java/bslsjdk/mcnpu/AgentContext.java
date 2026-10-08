@@ -35,18 +35,20 @@ public final class AgentContext {
         appendSection(out, "Conversation continuity:",
                 "Treat the USER history below as authoritative context. Preserve earlier goals, constraints, decisions and unfinished work unless the latest USER message explicitly changes them.");
         appendSection(out, "Conversation origin:",
-                origin(history, used, 1800));
+                origin(history, used, 7000));
         appendSection(out, "User history spine:",
-                userSpine(history, used, 2600));
+                userSpine(history, used, 50000));
         appendSection(out, "Relevant earlier conversation:",
-                relevant(history, current, used, 2800));
+                relevant(history, current, used, 40000));
         appendSection(out, "Recent conversation:",
-                recent(history, Math.max(1, recentMessages), used, 3600));
+                recent(history, Math.max(1, recentMessages), used, 50000));
 
-        if (out.length() > budget) {
-            return trim(out.toString(), budget);
-        }
-        return out.toString();
+        String result = out.toString();
+        // Character count is not a reliable token count for Chinese/code. Use a
+        // conservative mixed-language estimate so the 64K native context is not overrun.
+        result = trimToEstimatedTokens(result, 58000);
+        if (result.length() > budget) result = trim(result, budget);
+        return result;
     }
 
     public static String buildRecent(JSONArray history, int maxMessages) {
@@ -83,7 +85,7 @@ public final class AgentContext {
             if (i >= 0) picks.add(users.get(i));
         }
 
-        int target = Math.min(14, users.size());
+        int target = Math.min(48, users.size());
         while (picks.size() < target) {
             double step = (double)(users.size() - 1) / Math.max(1, target - 1);
             int pos = (int)Math.round((picks.size()) * step);
@@ -98,7 +100,7 @@ public final class AgentContext {
         StringBuilder b = new StringBuilder();
         for (int idx : sorted) {
             if (used.contains(idx)) continue;
-            appendMessage(b, history.optJSONObject(idx), 320, idx, used);
+            appendMessage(b, history.optJSONObject(idx), 1200, idx, used);
         }
         return trim(b.toString(), cap);
     }
@@ -109,7 +111,7 @@ public final class AgentContext {
         for (int i = from; i < history.length(); i++) {
             JSONObject m = history.optJSONObject(i);
             if (m == null || used.contains(i)) continue;
-            appendMessage(b, m, 900, i, used);
+            appendMessage(b, m, 1800, i, used);
         }
         return trim(b.toString(), cap);
     }
@@ -150,7 +152,7 @@ public final class AgentContext {
         for (Candidate c : candidates) {
             if (selected >= 8) break;
             if (used.contains(c.index)) continue;
-            appendMessage(out, history.optJSONObject(c.index), isUser(history.optJSONObject(c.index)) ? 520 : 360,
+            appendMessage(out, history.optJSONObject(c.index), isUser(history.optJSONObject(c.index)) ? 1600 : 900,
                     c.index, used);
             selected++;
         }
@@ -218,6 +220,41 @@ public final class AgentContext {
                 .append(trim(text, cap))
                 .append('\n');
         used.add(index);
+    }
+
+
+    private static long estimatedTokens(String s) {
+        long estimate = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char ch = s.charAt(i);
+            if (isCjk(ch)) estimate += 12;
+            else if (Character.isWhitespace(ch)) estimate += 3;
+            else if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+                     (ch >= '0' && ch <= '9') || ch == '_' || ch == '-') estimate += 3;
+            else if (ch < 128) estimate += 6;
+            else estimate += 12;
+        }
+        return (estimate + 9) / 10;
+    }
+
+    private static String trimToEstimatedTokens(String s, int maxTokens) {
+        if (s == null || s.isEmpty() || maxTokens <= 0) return "";
+        if (estimatedTokens(s) <= maxTokens) return s;
+        int low = Math.max(4096, Math.min(s.length(), (int)((long)s.length() * maxTokens /
+                Math.max(1L, estimatedTokens(s)))));
+        int high = s.length();
+        String best = trim(s, low);
+        while (high - low > 1024) {
+            int mid = low + (high - low) / 2;
+            String candidate = trim(s, mid);
+            if (estimatedTokens(candidate) <= maxTokens) {
+                best = candidate;
+                low = mid;
+            } else {
+                high = mid;
+            }
+        }
+        return best;
     }
 
     private static String trim(String s, int cap) {
