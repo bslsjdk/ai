@@ -102,6 +102,7 @@ struct Runtime {
         uint32_t dimsA[2]={0,0}, dimsB[2]={0,0}, dimsC[2]={0,0};
         Qnn_Tensor_t a=QNN_TENSOR_INIT, b=QNN_TENSOR_INIT, c=QNN_TENSOR_INIT;
         bool fp16=false;
+        bool transposeB=false;
         // Binary int8 path: the requantisation factor is a property of the graph,
         // not of the data, so the host-side calibration only has to run once per
         // shape. Caching it removes an O(refRows*n*k) CPU triple loop from every
@@ -1567,12 +1568,31 @@ std::string runMatMulInt8Buf(const int8_t* Ain,const int8_t* Bin,int8_t* Cout,ui
         op.v1.name="matmul";
         op.v1.packageName="qti.aisw";
         op.v1.typeName=QNN_OP_MAT_MUL;
-        op.v1.numOfParams=0;
-        op.v1.params=nullptr;
         op.v1.numOfInputs=2;
         op.v1.inputTensors=ins;
         op.v1.numOfOutputs=1;
         op.v1.outputTensors=&mg->c;
+
+        Qnn_Scalar_t transpose0{};
+        Qnn_Scalar_t transpose1{};
+        Qnn_Param_t transposeParams[2]{};
+        if (transposeB) {
+            transpose0.dataType=QNN_DATATYPE_UINT_32;
+            transpose0.uint32Value=0;
+            transpose1.dataType=QNN_DATATYPE_UINT_32;
+            transpose1.uint32Value=1;
+            transposeParams[0].paramType=QNN_PARAMTYPE_SCALAR;
+            transposeParams[0].name=QNN_OP_MAT_MUL_PARAM_TRANSPOSE_IN0;
+            transposeParams[0].scalarParam=transpose0;
+            transposeParams[1].paramType=QNN_PARAMTYPE_SCALAR;
+            transposeParams[1].name=QNN_OP_MAT_MUL_PARAM_TRANSPOSE_IN1;
+            transposeParams[1].scalarParam=transpose1;
+            op.v1.numOfParams=2;
+            op.v1.params=transposeParams;
+        } else {
+            op.v1.numOfParams=0;
+            op.v1.params=nullptr;
+        }
         rc=f.graphAddNode(mg->graph,op);
         if(rc!=QNN_SUCCESS){
             g.matMulGraphs8.erase(key);
@@ -1701,8 +1721,8 @@ std::string runMatMulInt8Buf(const int8_t* Ain,const int8_t* Bin,int8_t* Cout,ui
 }
 
 
-std::string runMatMulFp16Buf(const uint16_t* Ain,const uint16_t* Bin,uint16_t* Cout,
-                             uint32_t m,uint32_t k,uint32_t n){
+std::string runMatMulFp16BufEx(const uint16_t* Ain,const uint16_t* Bin,uint16_t* Cout,
+                               uint32_t m,uint32_t k,uint32_t n,bool transposeB){
     const auto lockWait0 = std::chrono::steady_clock::now();
     std::unique_lock<std::mutex> lock(gRuntimeMutex);
     const long long lockWaitUs = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -1724,7 +1744,8 @@ std::string runMatMulFp16Buf(const uint16_t* Ain,const uint16_t* Bin,uint16_t* C
                std::to_string((unsigned)Kb)+"x"+
                std::to_string((unsigned)Nb);
 
-    const uint64_t key=((uint64_t)Mb<<42)|((uint64_t)Kb<<21)|(uint64_t)Nb;
+    const uint64_t key=((uint64_t)Mb<<42)|((uint64_t)Kb<<21)|(uint64_t)Nb|
+                       (transposeB ? (1ULL<<63) : 0ULL);
     Runtime::MatMulGraph* mg=nullptr;
     bool graphCached=false;
     auto found=g.matMulGraphs.find(key);
@@ -1743,13 +1764,18 @@ std::string runMatMulFp16Buf(const uint16_t* Ain,const uint16_t* Bin,uint16_t* C
             return "ERR FP16BUF_GRAPH_BUDGET_EXHAUSTED";
         auto inserted=g.matMulGraphs.emplace(key,Runtime::MatMulGraph{});
         mg=&inserted.first->second;
-        mg->m=Mb; mg->k=Kb; mg->n=Nb; mg->fp16=true;
+        mg->m=Mb; mg->k=Kb; mg->n=Nb; mg->fp16=true; mg->transposeB=transposeB;
         mg->dimsA[0]=Kb; mg->dimsA[1]=Mb;
-        mg->dimsB[0]=Nb; mg->dimsB[1]=Kb;
+        // Existing QNN tensors use reversed dimensions ({K,M}, {N,K}, {N,M})
+        // for row-major client buffers. A transpose-B graph therefore receives
+        // an N-by-K physical buffer and exposes it as the logical K-by-N B.
+        mg->dimsB[0]=transposeB ? Kb : Nb;
+        mg->dimsB[1]=transposeB ? Nb : Kb;
         mg->dimsC[0]=Nb; mg->dimsC[1]=Mb;
 
         const std::string graphName="mcnpu_mm16b_"+std::to_string(Mb)+"x"+
-                                     std::to_string(Kb)+"x"+std::to_string(Nb);
+                                     std::to_string(Kb)+"x"+std::to_string(Nb)+
+                                     (transposeB ? "_tb" : "");
         rc=f.graphCreate(g.context,graphName.c_str(),nullptr,&mg->graph);
         if(rc!=QNN_SUCCESS || !mg->graph){
             g.matMulGraphs.erase(inserted.first);
@@ -1812,15 +1838,24 @@ std::string runMatMulFp16Buf(const uint16_t* Ain,const uint16_t* Bin,uint16_t* C
         Ap.assign((size_t)Mb*Kb,0);
         for(uint32_t row=0;row<m;row++)
             std::memcpy(&Ap[(size_t)row*Kb],&Ain[(size_t)row*k],(size_t)k*sizeof(uint16_t));
-        Bp.assign((size_t)Kb*Nb,0);
-        for(uint32_t row=0;row<k;row++)
-            std::memcpy(&Bp[(size_t)row*Nb],&Bin[(size_t)row*n],(size_t)n*sizeof(uint16_t));
         Ause=Ap.data();
-        Buse=Bp.data();
-    } else if(Nb!=n){
+    }
+
+    if (transposeB) {
+        // Physical B layout is [N][K] for transpose_in1. QNN turns it into
+        // logical [K][N] without a host-side K packing pass.
+        if (Nb!=n || Kb!=k) {
+            Bp.assign((size_t)Nb*Kb,0);
+            for(uint32_t row=0;row<n;row++)
+                std::memcpy(&Bp[(size_t)row*Kb],&Bin[(size_t)row*k],
+                            (size_t)k*sizeof(uint16_t));
+            Buse=Bp.data();
+        }
+    } else if(Nb!=n || Kb!=k){
         Bp.assign((size_t)Kb*Nb,0);
         for(uint32_t row=0;row<k;row++)
-            std::memcpy(&Bp[(size_t)row*Nb],&Bin[(size_t)row*n],(size_t)n*sizeof(uint16_t));
+            std::memcpy(&Bp[(size_t)row*Nb],&Bin[(size_t)row*n],
+                        (size_t)n*sizeof(uint16_t));
         Buse=Bp.data();
     }
 
@@ -1913,7 +1948,13 @@ std::string mcnpu_backend_matmul_int8(
 std::string mcnpu_backend_matmul_fp16(
         const uint16_t* a, const uint16_t* b, uint16_t* c,
         uint32_t m, uint32_t k, uint32_t n) {
-    return runMatMulFp16Buf(a, b, c, m, k, n);
+    return runMatMulFp16BufEx(a, b, c, m, k, n, false);
+}
+
+std::string mcnpu_backend_matmul_fp16_transpose_b(
+        const uint16_t* a, const uint16_t* b, uint16_t* c,
+        uint32_t m, uint32_t k, uint32_t n) {
+    return runMatMulFp16BufEx(a, b, c, m, k, n, true);
 }
 
 
