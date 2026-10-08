@@ -38,6 +38,23 @@ bool mlx_read_tensor_range(const std::string & path, const MlxTensorInfo & tenso
 // Reads a tiny real MLX affine4 weight tile from disk and executes one 32x64x32
 // multiply through the in-process MCNPU bridge. This is a diagnostic proof that
 // real model bytes, not synthetic weights, reached QNN HTP.
+struct MlxAffine4Tile {
+    uint32_t rows = 0;
+    uint32_t cols = 0;
+    std::vector<uint32_t> packed_weight;
+    std::vector<float> scales;
+    std::vector<float> biases;
+    std::string tensor_name;
+};
+
+bool mlx_read_affine4_tile(const std::string & path,
+                           const MlxSafetensorsInfo & info,
+                           const std::string & tensor_suffix,
+                           uint32_t row0, uint32_t rows,
+                           uint32_t col0, uint32_t cols,
+                           MlxAffine4Tile & out,
+                           std::string & error);
+
 std::string mlx_affine4_npu_probe(const std::string & path,
                                   const MlxSafetensorsInfo & info);
 
