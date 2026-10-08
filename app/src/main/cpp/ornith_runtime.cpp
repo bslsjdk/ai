@@ -134,6 +134,10 @@ static std::string generateMlxModel(const std::string &prompt, int maxTokens) {
                                         g.mlx_runtime, error))
         return "ERR ORNITH15_RUNTIME runtime_init=" + error;
 
+    // Each generation replays the complete working prompt. Reset recurrent and
+    // KV state first, otherwise the previous request would be silently replayed twice.
+    ornith15_executor_reset_runtime(g.mlx_runtime);
+
     Ornith15DecoderStep step;
     for (size_t i = 0; i < ids.size(); ++i) {
         if (!ornith15_executor_forward_token(g.path, g.mlx_info, g.mlx_cfg,
