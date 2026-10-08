@@ -11,6 +11,8 @@ struct Ornith35Tokenizer {
     bool loaded = false;
 };
 
+// Loads the compact sidecar emitted by the app's model-preparation step.
+// It deliberately does not pretend that raw MLX weights contain a tokenizer.
 bool ornith35_tokenizer_load(const std::string &path, Ornith35Tokenizer &out, std::string &error);
 bool ornith35_tokenizer_encode(const Ornith35Tokenizer &tok, const std::string &text,
                                std::vector<int32_t> &ids, std::string &error);
