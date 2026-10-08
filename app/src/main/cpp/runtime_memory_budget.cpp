@@ -7,17 +7,33 @@
 #include <string>
 
 namespace {
-static uint64_t read_rss_bytes() {
+struct ProcMemory {
+    uint64_t rss = 0;
+    uint64_t hwm = 0;
+    uint64_t peak = 0;
+};
+
+static ProcMemory read_proc_memory() {
+    ProcMemory out;
     std::ifstream in("/proc/self/status");
-    if (!in) return 0;
+    if (!in) return out;
     std::string line;
     while (std::getline(in, line)) {
-        if (line.rfind("VmRSS:", 0) != 0) continue;
+        const char *field = nullptr;
+        uint64_t *dst = nullptr;
+        if (line.rfind("VmRSS:", 0) == 0) { field = "VmRSS:"; dst = &out.rss; }
+        else if (line.rfind("VmHWM:", 0) == 0) { field = "VmHWM:"; dst = &out.hwm; }
+        else if (line.rfind("VmPeak:", 0) == 0) { field = "VmPeak:"; dst = &out.peak; }
+        if (!field || !dst) continue;
         unsigned long long kb = 0;
-        if (std::sscanf(line.c_str(), "VmRSS: %llu kB", &kb) != 1) return 0;
-        return (uint64_t)kb * 1024ull;
+        if (std::sscanf(line.c_str(), "%*[^:]: %llu kB", &kb) == 1)
+            *dst = (uint64_t)kb * 1024ull;
     }
-    return 0;
+    return out;
+}
+
+static uint64_t read_rss_bytes() {
+    return read_proc_memory().rss;
 }
 
 static uint64_t ceil_div(uint64_t a, uint64_t b) {
@@ -114,8 +130,10 @@ bool ornith15_memory_within_limit(std::string &error) {
 }
 
 std::string ornith15_memory_status() {
-    const uint64_t rss = read_rss_bytes();
-    return "rss_bytes=" + std::to_string(rss) +
+    const ProcMemory mem = read_proc_memory();
+    return "rss_bytes=" + std::to_string(mem.rss) +
+           " hwm_bytes=" + std::to_string(mem.hwm) +
+           " peak_virtual_bytes=" + std::to_string(mem.peak) +
            " rss_limit_bytes=" + std::to_string(ORNITH15_RSS_HARD_LIMIT_BYTES) +
            " safety_bytes=" + std::to_string(ORNITH15_RSS_SAFETY_BYTES) +
            " non_state_reserve_bytes=" + std::to_string(ORNITH15_NON_STATE_RESERVE_BYTES) +
