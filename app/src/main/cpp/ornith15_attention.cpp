@@ -240,8 +240,11 @@ bool ornith15_attention_step(
             std::copy(q+(size_t)h*head_dim,q+(size_t)(h+1)*head_dim,qr.begin());
             rms(qr.data(),head_dim,q_norm_weight);
             rope(qr.data(),head_dim,64u,position,rope_theta);
+            // Qwen3.5 full attention applies the standard 1/sqrt(head_dim)
+            // scaling after Q/K normalization and RoPE. head_dim=256 => 1/16.
+            constexpr float ATTENTION_SCALE = 0.0625f;
             for(uint32_t d=0;d<head_dim;d++)
-                qmat[(size_t)local*head_dim+d]=float_to_half(qr[d]);
+                qmat[(size_t)local*head_dim+d]=float_to_half(qr[d]*ATTENTION_SCALE);
         }
 
         std::vector<SegmentScores> segments;
