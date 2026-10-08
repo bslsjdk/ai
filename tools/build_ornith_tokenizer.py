@@ -112,6 +112,21 @@ def main() -> int:
 
     # Added/special tokens may live outside model.vocab. Extend the ID table
     # to the highest added-token ID so the runtime can embed them directly.
+    # Added tokens, including non-special entries such as tool markers, may
+    # also sit outside model.vocab. Keep their textual bytes at their IDs so
+    # decoding never drops a valid generated token.
+    for item in data.get("added_tokens") or []:
+        if not isinstance(item, dict) or "id" not in item or "content" not in item:
+            continue
+        idx = int(item["id"])
+        if idx < 0:
+            raise ValueError(f"negative added token id: {idx}")
+        if idx >= len(tokens):
+            grow = idx + 1 - len(tokens)
+            tokens.extend([b""] * grow)
+            ranks.extend([-1] * grow)
+        if not tokens[idx]:
+            tokens[idx] = str(item["content"]).encode("utf-8")
     if specials:
         max_special = max(specials.values())
         if max_special >= len(tokens):
