@@ -22,7 +22,7 @@ set(MCNPU_SOURCES
 if(LLAMA_CPP_SRC)
     list(APPEND MCNPU_SOURCES mcnpu_ggml_backend.cpp)
 endif()
-add_library(mcnpu SHARED ${MCNPU_SOURCES})
+add_library(ornithnpu SHARED ${MCNPU_SOURCES})
 if(LLAMA_CPP_SRC)
     set(LLAMA_BUILD_COMMON OFF CACHE BOOL "" FORCE)
     set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
