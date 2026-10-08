@@ -2455,6 +2455,7 @@ static std::string buildPerlinFull(PerlinGraph& G, uint32_t n, int constMode,
     Qnn_ErrorHandle_t rc = f.graphCreate(g.context, gname.c_str(), nullptr, &G.graph);
     if(rc != QNN_SUCCESS || !G.graph)
         return "ERR GRAPH_CREATE rc=" + std::to_string((int)rc) + " " + verbose(rc);
+    ++g.graphCount;
 
     const Qnn_DataType_t F = QNN_DATATYPE_FLOAT_32;
     const Qnn_DataType_t I = QNN_DATATYPE_INT_32;
@@ -2878,6 +2879,7 @@ static std::string buildPerlinHybrid(PerlinGraph& G, uint32_t n){
     Qnn_ErrorHandle_t rc = f.graphCreate(g.context, gname.c_str(), nullptr, &G.graph);
     if(rc != QNN_SUCCESS || !G.graph)
         return "ERR GRAPH_CREATE rc=" + std::to_string((int)rc) + " " + verbose(rc);
+    ++g.graphCount;
 
     for(int c = 0; c < 8; c++){
         G.inD[c] = mkT(A, "d", QNN_TENSOR_TYPE_APP_WRITE, F, n);
@@ -2991,7 +2993,7 @@ static std::string runPerlinDiag(uint32_t n){
     // destroy in use here, so the budget check may reset the context between
     // probes. Diagnostic graphs are never executed, so that is acceptable.
     auto fresh = [&](const char* tag)->Qnn_ErrorHandle_t{
-        ensureGraphBudget();
+        if(!ensureGraphBudget()) return QNN_COMMON_ERROR_SYSTEM_COMMUNICATION;
         const std::string nm = std::string("mcnpu_diag_") + tag + std::to_string(++seq);
         const Qnn_ErrorHandle_t rc = f.graphCreate(g.context, nm.c_str(), nullptr, &gh);
         if (rc == QNN_SUCCESS && gh) ++g.graphCount;
