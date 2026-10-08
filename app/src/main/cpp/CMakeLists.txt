@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22.1)
-project(mcnpu)
+project(ornithnpu)
 set(QNN_INC "" CACHE PATH "QNN headers")
 set(LLAMA_CPP_SRC "" CACHE PATH "Optional llama.cpp source tree for real Ornith inference")
 set(MCNPU_SOURCES
@@ -42,36 +42,36 @@ endif()
 if(NOT QNN_INC)
     message(FATAL_ERROR "QNN_INC is required")
 endif()
-target_include_directories(mcnpu PRIVATE ${QNN_INC})
+target_include_directories(ornithnpu PRIVATE ${QNN_INC})
 if(LLAMA_CPP_SRC)
-    target_include_directories(mcnpu PRIVATE ${LLAMA_CPP_SRC}/ggml/include ${LLAMA_CPP_SRC}/ggml/src)
+    target_include_directories(ornithnpu PRIVATE ${LLAMA_CPP_SRC}/ggml/include ${LLAMA_CPP_SRC}/ggml/src)
 endif()
 find_library(log-lib log)
-target_link_libraries(mcnpu PRIVATE ${log-lib} dl)
-target_compile_features(mcnpu PRIVATE cxx_std_17)
-target_compile_options(mcnpu PRIVATE -fvisibility=hidden -ffunction-sections -fdata-sections -Wall -Wextra)
-target_link_options(mcnpu PRIVATE -Wl,--gc-sections)
+target_link_libraries(ornithnpu PRIVATE ${log-lib} dl)
+target_compile_features(ornithnpu PRIVATE cxx_std_17)
+target_compile_options(ornithnpu PRIVATE -fvisibility=hidden -ffunction-sections -fdata-sections -Wall -Wextra)
+target_link_options(ornithnpu PRIVATE -Wl,--gc-sections)
 
 # Stamp the commit this binary was built from into the diagnostic output. The
 # diag is read out of logs pasted into a chat, and more than one round has been
 # spent reasoning about output that came from an APK older than the fix under
 # discussion. Anything that cannot identify itself is not diagnosable.
-set(MCNPU_BUILD_ID "unknown")
+set(ORNITHNPU_BUILD_ID "unknown")
 find_package(Git QUIET)
 if(GIT_FOUND)
     execute_process(
         COMMAND ${GIT_EXECUTABLE} rev-parse --short=8 HEAD
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        OUTPUT_VARIABLE _mcnpu_sha
+        OUTPUT_VARIABLE _ornithnpu_sha
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET)
-    if(_mcnpu_sha)
-        set(MCNPU_BUILD_ID "${_mcnpu_sha}")
+    if(_ornithnpu_sha)
+        set(ORNITHNPU_BUILD_ID "${_ornithnpu_sha}")
     endif()
 endif()
-message(STATUS "MCNPU_BUILD_ID=${MCNPU_BUILD_ID}")
-target_compile_definitions(mcnpu PRIVATE MCNPU_BUILD_ID="${MCNPU_BUILD_ID}" MCNPU_HAS_LLAMA=${MCNPU_HAS_LLAMA})
+message(STATUS "ORNITHNPU_BUILD_ID=${ORNITHNPU_BUILD_ID}")
+target_compile_definitions(ornithnpu PRIVATE ORNITHNPU_BUILD_ID="${ORNITHNPU_BUILD_ID}" MCNPU_HAS_LLAMA=${MCNPU_HAS_LLAMA})
 if(LLAMA_CPP_SRC)
-    target_include_directories(mcnpu PRIVATE ${LLAMA_CPP_SRC}/include)
-    target_link_libraries(mcnpu PRIVATE llama)
+    target_include_directories(ornithnpu PRIVATE ${LLAMA_CPP_SRC}/include)
+    target_link_libraries(ornithnpu PRIVATE llama)
 endif()
