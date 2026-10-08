@@ -3,10 +3,7 @@
 #include <string>
 #include <vector>
 
-enum class Ornith35LayerType : uint8_t {
-    LinearAttention = 0,
-    FullAttention = 1,
-};
+enum class Ornith35LayerType { LinearAttention, FullAttention };
 
 struct Ornith35TextConfig {
     uint32_t hidden_size = 4096;
@@ -25,14 +22,8 @@ struct Ornith35TextConfig {
     float rms_norm_eps = 1.0e-6f;
     uint32_t rope_theta = 10000000;
     uint32_t rotary_dim = 64;
+    bool attention_output_gate = true;
 };
 
-struct Ornith35LayerPlan {
-    uint32_t index = 0;
-    Ornith35LayerType type = Ornith35LayerType::LinearAttention;
-    std::string prefix;
-};
-
-std::vector<Ornith35LayerPlan> ornith35_make_layer_plan();
-const char * ornith35_layer_type_name(Ornith35LayerType type);
-bool ornith35_validate_config(const Ornith35TextConfig & cfg, std::string & error);
+std::vector<Ornith35LayerType> ornith35_make_layer_plan();
+bool ornith35_validate_config(const Ornith35TextConfig &cfg, std::string &error);
