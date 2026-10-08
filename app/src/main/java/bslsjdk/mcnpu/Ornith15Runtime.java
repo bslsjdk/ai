@@ -54,6 +54,17 @@ public final class Ornith15Runtime {
         }
     }
 
+    /** Direct in-process smoke path from Ornith native code into MCNPU/QNN. */
+    public static synchronized String npuBridgeProbe() {
+        if (!loaded) return "ERR ORNITH15_RUNTIME not_loaded";
+        try {
+            String r = nativeNpuBridgeProbe();
+            return r == null ? "ERR ORNITH15_RUNTIME null_npu_probe" : r;
+        } catch (Throwable t) {
+            return "ERR ORNITH15_RUNTIME npu_probe_" + t.getClass().getSimpleName();
+        }
+    }
+
     public static synchronized String info() {
         try {
             String r = nativeInfo();
@@ -76,5 +87,6 @@ public final class Ornith15Runtime {
     private static native String nativeLoad(String modelPath, long contextTokens);
     private static native String nativeGenerate(String prompt, int maxTokens);
     private static native String nativeInfo();
+    private static native String nativeNpuBridgeProbe();
     private static native void nativeUnload();
 }
