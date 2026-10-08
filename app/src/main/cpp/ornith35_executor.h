@@ -4,6 +4,8 @@
 #include <vector>
 #include "mlx_safetensors.h"
 #include "ornith35_arch.h"
+#include "ornith35_attention.h"
+#include "ornith35_deltanet.h"
 
 struct Ornith35ExecutorStats {
     uint32_t layers_done = 0;
@@ -28,3 +30,26 @@ bool ornith35_executor_greedy_step(const std::string &model_path,
                                     uint32_t token_id,
                                     Ornith35DecoderStep &step,
                                     std::string &error);
+
+struct Ornith35LayerRuntime {
+    std::vector<Ornith35DeltaState> delta;
+    std::vector<Ornith35AttentionState> attention;
+    std::vector<float> work_a;
+    std::vector<float> work_b;
+    std::vector<float> work_c;
+    uint32_t initialized_layers = 0;
+};
+
+bool ornith35_executor_init_runtime(const Ornith35TextConfig &cfg,
+                                     uint32_t max_attention_tokens,
+                                     Ornith35LayerRuntime &runtime,
+                                     std::string &error);
+
+bool ornith35_executor_apply_mlp(const std::string &model_path,
+                                  const MlxSafetensorsInfo &info,
+                                  const Ornith35TextConfig &cfg,
+                                  uint32_t layer_index,
+                                  const float *hidden,
+                                  float *out,
+                                  Ornith35ExecutorStats &stats,
+                                  std::string &error);
