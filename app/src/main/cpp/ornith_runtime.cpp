@@ -443,7 +443,7 @@ static std::string generateModel(const std::string &prompt, int maxTokens) {
 } // namespace
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_bslsjdk_mcnpu_Ornith15Runtime_nativeLoad(JNIEnv* env,jclass,jstring jpath,jlong requested) {
+Java_bslsjdk_ornithnpu_Ornith15Runtime_nativeLoad(JNIEnv* env,jclass,jstring jpath,jlong requested) {
     const char* p=env->GetStringUTFChars(jpath,nullptr);
     std::string s=loadModel(p?p:"",(uint64_t)requested);
     if(p) env->ReleaseStringUTFChars(jpath,p);
@@ -451,7 +451,7 @@ Java_bslsjdk_mcnpu_Ornith15Runtime_nativeLoad(JNIEnv* env,jclass,jstring jpath,j
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_bslsjdk_mcnpu_Ornith15Runtime_nativeGenerate(JNIEnv* env,jclass,jstring jprompt,jint maxTokens) {
+Java_bslsjdk_ornithnpu_Ornith15Runtime_nativeGenerate(JNIEnv* env,jclass,jstring jprompt,jint maxTokens) {
     const char* p=env->GetStringUTFChars(jprompt,nullptr);
     std::string s=generateModel(p?p:"",(int)maxTokens);
     if(p) env->ReleaseStringUTFChars(jprompt,p);
@@ -459,7 +459,7 @@ Java_bslsjdk_mcnpu_Ornith15Runtime_nativeGenerate(JNIEnv* env,jclass,jstring jpr
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_bslsjdk_mcnpu_Ornith15Runtime_nativeInfo(JNIEnv* env,jclass) {
+Java_bslsjdk_ornithnpu_Ornith15Runtime_nativeInfo(JNIEnv* env,jclass) {
     std::string s=g.loaded
         ? "OK ORNITH15_RUNTIME/1 loaded=true path="+g.path+
           " context="+std::to_string(g.context)+
@@ -481,7 +481,7 @@ Java_bslsjdk_mcnpu_Ornith15Runtime_nativeInfo(JNIEnv* env,jclass) {
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_bslsjdk_mcnpu_Ornith15Runtime_nativeUnload(JNIEnv*,jclass) {
+Java_bslsjdk_ornithnpu_Ornith15Runtime_nativeUnload(JNIEnv*,jclass) {
 #if MCNPU_HAS_LLAMA
     if (g.sampler) { llama_sampler_free(g.sampler); g.sampler=nullptr; }
     if (g.ctx) { llama_free(g.ctx); g.ctx=nullptr; }

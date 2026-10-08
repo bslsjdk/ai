@@ -1,4 +1,4 @@
-package bslsjdk.mcnpu;
+package bslsjdk.ornithnpu;
 
 import java.io.*;
 import java.net.InetAddress;

@@ -1,4 +1,4 @@
-package bslsjdk.mcnpu;
+package bslsjdk.ornithnpu;
 
 /**
  * Native micro-probe for the Ornith-1.5 KV page codec.
