@@ -8,6 +8,7 @@
 #include <limits>
 #include <sstream>
 #include <cstring>
+#include <utility>
 
 namespace {
 bool is_ws(char c) { return c==' ' || c=='\t' || c=='\r' || c=='\n'; }
