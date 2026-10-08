@@ -242,12 +242,7 @@ bool mlx_read_affine4_tile(const std::string & path,
     }
     const MlxTensorInfo * w=nullptr;
     for(const auto &t: info.tensors) {
-        if(t.dtype=="U32" && t.shape.size()==2 &&
-           t.name.size()>=tensor_suffix.size() &&
-           t.name.compare(t.name.size()-tensor_suffix.size(),
-                          tensor_suffix.size(),tensor_suffix)==0 &&
-           t.name.size()>=7 &&
-           t.name.compare(t.name.size()-7,7,".weight")==0) {
+        if(t.dtype=="U32" && t.shape.size()==2 && t.name == tensor_suffix) {
             w=&t; break;
         }
     }
