@@ -261,6 +261,19 @@ bool ornith15_executor_init_runtime(const Ornith15TextConfig &cfg,
     return true;
 }
 
+void ornith15_executor_reset_runtime(Ornith15LayerRuntime &runtime) {
+    for (auto &s : runtime.delta) {
+        std::fill(s.state.begin(), s.state.end(), 0.0f);
+        std::fill(s.conv.begin(), s.conv.end(), 0.0f);
+        s.tokens = 0;
+    }
+    for (auto &s : runtime.attention) {
+        std::fill(s.keys.begin(), s.keys.end(), 0.0f);
+        std::fill(s.values.begin(), s.values.end(), 0.0f);
+        s.tokens = 0;
+    }
+}
+
 bool ornith15_executor_forward_token(const std::string &model_path,
                                        const MlxSafetensorsInfo &info,
                                        const Ornith15TextConfig &cfg,
