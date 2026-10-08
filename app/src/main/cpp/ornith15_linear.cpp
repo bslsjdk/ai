@@ -76,10 +76,14 @@ bool ornith15_run_projection_tile(
                         }
                 }
                 qc.resize((size_t)mr*nn);
+                float npu_scale = 0.0f;
                 std::string s=mcnpu_backend_matmul_int8(
-                    qa.data(),qw.data(),qc.data(),mr,k_tile,nn,1.0f);
+                    qa.data(),qw.data(),qc.data(),mr,k_tile,nn,npu_scale);
                 if(s.rfind("OK",0)!=0) { stats.status=s; return false; }
-                const float so=sa*sw;
+                // The QNN bridge calibrates integer dot products with fixed
+                // 0.001 input scales. Convert that result back to this tile's
+                // actual dynamic activation and weight scales.
+                const float so=npu_scale*(sa*sw/1.0e-6f);
                 for(uint32_t i=0;i<mr;i++)
                     for(uint32_t j=0;j<nn;j++)
                         output[(size_t)(r0+i)*n+n0+j]+=((float)qc[(size_t)i*nn+j])*so;
