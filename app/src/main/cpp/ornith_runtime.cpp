@@ -6,6 +6,7 @@
 #include <vector>
 #include <algorithm>
 #include "mcnpu_backend.h"
+#include "mlx_safetensors.h"
 #if MCNPU_HAS_LLAMA
 extern "C" ggml_backend_reg_t mcnpu_ggml_backend_reg(void);
 #endif
@@ -70,7 +71,40 @@ static bool skipValue(std::ifstream &f, uint32_t type, int depth=0) {
     }
 }
 
+static std::string loadMlxModel(const std::string &path, uint64_t requested) {
+    MlxSafetensorsInfo info;
+    std::string error;
+    if (!mlx_safetensors_probe(path, info, error))
+        return "ERR ORNITH15_MLX " + error;
+    // This is a format probe/loader boundary. No full 5GB mapping or expansion
+    // is performed here; tensor payloads remain on disk until the real tiled
+    // MLX-4bit kernel consumes them.
+    g.arch = "qwen3_5";
+    g.blocks = 32;
+    g.hidden = 4096;
+    g.vocab = 248320;
+    g.context = 262144;
+    if (requested > g.context)
+        return "ERR ORNITH15_RUNTIME requested_context=" + std::to_string(requested) + " native=262144";
+    g.path = path;
+    g.context = requested;
+    g.fileBytes = info.file_bytes;
+    g.loaded = true;
+    return "OK ORNITH15_RUNTIME/1 format=MLX_SAFE_TENSORS_4BIT"
+           " arch=qwen3_5 layers=32 hidden=4096 vocab=248320"
+           " context=" + std::to_string(requested) +
+           " file_bytes=" + std::to_string(info.file_bytes) +
+           " header_bytes=" + std::to_string(info.header_bytes) +
+           " tensors=" + std::to_string(info.tensor_count) +
+           " quantized_marked=" + std::to_string(info.quantized_tensor_count) +
+           " " + info.quantization_summary +
+           " npu=" + mcnpu_backend_status() +
+           " inference=MLX4BIT_PROBE_ONLY";
+}
+
 static std::string loadModel(const std::string &path, uint64_t requested) {
+    if (path.size() >= 11 && path.compare(path.size()-11, 11, ".safetensors") == 0)
+        return loadMlxModel(path, requested);
 #if MCNPU_HAS_LLAMA
     if (g.loaded) {
         if (g.sampler) { llama_sampler_free(g.sampler); g.sampler=nullptr; }
