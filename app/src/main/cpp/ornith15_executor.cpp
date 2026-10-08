@@ -357,10 +357,19 @@ bool ornith15_executor_init_runtime(const Ornith15TextConfig &cfg,
         return false;
     }
 
+    // Runtime state may be rebuilt after a context/lifecycle recovery while the
+    // model's static tensors are still valid. Do not discard those long-lived
+    // weights here: clearing them would make the next token fail with
+    // layer_static_*_missing even though the model itself is still loaded.
+    const bool preserve_static_weights =
+        runtime.static_weights.size() == cfg.num_layers &&
+        runtime.final_norm.size() == cfg.hidden_size;
     runtime.delta.clear();
     runtime.attention.clear();
-    runtime.static_weights.clear();
-    runtime.final_norm.clear();
+    if (!preserve_static_weights) {
+        runtime.static_weights.clear();
+        runtime.final_norm.clear();
+    }
     runtime.delta.resize(cfg.num_layers);
     runtime.attention.resize(cfg.num_layers);
     const auto plan = ornith15_make_layer_plan();
