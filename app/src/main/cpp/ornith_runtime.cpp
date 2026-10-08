@@ -138,8 +138,8 @@ static std::string generateMlxModel(const std::string &prompt, int maxTokens) {
 
     const auto tokenize0 = std::chrono::steady_clock::now();
     const std::string chat =
-        "<|im_start|>user\\n" + prompt + "<|im_end|>\\n"
-        "<|im_start|>assistant\\n<think>\\n";
+        "<|im_start|>user\n" + prompt + "<|im_end|>\n"
+        "<|im_start|>assistant\n<think>\n";
     std::vector<int32_t> ids;
     std::string error;
     if (!ornith15_tokenizer_encode(g.tokenizer, chat, ids, error) || ids.empty())
