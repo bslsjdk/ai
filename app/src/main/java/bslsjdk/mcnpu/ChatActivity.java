@@ -71,13 +71,22 @@ public final class ChatActivity extends Activity {
     private void initLocalRuntime() {
         new Thread(() -> {
             boolean ok = NpuRuntime.init(getApplicationContext());
+            if (ok) {
+                String saved = getSharedPreferences(PREFS, MODE_PRIVATE)
+                        .getString(MODEL_PATH, "");
+                if (!saved.isEmpty() && new File(saved).isFile()) {
+                    try { Ornith15Runtime.load(saved, 65536); } catch (Throwable ignored) {}
+                }
+            }
             main.post(() -> {
                 updateRuntimeState();
-                if (ok) statusLine.setText("本地 NPU 在线 · Ornith-1.5-9B");
+                if (ok && Ornith15Runtime.isLoaded())
+                    statusLine.setText("本地 NPU 在线 · Ornith-1.5-9B");
+                else if (ok)
+                    statusLine.setText("本地 NPU 在线 · 等待 Ornith-1.5-9B");
             });
         }, "mcnpu-init").start();
     }
-
     @Override protected void onResume() {
         super.onResume();
         updateRuntimeState();
@@ -187,6 +196,13 @@ public final class ChatActivity extends Activity {
                     throw new java.io.IOException("这里只接受 Ornith-1.5-9B-MLX-4bit.safetensors");
                 String dstName = MODEL_FILENAME;
                 File dst = new File(dir, dstName);
+                File tokenizer = new File(dir, MODEL_FILENAME + ".tokenizer");
+                try (java.io.InputStream asset = getAssets().open("ornith15.tokenizer");
+                     FileOutputStream tokenOut = new FileOutputStream(tokenizer)) {
+                    byte[] tokenBuf = new byte[64 * 1024];
+                    int tokenN;
+                    while ((tokenN = asset.read(tokenBuf)) != -1) tokenOut.write(tokenBuf, 0, tokenN);
+                }
                 try (java.io.InputStream in = getContentResolver().openInputStream(uri);
                      FileOutputStream out = new FileOutputStream(dst)) {
                     if (in == null) throw new java.io.IOException("无法打开模型文件");
