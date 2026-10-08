@@ -176,3 +176,56 @@ bool mlx_decode_affine4_tile(const uint32_t * packed, size_t packed_words,
     }
     return true;
 }
+
+#include "mcnpu_backend.h"
+
+MlxNpuTileResult mlx_affine4_npu_matmul_tile(
+        const float * activation,
+        const uint32_t * packed_weight,
+        const float * scales,
+        const float * biases,
+        uint32_t m, uint32_t k, uint32_t n,
+        uint32_t group_size) {
+    MlxNpuTileResult r;
+    r.m=m; r.k=k; r.n=n;
+    if (!activation || !packed_weight || !scales || !biases ||
+        !m || !k || !n || group_size != 64 || (k & 7u) != 0u ||
+        !mcnpu_backend_ready()) {
+        r.status = "ERR MLX_NPU_TILE invalid_or_backend_not_ready";
+        return r;
+    }
+
+    const size_t na=(size_t)m*k, nw=(size_t)n*k, nc=(size_t)m*n;
+    std::vector<float> wf(nw);
+    if (!mlx_decode_affine4_tile(packed_weight, nw/8u, scales, biases,
+                                 n, k, group_size, wf.data(), wf.size())) {
+        r.status="ERR MLX_NPU_TILE decode_failed";
+        return r;
+    }
+
+    float ma=0.0f, mw=0.0f;
+    for(size_t i=0;i<na;i++) ma=std::max(ma,std::fabs(activation[i]));
+    for(size_t i=0;i<nw;i++) mw=std::max(mw,std::fabs(wf[i]));
+    if(ma==0.0f || mw==0.0f) {
+        r.ok=true; r.status="OK MLX_NPU_TILE zero"; return r;
+    }
+
+    const float sa=ma/127.0f, sw=mw/127.0f;
+    std::vector<int8_t> qa(na), qw(nw), qc(nc);
+    for(size_t i=0;i<na;i++) {
+        const float x=activation[i]/sa;
+        qa[i]=(int8_t)std::max(-127.0f,std::min(127.0f,std::lrintf(x)));
+    }
+    for(size_t i=0;i<nw;i++) {
+        const float x=wf[i]/sw;
+        qw[i]=(int8_t)std::max(-127.0f,std::min(127.0f,std::lrintf(x)));
+    }
+
+    float so=1.0f;
+    r.status=mcnpu_backend_matmul_int8(
+        qa.data(), qw.data(), qc.data(), m, k, n, so);
+    if(r.status.rfind("OK",0)!=0) return r;
+    r.ok=true; r.scale=sa*sw*so;
+    r.status += " path=MLX_AFFINE4_TILE_NPU";
+    return r;
+}
