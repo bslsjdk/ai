@@ -924,7 +924,6 @@ std::string runAddEx(const float* av,const float* bv,uint32_t n,float* out,bool 
         // Insert the cache entry BEFORE creating graph tensors so every tensor
         // descriptor points at dimensions owned by the final cached object.
         if(!ensureGraphBudget()) return "ERR GRAPH_BUDGET_EXHAUSTED graphs="+std::to_string(g.graphCount)+"/"+std::to_string(MAX_CACHED_GRAPHS);
-        g.graphCount++;
         auto inserted=g.addGraphs.emplace(key, Runtime::AddGraph{});
         ag=&inserted.first->second;
         ag->dims[0]=n;
@@ -942,6 +941,7 @@ std::string runAddEx(const float* av,const float* bv,uint32_t n,float* out,bool 
                    " create_us="+std::to_string(createUs)+" "+verbose(rc);
         }
 
+        g.graphCount++;
         const Qnn_DataType_t adt = fp16 ? QNN_DATATYPE_FLOAT_16 : QNN_DATATYPE_FLOAT_32;
         ag->a=makeTensor("a",QNN_TENSOR_TYPE_APP_WRITE,adt,ag->dims);
         ag->b=makeTensor("b",QNN_TENSOR_TYPE_APP_WRITE,adt,ag->dims);
@@ -1090,7 +1090,6 @@ std::string runMatMul(uint32_t m,uint32_t k,uint32_t n,bool fp16){
     Qnn_ErrorHandle_t rc=QNN_SUCCESS;
     if(!cached){
         if(!ensureGraphBudget()) return "ERR GRAPH_BUDGET_EXHAUSTED";
-        g.graphCount++;
         auto inserted=g.matMulGraphs.emplace(key, Runtime::MatMulGraph{});
         mg=&inserted.first->second;
         mg->m=m; mg->k=k; mg->n=n; mg->fp16=fp16;
@@ -1106,6 +1105,7 @@ std::string runMatMul(uint32_t m,uint32_t k,uint32_t n,bool fp16){
             g.matMulGraphs.erase(inserted.first);
             return "ERR MM_GRAPH_CREATE rc="+std::to_string((int)rc)+" create_us="+std::to_string(createUs)+" "+verbose(rc);
         }
+        g.graphCount++;
         const Qnn_DataType_t dt = fp16 ? QNN_DATATYPE_FLOAT_16 : QNN_DATATYPE_FLOAT_32;
         mg->a=makeTensorN("a",QNN_TENSOR_TYPE_APP_WRITE,dt,mg->dimsA,2);
         mg->b=makeTensorN("b",QNN_TENSOR_TYPE_APP_WRITE,dt,mg->dimsB,2);
@@ -1259,6 +1259,7 @@ std::string runBatchXform(uint32_t n,int op){
         if(rc!=QNN_SUCCESS){ g.matMulGraphs8.erase(key); return "ERR XF_NODE rc="+std::to_string((int)rc); }
         rc=f.graphFinalize(mg->graph,nullptr,nullptr);
         if(rc!=QNN_SUCCESS){ g.matMulGraphs8.erase(key); return "ERR XF_FINALIZE rc="+std::to_string((int)rc); }
+        g.graphCount++;
         I("XFORM GRAPH READY op=%d n=%u",op,(unsigned)Nb);
     }
     std::vector<int8_t> A(Nb,0),B(Nb,0),C(Nb,0);
@@ -1357,6 +1358,7 @@ std::string runMatMulInt8(uint32_t m,uint32_t k,uint32_t n){
             g.matMulGraphs8.erase(key);
             return "ERR MM8_GRAPH_FINALIZE rc="+std::to_string((int)rc)+" "+verbose(rc);
         }
+        g.graphCount++;
         I("MATMUL8 GRAPH READY m=%u k=%u n=%u",(unsigned)m,(unsigned)k,(unsigned)n);
     }
 

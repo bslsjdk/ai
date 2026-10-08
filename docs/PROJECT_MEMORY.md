@@ -85,7 +85,7 @@ Ornith-1.5-9B-MLX-4bit：
 - 当前 `AgentContext` 已改为 USER 优先：`Conversation origin` + 全历史分布式 `User history spine` + 当前问题相关旧对话 + 最近完整对话。用户消息相关性权重高于 assistant 输出，避免模型被自己的废话淹没。
 - 当前 prompt 会把 `Current USER message` 强制放在最后，避免预算裁剪把最新用户指令切掉。
 - 旧的固定“最近 6 条”不再决定模型能否知道前面发生了什么；`MAX_CONTEXT_MESSAGES` 只是最近窗口的一部分。
-- 模型请求上下文仍配置为 65536 tokens，模型原生 context=262144；当前 native full-attention resident window 仍为 4096，因此长上下文的第一阶段依靠用户历史骨架 + 相关召回来保持连续性，而不是直接分配 64K KV 导致超过 4 GiB。
+- 模型请求上下文仍配置为 65536 tokens，模型原生 context=262144；当前 native full-attention resident window 第一阶段已为 65536，长上下文依靠 FP16 KV + 4 GiB 内存预算与按需驻留，而不是一次性扩大到原生 262K 所需的多 GB 常驻 KV。
 - 后续真正扩展到 64K/128K 有效上下文时，优先研究分页/分块 KV、按需重算/CPU/存储卸载和更精确的 token budget，不得一次性分配多 GB 常驻 KV。
 
 ## 参考/借鉴仓库与来源（2026-10-08）
