@@ -15,10 +15,8 @@
 #include "ornith15_tokenizer.h"
 #include "runtime_memory_budget.h"
 #if MCNPU_HAS_LLAMA
-extern "C" ggml_backend_reg_t mcnpu_ggml_backend_reg(void);
-#endif
-#if MCNPU_HAS_LLAMA
 #include "llama.h"
+extern "C" ggml_backend_reg_t mcnpu_ggml_backend_reg(void);
 #endif
 
 namespace {
