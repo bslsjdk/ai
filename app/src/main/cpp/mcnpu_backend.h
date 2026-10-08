@@ -16,3 +16,8 @@ std::string mcnpu_backend_matmul_int8(
 std::string mcnpu_backend_matmul_fp16(
         const uint16_t* a, const uint16_t* b, uint16_t* c,
         uint32_t m, uint32_t k, uint32_t n);
+// Attention-specific FP16 MatMul. The B buffer is laid out [N][K], while
+// QNN applies transpose_in1 to consume it as the logical KxN operand.
+std::string mcnpu_backend_matmul_fp16_transpose_b(
+        const uint16_t* a, const uint16_t* b, uint16_t* c,
+        uint32_t m, uint32_t k, uint32_t n);
