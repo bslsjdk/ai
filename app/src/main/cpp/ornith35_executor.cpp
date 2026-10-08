@@ -99,6 +99,9 @@ bool ornith35_executor_init_runtime(const Ornith35TextConfig &cfg,
                                      std::string &error) {
     if (!ornith35_validate_config(cfg, error)) return false;
     if (!max_attention_tokens) { error = "max_attention_tokens_zero"; return false; }
+    // Never preallocate the full 262K attention cache. The runtime is deliberately
+    // bounded; a paged KV cache will extend context later without blowing RAM.
+    const uint32_t bounded_attention_tokens = std::min(max_attention_tokens, 4096u);
     runtime.delta.clear();
     runtime.attention.clear();
     runtime.delta.resize(cfg.num_layers);
@@ -111,7 +114,7 @@ bool ornith35_executor_init_runtime(const Ornith35TextConfig &cfg,
                 return false;
             }
         } else {
-            if (!ornith35_attention_init(runtime.attention[i], max_attention_tokens)) {
+            if (!ornith35_attention_init(runtime.attention[i], bounded_attention_tokens)) {
                 error = "attention_state_init_failed";
                 return false;
             }
