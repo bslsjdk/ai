@@ -2993,7 +2993,7 @@ static std::string runPerlinDiag(uint32_t n){
     // destroy in use here, so the budget check may reset the context between
     // probes. Diagnostic graphs are never executed, so that is acceptable.
     auto fresh = [&](const char* tag)->Qnn_ErrorHandle_t{
-        if(!ensureGraphBudget()) return QNN_COMMON_ERROR_SYSTEM_COMMUNICATION;
+        if(!ensureGraphBudget()) return static_cast<Qnn_ErrorHandle_t>(-1);
         const std::string nm = std::string("mcnpu_diag_") + tag + std::to_string(++seq);
         const Qnn_ErrorHandle_t rc = f.graphCreate(g.context, nm.c_str(), nullptr, &gh);
         if (rc == QNN_SUCCESS && gh) ++g.graphCount;
