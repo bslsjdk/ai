@@ -34,7 +34,8 @@ struct RuntimeState {
     MlxSafetensorsInfo mlx_info;
     Ornith15TextConfig mlx_cfg;
     Ornith15LayerRuntime mlx_runtime;
-    Ornith15Tokenizer tokenizer;#if MCNPU_HAS_LLAMA
+    Ornith15Tokenizer tokenizer;
+#if MCNPU_HAS_LLAMA
     llama_model * model = nullptr;
     llama_context * ctx = nullptr;
     llama_sampler * sampler = nullptr;
@@ -225,18 +226,19 @@ static std::string loadModel(const std::string &path, uint64_t requested) {
     if (path.size() >= 11 && path.compare(path.size()-11, 11, ".safetensors") == 0)
         return loadMlxModel(path, requested);
 #if MCNPU_HAS_LLAMA
+#if MCNPU_HAS_LLAMA
     if (g.loaded) {
         if (g.sampler) { llama_sampler_free(g.sampler); g.sampler=nullptr; }
         if (g.ctx) { llama_free(g.ctx); g.ctx=nullptr; }
         if (g.model) { llama_model_free(g.model); g.model=nullptr; }
-        g.loaded=false;
     }
+#endif
+    g.loaded=false;
     g.mlx_loaded = false;
     g.mlx_info = MlxSafetensorsInfo{};
     g.mlx_cfg = Ornith15TextConfig{};
     g.mlx_runtime = Ornith15LayerRuntime{};
     g.tokenizer = Ornith15Tokenizer{};
-#endif
     std::ifstream f(path, std::ios::binary|std::ios::ate);
     if(!f) return "ERR ORNITH15_RUNTIME open_failed";
     const std::streamoff end=f.tellg();
