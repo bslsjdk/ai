@@ -51,6 +51,10 @@ struct Ornith15LayerRuntime {
     uint32_t initialized_layers = 0;
 };
 
+uint64_t ornith15_effective_attention_tokens(const Ornith15TextConfig &cfg,
+                                                uint64_t requested_tokens,
+                                                std::string &diagnostic);
+
 bool ornith15_executor_init_runtime(const Ornith15TextConfig &cfg,
                                      uint32_t max_attention_tokens,
                                      Ornith15LayerRuntime &runtime,
