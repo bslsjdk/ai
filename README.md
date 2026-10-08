@@ -18,4 +18,4 @@ The IPC listener is self-healing: bind/accept failures close the broken ServerSo
 
 ## Architecture review
 
-- [GPT-5.6 Luna NPU optimization report](docs/GPT_NPU_OPTIMIZATION_REPORT.md) — current code review, memory/IPC/batching risks, 9×9 workset design, and recommended implementation order.
+- [Project working memory](docs/PROJECT_MEMORY.md) — current model/runtime state, hard constraints, reference repositories, and verified-vs-unverified engineering status.

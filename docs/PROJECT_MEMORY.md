@@ -88,6 +88,35 @@ Ornith-1.5-9B-MLX-4bit：
 - 模型请求上下文仍配置为 65536 tokens，模型原生 context=262144；当前 native full-attention resident window 仍为 4096，因此长上下文的第一阶段依靠用户历史骨架 + 相关召回来保持连续性，而不是直接分配 64K KV 导致超过 4 GiB。
 - 后续真正扩展到 64K/128K 有效上下文时，优先研究分页/分块 KV、按需重算/CPU/存储卸载和更精确的 token budget，不得一次性分配多 GB 常驻 KV。
 
+## 参考/借鉴仓库与来源（2026-10-08）
+
+这些项目是实现时的明确参考来源；它们的作用不同，不能混成一个“后端依赖”。
+
+- AAswordman/Operit — Android Agent 的任务工作区、长对话上下文/记忆分层和工具执行交互思路。只借鉴架构思想，不引入其 Provider/云端模型架构。
+- ggml-org/llama.cpp — GGUF 兼容路径、KV cache 管理和移动端/本地推理的工程参考。CI 当前固定到 42c787e8c191d49c01c757f4b7029d69ec0bf2c8。
+- bslsjdk/npu_probe — Qualcomm QNN HTP V73 已验证的本地栈与 Android 资产来源。CI 当前固定到 8fab2ee58cd4ce17ddc18e36a6a7b4992c85c52a。
+- huggingface/transformers / Qwen3.5 实现 — Qwen3.5 混合 Attention/GDN、RMSNorm、RoPE、Q/K norm、DeltaNet 等架构事实与公式参考；模型具体参数仍必须以当前 Ornith-1.5 模型资料和仓库校验器为准。
+- PrismML-Eng/Bonsai-demo 与 PrismML-Eng/llama.cpp — Bonsai 2 PQ2_0、FWHT/Hadamard、GGUF 私有格式和量化 KV/后端性能取舍的参考。当前 Bonsai 路径仍与 Ornith runtime 分开。
+- ornith-ai/Ornith-1.5-9B-MLX-4bit — 当前唯一目标模型的 Safetensors/MLX affine4 权重、tokenizer 与模型格式来源。
+
+## 2026-10-08 HEAD 代码-记忆对照审计
+
+当前 main HEAD 在本轮开始检查时为 e370e231908540228ab8bb4d89b3413f5406876f。
+
+本轮对照发现并修复了三个工程级问题：
+
+1. CMakeLists.txt 原本无条件把 mcnpu_ggml_backend.cpp 加进目标；没有设置 LLAMA_CPP_SRC 时仍会尝试包含 ggml 头文件，导致没有 llama.cpp 的本地 CMake 构建链不完整。现在只有设置 LLAMA_CPP_SRC 时才加入该源文件。
+2. ornith_runtime.cpp 使用 std::chrono 却没有显式包含 <chrono>，依赖传递头文件是不可靠的。现在显式包含。
+3. MLX decode 在达到 maxTokens 后仍执行一次完整的下一-token forward，造成无意义的额外 32-layer 计算并污染 decode 时间统计。现在最后一个请求 token 产生后立即结束。
+
+以下仍属于待实测而非“已验证完成”的项目：
+
+- GitHub Actions 是否真正完成 Java/C++/APK 编译；此前 runner 存在 steps 创建前快速失败，不能用它冒充编译证据。
+- 真机 64K 的 VmRSS/VmHWM/VmPeak、PSS、TTFT、prefill、decode tok/s 和 QNN staging 内存。
+- 64K 长上下文下 full-attention QK/AV 的实际 HTP 稳定性与图缓存内存。
+- 目前 runtime 仍使用 FP16 resident KV；Q8 K/Q8 V、Q8 K/Q5 V 只是 probe/planner 研究路径，尚未成为生产 KV。
+- 当前 projection 仍按 token 顺序反复从 Safetensors 流式读取权重；这是 4 GiB 友好但很可能成为 decode 速度的主要瓶颈，后续必须用 profiler 实测并优化 hot-tile 复用，而不能凭空宣称性能达标。
+
 ## 当前工作方式
 用户只用手机/MT 管理器，不会直接维护复杂 C++ 工程。
 因此助手应直接修改仓库、提交修复并尽量验证 CI/build，不要把实现工作重新丢给用户。

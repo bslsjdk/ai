@@ -5,6 +5,7 @@
 #include <cstring>
 #include <vector>
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <random>
 #include <utility>
@@ -192,6 +193,10 @@ static std::string generateMlxModel(const std::string &prompt, int maxTokens) {
             g.last_first_token_us = (uint64_t)std::chrono::duration_cast<std::chrono::microseconds>(
                 std::chrono::steady_clock::now() - tokenize0).count();
         }
+        // No next-token logits are needed after the final requested token.
+        // Avoid one complete extra 32-layer forward pass and keep decode timing
+        // aligned with the work actually needed to produce generated tokens.
+        if (i + 1 >= maxTokens) break;
         const uint32_t pos = (uint32_t)ids.size() + (uint32_t)i;
         if (!ornith15_executor_forward_token(g.path, g.mlx_info, g.mlx_cfg,
                                              (uint32_t)next, pos,
