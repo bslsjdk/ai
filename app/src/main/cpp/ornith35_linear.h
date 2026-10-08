@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <string>
 #include "ornith35_arch.h"
+#include "mlx_safetensors.h"
 
 struct Ornith35ProjectionStats {
     uint64_t tiles = 0;
