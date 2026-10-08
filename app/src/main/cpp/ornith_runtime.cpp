@@ -5,6 +5,7 @@
 #include <cstring>
 #include <vector>
 #include <algorithm>
+#include "mcnpu_backend.h"
 #if MCNPU_HAS_LLAMA
 #include "llama.h"
 #endif
@@ -151,7 +152,8 @@ static std::string loadModel(const std::string &path, uint64_t requested) {
            " vocab="+std::to_string(g.vocab)+
            " context="+std::to_string(requested)+
            " file_bytes="+std::to_string(g.fileBytes)+
-           " inference=LLAMA_CPU_BASELINE_NPU_READY";
+           " npu="+mcnpu_backend_status()+
+           " inference=LLAMA_CPU_FALLBACK_NPU_BRIDGE_READY";
 }
 
 static std::string generateModel(const std::string &prompt, int maxTokens) {
