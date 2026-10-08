@@ -1,5 +1,6 @@
 #include "ornith15_attention.h"
 #include "mcnpu_backend.h"
+#include "runtime_memory_budget.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -120,6 +121,10 @@ bool ornith15_attention_init(Ornith15AttentionState &s, uint32_t max_tokens) {
     if (elems64 > (uint64_t)std::numeric_limits<size_t>::max())
         return false;
     const size_t elems = (size_t)elems64;
+    const uint64_t cache_bytes = elems64 * sizeof(uint16_t) * 2ull;
+    std::string mem_error;
+    if (!ornith15_memory_headroom(cache_bytes, "attention_kv", mem_error))
+        return false;
     // K is laid out [kv_head][head_dim][token] so each K matrix is directly
     // usable as the [K,N] operand of QNN MatMul. V is laid out
     // [kv_head][token][head_dim] for the [N,D] operand of the second matmul.
@@ -194,6 +199,14 @@ bool ornith15_attention_step(
         }
 
         for(auto &seg:segments) {
+            const uint64_t qk_temp_bytes =
+                (uint64_t)group * seg.length * sizeof(uint16_t) * 2ull +
+                (uint64_t)32u * seg.length * sizeof(uint16_t);
+            std::string mem_error;
+            if (!ornith15_memory_headroom(qk_temp_bytes, "attention_qk_temp", mem_error)) {
+                error = mem_error;
+                return false;
+            }
             seg.values.resize((size_t)group*seg.length);
             const uint16_t *kbase =
                 s.keys.data() + (size_t)kh*head_dim*capacity + seg.start;
@@ -233,6 +246,14 @@ bool ornith15_attention_step(
         }
 
         for(const auto &seg:segments) {
+            const uint64_t av_temp_bytes =
+                (uint64_t)32u * seg.length * sizeof(uint16_t) +
+                (uint64_t)32u * head_dim * sizeof(uint16_t);
+            std::string av_mem_error;
+            if (!ornith15_memory_headroom(av_temp_bytes, "attention_av_temp", av_mem_error)) {
+                error = av_mem_error;
+                return false;
+            }
             std::vector<uint16_t> weights((size_t)32*seg.length,0);
             for(uint32_t h=0;h<group;h++) {
                 const float inv=1.0f/denom[h];
