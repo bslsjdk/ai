@@ -20,3 +20,5 @@ struct Ornith15Tokenizer {
 bool ornith15_tokenizer_load(const std::string &path, Ornith15Tokenizer &out, std::string &error);
 bool ornith15_tokenizer_encode(const Ornith15Tokenizer &tok, const std::string &text,
                                std::vector<int32_t> &ids, std::string &error);
+std::string ornith15_tokenizer_decode(const Ornith15Tokenizer &tok,
+                                      const std::vector<int32_t> &ids);
