@@ -27,6 +27,32 @@ static bool read_vec(const std::string &path,const MlxTensorInfo &t,uint32_t n,s
     else {err="vector_dtype";return false;}
     return true;
 }
+static bool read_flat_tensor(const std::string &path,
+                             const MlxTensorInfo &t,
+                             uint64_t elements,
+                             std::vector<float> &out,
+                             std::string &err) {
+    uint64_t shape_elements=1;
+    for(uint64_t d:t.shape) {
+        if(!d || shape_elements>UINT64_MAX/d) { err="flat_tensor_shape"; return false; }
+        shape_elements*=d;
+    }
+    if(shape_elements!=elements || !elements || elements>(uint64_t)SIZE_MAX/4u) {
+        err="flat_tensor_shape";
+        return false;
+    }
+    const size_t bytes=t.dtype=="F32" ? (size_t)elements*4u :
+                       (t.dtype=="F16" || t.dtype=="BF16") ? (size_t)elements*2u : 0u;
+    if(!bytes) { err="flat_tensor_dtype"; return false; }
+    std::vector<unsigned char>b(bytes);
+    if(!mlx_read_tensor_range(path,t,0,b.data(),bytes,err)) return false;
+    out.resize((size_t)elements);
+    if(t.dtype=="F32") std::memcpy(out.data(),b.data(),bytes);
+    else if(t.dtype=="F16") for(uint64_t i=0;i<elements;i++) out[(size_t)i]=half_to_f(rd16(b.data()+2*i));
+    else for(uint64_t i=0;i<elements;i++) out[(size_t)i]=bf16_to_f(rd16(b.data()+2*i));
+    return true;
+}
+
 static const MlxTensorInfo *tx(const MlxSafetensorsInfo&i,const std::string&n){
     for(const auto&t:i.tensors) if(t.name==n) return &t; return nullptr;
 }
@@ -48,7 +74,6 @@ static bool scalar_f32(const MlxTensorInfo &t,const std::string &path,uint64_t o
     std::string e;
     if(!mlx_read_tensor_range(path,t,off,b.data(),4,e)) return false;
     std::memcpy(&v,b.data(),4); return std::isfinite(v);
-}
 }
 
 bool ornith35_executor_validate(const MlxSafetensorsInfo &info,
@@ -214,7 +239,8 @@ bool ornith35_executor_run_delta_layer(const std::string &model_path,
     if(!ct){error="conv1d_weight_not_found";return false;}
     size_t conv_elems=1; for(auto d:ct->shape) conv_elems*=d;
     if(conv_elems!=8192u*4u){error="conv1d_shape";return false;}
-    std::vector<float> cw; if(!read_vec(model_path,*ct,(uint32_t)conv_elems,cw,error)) return false;
+    std::vector<float> cw;
+    if(!read_flat_tensor(model_path,*ct,(uint64_t)conv_elems,cw,error)) return false;
     if(state.conv.size()!=8192u*4u) state.conv.assign(8192u*4u,0.0f);
     std::vector<float> conv(8192);
     for(uint32_t ch=0;ch<8192;ch++){
