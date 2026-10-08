@@ -186,8 +186,7 @@ bool ornith15_run_projection_token(
     uint32_t k,
     float * output,
     uint32_t n,
-    Ornith15ProjectionStats & stats,
-    uint32_t logical_rows) {
+    Ornith15ProjectionStats & stats) {
     if (!input || !output || !k || !n) {
         stats.status = "ERR invalid_args";
         return false;
