@@ -95,14 +95,14 @@ public final class ChatActivity extends Activity {
 
         if (!NpuRuntime.isReady()) {
             addBubble("system",
-                    "本地 NPU 尚未启动。先点顶部模型名称选择本地 Ornith-1.5-9B GGUF。");
+                    "本地 NPU 尚未启动。先点顶部模型名称选择本地 Ornith-1.5-9B 模型文件。");
             saveHistory();
             return;
         }
 
         String modelPath = getSharedPreferences(PREFS, MODE_PRIVATE).getString(MODEL_PATH, "");
         if (modelPath.isEmpty() || !Ornith15Runtime.isLoaded()) {
-            addBubble("system", "MCNPU 已在线，但尚未加载 Ornith-1.5-9B。点击顶部“Ornith AI”选择本地 GGUF。");
+            addBubble("system", "MCNPU 已在线，但尚未加载 Ornith-1.5-9B。点击顶部“Ornith AI”选择本地模型文件。");
             saveHistory();
             return;
         }
@@ -135,7 +135,10 @@ public final class ChatActivity extends Activity {
             try {
                 File dir = new File(getFilesDir(), "models");
                 if (!dir.exists() && !dir.mkdirs()) throw new java.io.IOException("无法创建模型目录");
-                File dst = new File(dir, "ornith-1.5-9b.gguf");
+                String sourceName = uri.getLastPathSegment();
+                String lower = sourceName == null ? "" : sourceName.toLowerCase(java.util.Locale.ROOT);
+                String dstName = lower.endsWith(".safetensors") ? "ornith-1.5-9b-mlx-4bit.safetensors" : "ornith-1.5-9b.gguf";
+                File dst = new File(dir, dstName);
                 try (java.io.InputStream in = getContentResolver().openInputStream(uri);
                      FileOutputStream out = new FileOutputStream(dst)) {
                     if (in == null) throw new java.io.IOException("无法打开模型文件");
@@ -145,7 +148,7 @@ public final class ChatActivity extends Activity {
                 String r = Ornith15Runtime.load(dst.getAbsolutePath(), 65536);
                 if (!r.startsWith("OK ORNITH15_RUNTIME/1")) throw new java.io.IOException(r);
                 getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(MODEL_PATH, dst.getAbsolutePath()).apply();
-                main.post(() -> { statusLine.setText("Ornith-1.5-9B · 64K 本地上下文 · MCNPU"); Toast.makeText(this, "模型已加载", Toast.LENGTH_SHORT).show(); });
+                main.post(() -> { statusLine.setText("Ornith-1.5-9B · 本地模型已识别 · MCNPU"); Toast.makeText(this, "模型文件已识别", Toast.LENGTH_SHORT).show(); });
             } catch (Throwable t) {
                 main.post(() -> Toast.makeText(this, "模型加载失败: " + t.getMessage(), Toast.LENGTH_LONG).show());
             }
