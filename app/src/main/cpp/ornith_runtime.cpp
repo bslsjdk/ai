@@ -36,6 +36,13 @@ struct RuntimeState {
     Ornith15TextConfig mlx_cfg;
     Ornith15LayerRuntime mlx_runtime;
     Ornith15Tokenizer tokenizer;
+    uint64_t last_prompt_tokens = 0;
+    uint64_t last_generated_tokens = 0;
+    uint64_t last_tokenize_us = 0;
+    uint64_t last_prefill_us = 0;
+    uint64_t last_first_token_us = 0;
+    uint64_t last_decode_us = 0;
+    std::string last_generation_memory;
 #if MCNPU_HAS_LLAMA
     llama_model * model = nullptr;
     llama_context * ctx = nullptr;
@@ -120,6 +127,15 @@ static std::string generateMlxModel(const std::string &prompt, int maxTokens) {
     if (maxTokens <= 0 || maxTokens > 1024) return "ERR ORNITH15_RUNTIME bad_max_tokens";
     if (!g.tokenizer.loaded) return "ERR ORNITH15_RUNTIME tokenizer_not_loaded";
 
+    g.last_prompt_tokens = 0;
+    g.last_generated_tokens = 0;
+    g.last_tokenize_us = 0;
+    g.last_prefill_us = 0;
+    g.last_first_token_us = 0;
+    g.last_decode_us = 0;
+    g.last_generation_memory.clear();
+
+    const auto tokenize0 = std::chrono::steady_clock::now();
     const std::string chat =
         "<|im_start|>user\\n" + prompt + "<|im_end|>\\n"
         "<|im_start|>assistant\\n<think>\\n";
@@ -127,6 +143,10 @@ static std::string generateMlxModel(const std::string &prompt, int maxTokens) {
     std::string error;
     if (!ornith15_tokenizer_encode(g.tokenizer, chat, ids, error) || ids.empty())
         return "ERR ORNITH15_RUNTIME tokenize=" + error;
+    g.last_tokenize_us = (uint64_t)std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now() - tokenize0).count();
+    g.last_prompt_tokens = (uint64_t)ids.size();
+
     // The model supports 262K positions, but the first phone target is a real
     // 64K resident attention window. The recurrent layers still carry state
     // across the whole replay; only full-attention K/V is windowed.
@@ -143,27 +163,39 @@ static std::string generateMlxModel(const std::string &prompt, int maxTokens) {
     ornith15_executor_reset_runtime(g.mlx_runtime);
 
     Ornith15DecoderStep step;
+    const auto prefill0 = std::chrono::steady_clock::now();
     for (size_t i = 0; i < ids.size(); ++i) {
         if (!ornith15_executor_forward_token(g.path, g.mlx_info, g.mlx_cfg,
                                              (uint32_t)ids[i], (uint32_t)i,
                                              g.mlx_runtime, step, error))
             return "ERR ORNITH15_RUNTIME forward=" + error;
     }
+    g.last_prefill_us = (uint64_t)std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now() - prefill0).count();
 
     std::mt19937 rng(0x4f524e49u);
     std::vector<int32_t> generated;
     generated.reserve((size_t)maxTokens);
+    const auto decode0 = std::chrono::steady_clock::now();
     for (int i = 0; i < maxTokens; ++i) {
         const int32_t next = sample_mlx_logits(step.logits, rng);
         if (next < 0) return "ERR ORNITH15_RUNTIME sample_failed";
         if (next == g.tokenizer.eos) break;
         generated.push_back(next);
+        if (generated.size() == 1) {
+            g.last_first_token_us = (uint64_t)std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now() - tokenize0).count();
+        }
         const uint32_t pos = (uint32_t)ids.size() + (uint32_t)i;
         if (!ornith15_executor_forward_token(g.path, g.mlx_info, g.mlx_cfg,
                                              (uint32_t)next, pos,
                                              g.mlx_runtime, step, error))
             return "ERR ORNITH15_RUNTIME forward=" + error;
     }
+    g.last_decode_us = (uint64_t)std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now() - decode0).count();
+    g.last_generated_tokens = (uint64_t)generated.size();
+    g.last_generation_memory = ornith15_memory_status();
     const std::string out = ornith15_tokenizer_decode(g.tokenizer, generated);
     return "OK ORNITH15_GENERATE/1 text=" + out;
 }
@@ -411,7 +443,13 @@ Java_bslsjdk_mcnpu_Ornith15Runtime_nativeInfo(JNIEnv* env,jclass) {
           " attention_window="+std::to_string(g.context)+
           " kv_storage="+(g.mlx_loaded ? "fp16" : "llama")+
           " mlx="+(g.mlx_loaded?"true":"false")+
-          " mem="+ornith15_memory_status()
+          " last_gen_prompt_tokens="+std::to_string(g.last_prompt_tokens)+
+          " last_gen_tokens="+std::to_string(g.last_generated_tokens)+
+          " last_tokenize_us="+std::to_string(g.last_tokenize_us)+
+          " last_prefill_us="+std::to_string(g.last_prefill_us)+
+          " last_first_token_us="+std::to_string(g.last_first_token_us)+
+          " last_decode_us="+std::to_string(g.last_decode_us)+
+          " last_gen_mem="+(g.last_generation_memory.empty() ? ornith15_memory_status() : g.last_generation_memory)
         : "OK ORNITH15_RUNTIME/1 loaded=false";
     return env->NewStringUTF(s.c_str());
 }

@@ -39,6 +39,32 @@ bool json_uint(const std::string &s, size_t &p, uint64_t &v) {
         uint64_t d=(uint64_t)(s[p++]-'0'); if(v>(UINT64_MAX-d)/10) return false; v=v*10+d;
     } return true;
 }
+struct PersistentReader {
+    std::string path;
+    std::ifstream file;
+
+    bool open(const std::string &next) {
+        if (path == next && file.is_open()) return true;
+        file.close();
+        file.clear();
+        path.clear();
+        file.open(next, std::ios::binary);
+        if (!file) return false;
+        path = next;
+        return true;
+    }
+};
+
+// All model reads for one inference thread share this descriptor. The executor
+// repeatedly asks for small weight tiles; reopening a 5-GB file for every tile
+// adds avoidable syscall/path-resolution overhead. thread_local keeps the helper
+// race-free even if a diagnostic thread reads another model path.
+thread_local PersistentReader g_model_reader;
+
+bool open_model_reader(const std::string &path) {
+    return g_model_reader.open(path);
+}
+
 bool skip_value(const std::string &s, size_t &p, int depth=0) {
     if(depth>32) return false; skip_ws(s,p); if(p>=s.size()) return false;
     if(s[p]=='"') { std::string x; return json_string(s,p,x); }
@@ -152,8 +178,9 @@ bool mlx_read_tensor_range(const std::string & path, const MlxTensorInfo & tenso
     if (relative_offset > tensor_bytes || bytes > tensor_bytes-relative_offset) {
         error="tensor_range_oob"; return false;
     }
-    std::ifstream f(path,std::ios::binary);
-    if(!f){error="open_failed";return false;}
+    if(!open_model_reader(path)){error="open_failed";return false;}
+    std::ifstream &f=g_model_reader.file;
+    f.clear();
     f.seekg((std::streamoff)(tensor.data_begin + relative_offset),std::ios::beg);
     if(!f){error="seek_failed";return false;}
     if(bytes && !f.read(reinterpret_cast<char*>(dst),(std::streamsize)bytes)){error="read_failed";return false;}
@@ -268,10 +295,11 @@ bool mlx_read_affine4_tile(const std::string & path,
     out.rows=rows; out.cols=cols; out.tensor_name=w->name;
     out.packed_weight.resize((size_t)rows*packedPerRow);
 
-    // Reuse one file descriptor for the entire tile. Reopening the 5-GB
-    // model for every row caused avoidable open/close overhead.
-    std::ifstream f(path,std::ios::binary);
-    if(!f){ error="open_failed"; return false; }
+    // Reuse one persistent descriptor for the whole tile and across subsequent
+    // projection calls in the same inference thread. This keeps the hot path
+    // from repeatedly opening/closing the 5-GB model file.
+    if(!open_model_reader(path)){ error="open_failed"; return false; }
+    std::ifstream &f=g_model_reader.file;
     auto read_open = [&](const MlxTensorInfo &t, uint64_t rel, void *dst, size_t bytes)->bool {
         const uint64_t tensor_bytes=t.data_end-t.data_begin;
         if(rel>tensor_bytes || bytes>tensor_bytes-rel){ error="tensor_range_oob"; return false; }
