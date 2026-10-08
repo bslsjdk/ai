@@ -53,3 +53,14 @@ bool ornith35_executor_apply_mlp(const std::string &model_path,
                                   float *out,
                                   Ornith35ExecutorStats &stats,
                                   std::string &error);
+
+bool ornith35_executor_run_attention_layer(const std::string &model_path,
+                                           const MlxSafetensorsInfo &info,
+                                           const Ornith35TextConfig &cfg,
+                                           uint32_t layer_index,
+                                           const float *hidden,
+                                           float *out,
+                                           Ornith35AttentionState &state,
+                                           uint32_t position,
+                                           Ornith35ExecutorStats &stats,
+                                           std::string &error);
