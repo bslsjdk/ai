@@ -105,6 +105,7 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
            " npu=" + mcnpu_backend_status() +
            " weight_npu_probe=" + npuProbe +
            " inference=MLX4BIT_PROBE_ONLY";
+}
 
 static std::string loadModel(const std::string &path, uint64_t requested) {
     if (path.size() >= 11 && path.compare(path.size()-11, 11, ".safetensors") == 0)
