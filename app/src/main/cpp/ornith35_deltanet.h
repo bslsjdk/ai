@@ -16,7 +16,7 @@ struct Ornith35DeltaState {
     uint64_t tokens = 0;
 };
 
-bool ornith35_deltanet_init(Ornith35DeltaState &s);
+bool ornith35_deltanet_init(Ornith35DeltaState &s, uint32_t conv_channels = 0, uint32_t conv_kernel = 4);
 
 bool ornith35_deltanet_step(
     Ornith35DeltaState &s,
