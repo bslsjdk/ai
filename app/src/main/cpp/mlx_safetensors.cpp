@@ -106,3 +106,50 @@ bool mlx_safetensors_probe(const std::string &path, MlxSafetensorsInfo &out, std
     for(auto &t:out.tensors){t.data_begin += 8+n; t.data_end += 8+n;}
     return true;
 }
+
+bool mlx_infer_affine4(const MlxSafetensorsInfo & info, MlxQuantInfo & out, std::string & error) {
+    out = MlxQuantInfo{};
+    for (const auto & w : info.tensors) {
+        if (w.dtype != "U32" || w.shape.size() != 2) continue;
+        if (w.name.size() < 7 || w.name.compare(w.name.size()-7,7,".weight") != 0) continue;
+        std::string base = w.name.substr(0,w.name.size()-7);
+        const MlxTensorInfo * sc=nullptr, * bi=nullptr;
+        for (const auto & t : info.tensors) {
+            if (t.name == base + ".scales") sc=&t;
+            else if (t.name == base + ".biases") bi=&t;
+        }
+        if (!sc || !bi || sc->shape.size()!=2 || bi->shape!=sc->shape) continue;
+        uint64_t packed_k=w.shape[1];
+        uint64_t logical_k=packed_k*8ull;
+        if (logical_k==0 || sc->shape[1]==0 || logical_k % sc->shape[1] != 0) {
+            error="invalid_affine4_group_shape:"+w.name; return false;
+        }
+        uint64_t group=logical_k/sc->shape[1];
+        if (group != 64) {
+            error="unexpected_group_size="+std::to_string(group)+":"+w.name; return false;
+        }
+        if (sc->dtype!="F16" && sc->dtype!="BF16" && sc->dtype!="F32") {
+            error="unexpected_scale_dtype="+sc->dtype+":"+w.name; return false;
+        }
+        if (bi->dtype!=sc->dtype) {
+            error="scale_bias_dtype_mismatch:"+w.name; return false;
+        }
+        ++out.quantized_weight_count; ++out.scale_count; ++out.bias_count;
+    }
+    if (out.quantized_weight_count==0) { error="no_mlx_affine4_weight_triplets"; return false; }
+    out.valid=true; out.bits=4; out.group_size=64; return true;
+}
+
+bool mlx_read_tensor_range(const std::string & path, const MlxTensorInfo & tensor,
+                           uint64_t relative_offset, void * dst, size_t bytes, std::string & error) {
+    const uint64_t tensor_bytes = tensor.data_end - tensor.data_begin;
+    if (relative_offset > tensor_bytes || bytes > tensor_bytes-relative_offset) {
+        error="tensor_range_oob"; return false;
+    }
+    std::ifstream f(path,std::ios::binary);
+    if(!f){error="open_failed";return false;}
+    f.seekg((std::streamoff)(tensor.data_begin + relative_offset),std::ios::beg);
+    if(!f){error="seek_failed";return false;}
+    if(bytes && !f.read(reinterpret_cast<char*>(dst),(std::streamsize)bytes)){error="read_failed";return false;}
+    return true;
+}
