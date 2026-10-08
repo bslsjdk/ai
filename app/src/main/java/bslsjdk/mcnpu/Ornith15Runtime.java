@@ -49,7 +49,19 @@ public final class Ornith15Runtime {
         if (prompt == null || prompt.isEmpty()) return "ERR ORNITH15_RUNTIME empty_prompt";
         try {
             String r = nativeGenerate(prompt, maxTokens);
-            return r == null ? "ERR ORNITH15_RUNTIME null_generate" : r;
+            if (r == null) {
+                lastInfo = "ERR ORNITH15_RUNTIME null_generate";
+                return lastInfo;
+            }
+            // Pull the native profiler snapshot immediately after generation so
+            // callers can display the actual prompt/prefill/TTFT/decode/HWM data.
+            try {
+                String snapshot = nativeInfo();
+                if (snapshot != null && !snapshot.isEmpty()) lastInfo = snapshot;
+            } catch (Throwable ignored) {
+                lastInfo = r;
+            }
+            return r;
         } catch (Throwable t) {
             return "ERR ORNITH15_RUNTIME generate_" + t.getClass().getSimpleName();
         }
