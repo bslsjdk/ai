@@ -12,11 +12,11 @@ static inline float l2_normalize(float *x, uint32_t n) {
 }
 }
 
-bool ornith35_deltanet_init(Ornith35DeltaState &s) {
+bool ornith35_deltanet_init(Ornith35DeltaState &s, uint32_t conv_channels, uint32_t conv_kernel) {
     if (!s.key_heads || !s.value_heads || !s.key_dim || !s.value_dim ||
         (s.value_heads % s.key_heads) != 0) return false;
     s.state.assign((size_t)s.value_heads * s.key_dim * s.value_dim, 0.0f);
-    s.conv.clear();
+    if (conv_channels && conv_kernel) s.conv.assign((size_t)conv_channels * conv_kernel, 0.0f); else s.conv.clear();
     s.tokens = 0;
     return true;
 }
