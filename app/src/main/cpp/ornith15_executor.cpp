@@ -1,6 +1,7 @@
 #include "ornith15_executor.h"
 #include "ornith15_linear.h"
 #include "mlx_safetensors.h"
+#include "runtime_memory_budget.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -227,36 +228,53 @@ bool ornith15_executor_greedy_step(const std::string &model_path,
 }
 
 
+uint64_t ornith15_effective_attention_tokens(const Ornith15TextConfig &cfg,
+                                                uint64_t requested_tokens,
+                                                std::string &diagnostic) {
+    const auto plan = ornith15_make_layer_plan();
+    uint32_t full_layers = 0;
+    for (const auto &layer : plan)
+        if (layer.type == Ornith15LayerType::FullAttention) ++full_layers;
+    const uint64_t delta_bytes =
+        (uint64_t)(cfg.num_layers - full_layers) * 32ull * 128ull * 128ull * sizeof(float);
+    return ornith15_memory_effective_attention_tokens(
+        requested_tokens, cfg.num_kv_heads, cfg.head_dim, full_layers, delta_bytes, diagnostic);
+}
+
 bool ornith15_executor_init_runtime(const Ornith15TextConfig &cfg,
                                      uint32_t max_attention_tokens,
                                      Ornith15LayerRuntime &runtime,
                                      std::string &error) {
     if (!ornith15_validate_config(cfg, error)) return false;
     if (!max_attention_tokens) { error = "max_attention_tokens_zero"; return false; }
-    // Full-attention KV is stored as FP16. Keep the first long-context target at
-    // 64K tokens so the resident cache remains comfortably below 4 GiB.
-    constexpr uint32_t MAX_RESIDENT_ATTENTION_TOKENS = 65536u;
-    const uint32_t bounded_attention_tokens =
-        std::min(max_attention_tokens, MAX_RESIDENT_ATTENTION_TOKENS);
 
-    // Eight full-attention layers are present in the Ornith-1.5 plan. Two
-    // FP16 caches (K and V) therefore consume about 2 GiB at the 64K limit.
-    // Keep a hard model-runtime budget below 3 GiB for KV + recurrent state,
-    // leaving headroom for QNN buffers, activations, tokenizer and Java/native glue.
-    uint32_t full_layers = 0;
-    const auto memory_plan = ornith15_make_layer_plan();
-    for (const auto &layer : memory_plan) {
-        if (layer.type == Ornith15LayerType::FullAttention) ++full_layers;
+    std::string plan_diag;
+    const uint64_t safe_tokens = ornith15_effective_attention_tokens(
+        cfg, max_attention_tokens, plan_diag);
+    if (!safe_tokens) {
+        error = "runtime_memory_plan=" + plan_diag;
+        return false;
     }
+    const uint32_t bounded_attention_tokens = (uint32_t)std::min<uint64_t>(
+        max_attention_tokens, safe_tokens);
+
+    const auto memory_plan = ornith15_make_layer_plan();
+    uint32_t full_layers = 0;
+    for (const auto &layer : memory_plan)
+        if (layer.type == Ornith15LayerType::FullAttention) ++full_layers;
+
     const uint64_t kv_bytes =
         (uint64_t)bounded_attention_tokens * cfg.num_kv_heads * cfg.head_dim * 2ull * 2ull *
         full_layers;
     const uint64_t delta_bytes =
         (uint64_t)(cfg.num_layers - full_layers) * 32ull * 128ull * 128ull * sizeof(float);
-    constexpr uint64_t RUNTIME_STATE_BUDGET = 3ull << 30;
-    if (kv_bytes + delta_bytes > RUNTIME_STATE_BUDGET) {
+
+    // This is a model-state budget only. The separate RSS guard reserves
+    // additional space for QNN, temporary tensors, tokenizer and Java/native code.
+    if (kv_bytes + delta_bytes > ORNITH15_MODEL_STATE_BUDGET_BYTES) {
         error = "runtime_state_budget_exceeded kv_bytes=" + std::to_string(kv_bytes) +
-                " delta_bytes=" + std::to_string(delta_bytes);
+                " delta_bytes=" + std::to_string(delta_bytes) +
+                " state_budget_bytes=" + std::to_string(ORNITH15_MODEL_STATE_BUDGET_BYTES);
         return false;
     }
 
@@ -278,9 +296,13 @@ bool ornith15_executor_init_runtime(const Ornith15TextConfig &cfg,
             }
         }
     }
+
+    const uint64_t work_bytes = (uint64_t)cfg.hidden_size * 3ull * sizeof(float);
+    if (!ornith15_memory_headroom(work_bytes, "executor_work_vectors", error)) return false;
     runtime.work_a.resize(cfg.hidden_size);
     runtime.work_b.resize(cfg.hidden_size);
     runtime.work_c.resize(cfg.hidden_size);
+    if (!ornith15_memory_within_limit(error)) return false;
     runtime.initialized_layers = cfg.num_layers;
     return true;
 }
