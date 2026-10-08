@@ -106,3 +106,37 @@ Ornith-1.5-9B-MLX-4bit：
 - 新的 attention reset 不再清零整块 KV，重置只清逻辑 token 计数；旧槽位在逻辑窗口外不会被读取，避免每次请求写扫约 2 GiB。
 - Java ChatActivity 当前历史预算提升到 32 条最近窗口 / 150000 字符上限；AgentContext 使用用户优先的 origin/spine/relevant/recent，并做保守 token 估算，当前用户消息始终单独置于最后。
 - 64K full-attention 的实际设备速度与 FP16 MatMul 形状稳定性仍需要真实手机验证；GitHub Actions 最近 job 仍在 steps 创建前秒退，不能替代设备验证。
+
+
+## 2026-10-08 runtime completion pass
+
+### Generation/runtime
+- Ornith runtime buffers are initialized once at model load and reused across chat turns; each generation resets only logical recurrent/KV state.
+- Native profiler records prompt tokens, generated tokens, tokenize/prefill/first-token/decode microseconds, RSS/HWM/Peak and affine4 weight-read bytes/time.
+- ChatActivity displays the latest native runtime performance snapshot in the status line.
+- Generation remains real MLX affine4 inference; no probe-only success is accepted.
+
+### Memory
+- Full-attention KV remains FP16, but storage is raw contiguous allocation without whole-range value initialization, so 64K capacity is demand-paged rather than explicitly zero-filled at load.
+- Runtime memory planner still enforces the <4 GiB project constraint using a 3.5 GiB process RSS hard guard plus safety/non-state reserves.
+- Long-lived runtime buffers are reused to avoid multi-gigabyte allocation churn between turns.
+
+### Full Attention
+- K is token-major [kv_head][token][head_dim].
+- QK uses a QNN FP16 MatMul graph with transpose_in1, eliminating host-side K repacking for ring segments.
+- V remains token-major and is consumed by the existing FP16 AV path.
+- QNN MatMul graph cache lifetime budget is 32 graphs. With N buckets 32..65536, QK and AV can create up to 24 distinct FP16 shapes during one 64K replay; production INT8 projection adds a small number of shapes.
+- Wrapped-ring correctness and non-full early-window correctness must not depend on the segment starting at slot zero.
+
+### I/O
+- Safetensors reads use a thread-local persistent ifstream rather than reopening the ~5 GiB model for every tile.
+- Affine4 tile reads are counted during generation so real decode weight traffic can be measured instead of inferred from total model file size.
+
+### Correctness repairs
+- LM-head final padded tile writes only the real vocabulary columns, preventing the final 248320-row projection tile from writing past the output buffer.
+- QNN transpose-B support was added through the existing probe-verified transpose_in1 MatMul parameter path.
+
+### Verification status
+- GitHub Actions runner infrastructure has repeatedly failed before executing build steps (steps=null), including rerun attempts. This is not compile evidence.
+- A previously published latest-apk predates the current runtime work and must not be treated as a current build.
+- Real-device 64K VmHWM, TTFT, prefill, decode tok/s and actual QNN staging memory remain unmeasured until a current APK is built and run on hardware.
