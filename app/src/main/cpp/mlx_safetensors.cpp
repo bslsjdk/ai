@@ -6,6 +6,7 @@
 #include <fstream>
 #include <limits>
 #include <sstream>
+#include <cstring>
 
 namespace {
 bool is_ws(char c) { return c==' ' || c=='\t' || c=='\r' || c=='\n'; }
@@ -180,7 +181,131 @@ bool mlx_decode_affine4_tile(const uint32_t * packed, size_t packed_words,
     return true;
 }
 
+static float decode_half(uint16_t h) {
+    const uint32_t sign=(uint32_t)(h&0x8000u)<<16;
+    const uint32_t exp=(h>>10)&0x1fu;
+    const uint32_t frac=h&0x3ffu;
+    uint32_t bits;
+    if(exp==0) {
+        if(frac==0) bits=sign;
+        else {
+            float v=std::ldexp((float)frac,-24);
+            return (sign ? -v : v);
+        }
+    } else if(exp==31) {
+        bits=sign|0x7f800000u|(frac<<13);
+    } else {
+        bits=sign|((exp+112u)<<23)|(frac<<13);
+    }
+    float v;
+    std::memcpy(&v,&bits,sizeof(v));
+    return v;
+}
+
+static float decode_scalar(const unsigned char *p, const std::string &dtype) {
+    if(dtype=="F32") {
+        float v; std::memcpy(&v,p,4); return v;
+    }
+    if(dtype=="F16") {
+        uint16_t v; std::memcpy(&v,p,2); return decode_half(v);
+    }
+    if(dtype=="BF16") {
+        uint16_t v; std::memcpy(&v,p,2);
+        uint32_t bits=((uint32_t)v)<<16;
+        float out; std::memcpy(&out,&bits,4); return out;
+    }
+    return 0.0f;
+}
+
+static const MlxTensorInfo * find_tensor(const MlxSafetensorsInfo &info,
+                                         const std::string &name) {
+    for(const auto &t: info.tensors) if(t.name==name) return &t;
+    return nullptr;
+}
+
 #include "mcnpu_backend.h"
+
+std::string mlx_affine4_npu_probe(const std::string & path,
+                                  const MlxSafetensorsInfo & info) {
+    if(!mcnpu_backend_ready())
+        return "ERR MLX_NPU_PROBE backend_not_ready " + mcnpu_backend_status();
+
+    constexpr uint32_t M=32, K=64, N=32;
+    for(const auto &w: info.tensors) {
+        if(w.dtype!="U32" || w.shape.size()!=2 || w.shape[0]<N || w.shape[1]<K/8u)
+            continue;
+        if(w.name.size()<7 || w.name.compare(w.name.size()-7,7,".weight")!=0)
+            continue;
+        const std::string base=w.name.substr(0,w.name.size()-7);
+        const MlxTensorInfo *sc=find_tensor(info,base+".scales");
+        const MlxTensorInfo *bi=find_tensor(info,base+".biases");
+        if(!sc || !bi || sc->shape.size()!=2 || bi->shape!=sc->shape)
+            continue;
+        const uint64_t packedK=w.shape[1];
+        const uint64_t logicalK=packedK*8ull;
+        if(logicalK< K || logicalK%64ull!=0 || sc->shape[0]<N ||
+           sc->shape[1]!=(logicalK/64ull))
+            continue;
+        if(sc->dtype!="F16" && sc->dtype!="BF16" && sc->dtype!="F32")
+            continue;
+        if(bi->dtype!=sc->dtype) continue;
+
+        const size_t weightRowBytes=(size_t)packedK*sizeof(uint32_t);
+        std::vector<uint32_t> packed((size_t)N*(K/8u));
+        std::string err;
+        for(uint32_t r=0;r<N;r++) {
+            if(!mlx_read_tensor_range(path,w,(uint64_t)r*weightRowBytes,
+                                       packed.data()+(size_t)r*(K/8u),
+                                       K/8u*sizeof(uint32_t),err))
+                return "ERR MLX_NPU_PROBE weight_read="+err+" tensor="+w.name;
+        }
+
+        const size_t scalarBytes=sc->dtype=="F32"?4u:2u;
+        const size_t groupsPerRow=(size_t)sc->shape[1];
+        std::vector<unsigned char> rawS((size_t)N*groupsPerRow*scalarBytes);
+        std::vector<unsigned char> rawB(rawS.size());
+        if(!mlx_read_tensor_range(path,*sc,0,rawS.data(),rawS.size(),err))
+            return "ERR MLX_NPU_PROBE scale_read="+err+" tensor="+sc->name;
+        if(!mlx_read_tensor_range(path,*bi,0,rawB.data(),rawB.size(),err))
+            return "ERR MLX_NPU_PROBE bias_read="+err+" tensor="+bi->name;
+
+        std::vector<float> scales(N),biases(N);
+        for(uint32_t r=0;r<N;r++) {
+            scales[r]=decode_scalar(rawS+((size_t)r*groupsPerRow)*scalarBytes,sc->dtype);
+            biases[r]=decode_scalar(rawB+((size_t)r*groupsPerRow)*scalarBytes,bi->dtype);
+            if(!std::isfinite(scales[r]) || !std::isfinite(biases[r]))
+                return "ERR MLX_NPU_PROBE nonfinite_affine_params tensor="+w.name;
+        }
+
+        std::vector<float> activation((size_t)M*K);
+        for(size_t i=0;i<activation.size();++i)
+            activation[i]=std::sin((float)i*0.017f)*0.5f;
+
+        std::vector<float> decoded((size_t)N*K);
+        if(!mlx_decode_affine4_tile(packed.data(),packed.size(),
+                                    scales.data(),biases.data(),
+                                    N,K,64,decoded.data(),decoded.size()))
+            return "ERR MLX_NPU_PROBE decode_failed tensor="+w.name;
+
+        const auto t0=std::chrono::steady_clock::now();
+        auto result=mlx_affine4_npu_matmul_tile(
+            activation.data(),packed.data(),scales.data(),biases.data(),
+            M,K,N,64);
+        const auto t1=std::chrono::steady_clock::now();
+        const auto us=std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count();
+        if(!result.ok)
+            return "ERR MLX_NPU_PROBE npu="+result.status+
+                   " tensor="+w.name+" elapsed_us="+std::to_string(us);
+
+        float checksum=0.0f;
+        for(float x:decoded) checksum+=x;
+        return "OK MLX_NPU_PROBE/1 tensor="+w.name+
+               " shape=32x64x32 elapsed_us="+std::to_string(us)+
+               " decoded_checksum="+std::to_string(checksum)+
+               " npu="+result.status;
+    }
+    return "ERR MLX_NPU_PROBE no_compatible_affine4_tensor";
+}
 
 MlxNpuTileResult mlx_affine4_npu_matmul_tile(
         const float * activation,
