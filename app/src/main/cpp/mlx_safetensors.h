@@ -36,6 +36,9 @@ bool mlx_infer_affine4(const MlxSafetensorsInfo & info, MlxQuantInfo & out, std:
 bool mlx_read_tensor_range(const std::string & path, const MlxTensorInfo & tensor,
                            uint64_t relative_offset, void * dst, size_t bytes, std::string & error);
 
+// Generation profiler for the real affine4 weight stream. Counters cover only
+// successful affine4 tile reads, which are the dominant model-weight I/O path.
+
 // Reads a tiny real MLX affine4 weight tile from disk and executes one 32x64x32
 // multiply through the in-process MCNPU bridge. This is a diagnostic proof that
 // real model bytes, not synthetic weights, reached QNN HTP.
@@ -84,3 +87,6 @@ MlxNpuTileResult mlx_affine4_npu_matmul_tile(
 bool mlx_read_affine4_row(const std::string &path, const MlxSafetensorsInfo &info,
                           const std::string &weight_name, uint32_t row,
                           std::vector<float> &out, std::string &error);
+
+bool mlx_reset_affine4_io_stats();
+std::string mlx_affine4_io_status();
