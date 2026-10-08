@@ -48,7 +48,7 @@ bool ornith35_run_projection_tile(
                     stats.status="ERR tile_read="+err; return false;
                 }
                 float sa=1.0f, sw=1.0f;
-                quantize_i8(input+(size_t)r0*k0,mr*k_tile,qa,sa);
+                quantize_i8(input+(size_t)r0*k+k0,mr*k_tile,qa,sa);
                 std::vector<float> wf((size_t)nn*k_tile);
                 if(!mlx_decode_affine4_tile(tile.packed_weight.data(),tile.packed_weight.size(),
                                             tile.scales.data(),tile.biases.data(),
