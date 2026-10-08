@@ -225,7 +225,7 @@ bool ornith15_executor_forward_token(const std::string &model_path,
     if(!read_vec(model_path,*fw,cfg.hidden_size,finalw,error)) return false;
     zero_centered_rms(hidden.data(),cfg.hidden_size,finalw,cfg.rms_norm_eps);
 
-    const std::string lm_name=prefix+"lm_head.weight";
+    const std::string lm_name="language_model.lm_head.weight";
     step.logits.resize(cfg.vocab_size);
     Ornith15ProjectionStats ps;
     if(!ornith15_run_projection_token(model_path,info,lm_name,hidden.data(),cfg.hidden_size,
