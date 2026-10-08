@@ -196,3 +196,11 @@ Ornith-1.5-9B-MLX-4bit：
 ## 2026-10-08 final load-path hardening
 
 模型加载在初始化 KV/recurrent/work buffers 和静态小权重后都经过 RSS memory guard；同时移除了 `ornith_runtime.cpp` 中重复嵌套的 `#if MCNPU_HAS_LLAMA` 预处理器层，保持 llama 兼容路径条件清晰。
+
+## 2026-10-08 continued runtime audit
+
+- ornith15_run_projection_token 的 header/definition 参数数量曾在连续修复中短暂分叉；当前已恢复为稳定的 8 参数公开接口，内部固定以 logical_rows=1 调用 tile 路径。
+- 单 token projection 的输出缓冲已压缩为 1 行后，发现 tile accumulation 仍按 32 行写的越界风险；当前已限制写入到真实 active_rows，避免 LM/head 与小 projection 的 native buffer 越界。
+- QNN graph budget 现在也覆盖 Perlin diagnostic/full/hybrid graph 的实际 graphCreate 生命周期；诊断 fresh graph 创建失败时不再忽略 budget reset 结果。
+- 生产 projection 仍保持 32-row bucket，以匹配已验证 HTP shape；logical_rows 只控制真实输出写入，不会把 32-row graph 错误地变成动态形状。
+- 当前 decode 的主要潜在速度瓶颈仍是每个 token 对多层 affine4 projection 做 streaming weight reads；mlx_safetensors.cpp 已使用线程局部 persistent ifstream 和连续 full-K tile reads。下一阶段应优先用 affine4_io profiler 实测 read_us/bytes，再决定是否增加有界 hot-tile cache，不能直接把数 GB 权重常驻内存。
