@@ -1,0 +1,53 @@
+plugins { id "com.android.application" }
+
+android {
+    namespace "bslsjdk.mcnpu"
+    compileSdk 35
+    ndkVersion "27.0.12077973"
+    defaultConfig {
+        // Development builds install under a separate id so they do not collide with
+        // a release APK signed with a different key - "signatures do not match" blocks
+        // the install outright, and there is no way past it except uninstalling first.
+        //
+        // namespace is deliberately left as bslsjdk.mcnpu. It is the code identity:
+        // it sets the Java package, the R class and, critically, the JNI symbol names
+        // that mcnpu.cpp exports (Java_bslsjdk_mcnpu_NpuRuntime_*). Changing it here
+        // would require renaming every JNI entry point in C++, and a mismatch fails
+        // at runtime with UnsatisfiedLinkError, which the compiler cannot catch.
+        //
+        // applicationId and namespace are allowed to differ - one is the install
+        // identity, the other the code identity - so this change is self-contained.
+        applicationId "bslsjdk.mcnpu.dev"
+        minSdk 30
+        targetSdk 35
+        // Bumped every CI build so the APK always installs as an upgrade instead of
+        // reporting "same version" and forcing an uninstall. GitHub's run number is
+        // monotonic per repo, so it is strictly increasing already: no need to keep a
+        // counter anywhere in the tree. Local builds (no env) fall back to the same
+        // values as before so nothing else has to know about this.
+        versionCode ((System.getenv("GITHUB_RUN_NUMBER") ?: "3") as Integer)
+        versionName "0.2.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
+        externalNativeBuild {
+            cmake {
+                arguments "-DQNN_INC=${System.getenv("QNN_INC") ?: "${rootDir}/qnn_inc"}", "-DANDROID_PLATFORM=android-35"
+            }
+        }
+    }
+    sourceSets { main { jniLibs.srcDirs = ["src/main/jniLibs"] } }
+    packaging { jniLibs { useLegacyPackaging true } }
+    externalNativeBuild {
+        cmake {
+            path file("src/main/cpp/CMakeLists.txt")
+            version "3.31.6"
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation "dev.rikka.shizuku:api:13.1.5"
+    implementation "dev.rikka.shizuku:provider:13.1.5"
+}
