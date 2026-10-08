@@ -192,3 +192,7 @@ Ornith-1.5-9B-MLX-4bit：
 ## 2026-10-08 声明/定义对账补记
 
 最终静态扫描发现并修复了一处编译阻断：`ornith15_linear.h` 已加入 `logical_rows`，而 C++ 定义一度仍缺少该参数，导致函数体对未声明变量的引用。当前 header、definition 和 token caller 已统一。
+
+## 2026-10-08 final load-path hardening
+
+模型加载在初始化 KV/recurrent/work buffers 和静态小权重后都经过 RSS memory guard；同时移除了 `ornith_runtime.cpp` 中重复嵌套的 `#if MCNPU_HAS_LLAMA` 预处理器层，保持 llama 兼容路径条件清晰。

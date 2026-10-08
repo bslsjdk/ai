@@ -257,6 +257,10 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
         return "ERR ORNITH15_MLX runtime_init=" + error;
     if (!ornith15_executor_prepare_static_weights(path, info, cfg, layerRuntime, error))
         return "ERR ORNITH15_MLX static_weights=" + error;
+    // Static vectors are intentionally small, but they are long-lived native
+    // memory and must still pass the same <4 GiB RSS guard as the model state.
+    if (!ornith15_memory_within_limit(error))
+        return "ERR ORNITH15_MLX static_weights_memory=" + error;
 
     g.path = path;
     g.context = requested;
@@ -295,7 +299,6 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
 static std::string loadModel(const std::string &path, uint64_t requested) {
     if (path.size() >= 11 && path.compare(path.size()-11, 11, ".safetensors") == 0)
         return loadMlxModel(path, requested);
-#if MCNPU_HAS_LLAMA
 #if MCNPU_HAS_LLAMA
     if (g.loaded) {
         if (g.sampler) { llama_sampler_free(g.sampler); g.sampler=nullptr; }
