@@ -125,7 +125,7 @@ bool ornith35_run_projection_token(
 
 
 bool ornith35_run_mlp(
-    const float *hidden, float *out, uint32_t hidden_size,
+    const std::string &model_path, const float *hidden, float *out, uint32_t hidden_size,
     uint32_t intermediate_size, const std::string &layer_prefix,
     const MlxSafetensorsInfo &model, Ornith35MlpStats &stats) {
     if(!hidden || !out || hidden_size != 4096u || intermediate_size != 12288u) {
@@ -137,12 +137,12 @@ bool ornith35_run_mlp(
     const std::string gate_name=layer_prefix+"mlp.gate_proj.weight";
     const std::string up_name=layer_prefix+"mlp.up_proj.weight";
     const std::string down_name=layer_prefix+"mlp.down_proj.weight";
-    if(!ornith35_run_projection_token("",model,gate_name,hidden,hidden_size,
+    if(!ornith35_run_projection_token(model_path,model,gate_name,hidden,hidden_size,
                                       gate.data(),intermediate_size,ps)) {
         stats.status="ERR gate="+ps.status; return false;
     }
     stats.projection_calls++;
-    if(!ornith35_run_projection_token("",model,up_name,hidden,hidden_size,
+    if(!ornith35_run_projection_token(model_path,model,up_name,hidden,hidden_size,
                                       up.data(),intermediate_size,ps)) {
         stats.status="ERR up="+ps.status; return false;
     }
@@ -152,7 +152,7 @@ bool ornith35_run_mlp(
         const float silu=x/(1.0f+std::exp(-x));
         fused[i]=silu*up[i];
     }
-    if(!ornith35_run_projection_token("",model,down_name,fused.data(),intermediate_size,
+    if(!ornith35_run_projection_token(model_path,model,down_name,fused.data(),intermediate_size,
                                       out,hidden_size,ps)) {
         stats.status="ERR down="+ps.status; return false;
     }
