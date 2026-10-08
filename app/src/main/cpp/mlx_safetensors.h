@@ -68,6 +68,8 @@ struct MlxNpuTileResult {
     bool ok = false;
     uint32_t m = 0, k = 0, n = 0;
     float scale = 0.0f;
+    float max_abs_error = 0.0f;
+    float max_relative_error = 0.0f;
     std::string status;
 };
 
