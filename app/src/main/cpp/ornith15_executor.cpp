@@ -240,8 +240,8 @@ bool ornith15_executor_init_runtime(const Ornith15TextConfig &cfg,
     runtime.attention.clear();
     runtime.delta.resize(cfg.num_layers);
     runtime.attention.resize(cfg.num_layers);
+    const auto plan = ornith15_make_layer_plan();
     for (uint32_t i = 0; i < cfg.num_layers; ++i) {
-        const auto plan = ornith15_make_layer_plan();
         if (plan[i].type == Ornith15LayerType::LinearAttention) {
             if (!ornith15_deltanet_init(runtime.delta[i], 32u * 128u, cfg.linear_conv_kernel)) {
                 error = "deltanet_state_init_failed";
