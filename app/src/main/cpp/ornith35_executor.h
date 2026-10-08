@@ -31,6 +31,17 @@ bool ornith35_executor_greedy_step(const std::string &model_path,
                                     Ornith35DecoderStep &step,
                                     std::string &error);
 
+struct Ornith35LayerRuntime;
+
+bool ornith35_executor_forward_token(const std::string &model_path,
+                                       const MlxSafetensorsInfo &info,
+                                       const Ornith35TextConfig &cfg,
+                                       uint32_t token_id,
+                                       uint32_t position,
+                                       Ornith35LayerRuntime &runtime,
+                                       Ornith35DecoderStep &step,
+                                       std::string &error);
+
 struct Ornith35LayerRuntime {
     std::vector<Ornith35DeltaState> delta;
     std::vector<Ornith35AttentionState> attention;
