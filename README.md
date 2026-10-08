@@ -1,4 +1,4 @@
-# mcnpu
+# Ornith NPU
 
 Persistent Android QNN/HTP V73 service for Minecraft Java NPU acceleration.
 
@@ -8,9 +8,9 @@ Commands: PING, STATUS, CAPABILITIES, SMOKE, EXEC_ADD, QUIT.
 Successful execution replies begin with OK HTP_GRAPH_EXECUTE.
 STATUS returns QNN HTP ready... when ready, otherwise NPU_OFFLINE plus the last initialization error.
 
-The Fabric mod in bslsjdk/mcjavanpu is the IPC client. The MCNPU service owns QNN/HTP and keeps the runtime initialized for repeated calls.
+The Fabric mod in bslsjdk/mcjavanpu is the IPC client. The Ornith NPU service owns QNN/HTP and keeps the runtime initialized for repeated calls.
 
-On Android 16, local-network protection is an opt-in compatibility feature during the current rollout. MCNPU declares INTERNET and NEARBY_WIFI_DEVICES; the app requests Nearby devices access before starting the IPC service. ACCESS_LOCAL_NETWORK is not required for targetSdk 35; Android 17/targetSdk 37+ is where the new local-network permission is enforced.
+On Android 16, local-network protection is an opt-in compatibility feature during the current rollout. Ornith NPU declares INTERNET and NEARBY_WIFI_DEVICES; the app requests Nearby devices access before starting the IPC service. ACCESS_LOCAL_NETWORK is not required for targetSdk 35; Android 17/targetSdk 37+ is where the new local-network permission is enforced.
 
 QNN assets are copied transactionally into app-private files/qnnlibs before the version stamp is committed. Native QNN lifecycle and execution are serialized.
 
