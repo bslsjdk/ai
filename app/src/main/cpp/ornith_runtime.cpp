@@ -7,6 +7,9 @@
 #include <algorithm>
 #include "mcnpu_backend.h"
 #if MCNPU_HAS_LLAMA
+extern "C" ggml_backend_reg_t mcnpu_ggml_backend_reg(void);
+#endif
+#if MCNPU_HAS_LLAMA
 #include "llama.h"
 #endif
 
@@ -120,6 +123,10 @@ static std::string loadModel(const std::string &path, uint64_t requested) {
 
 #if MCNPU_HAS_LLAMA
     llama_backend_init();
+    auto * mcnpu_reg = mcnpu_ggml_backend_reg();
+    if (mcnpu_reg) {
+        ggml_backend_register(mcnpu_reg);
+    }
     llama_model_params mp = llama_model_default_params();
     mp.n_gpu_layers = 0;
     g.model = llama_model_load_from_file(path.c_str(), mp);
@@ -153,7 +160,8 @@ static std::string loadModel(const std::string &path, uint64_t requested) {
            " context="+std::to_string(requested)+
            " file_bytes="+std::to_string(g.fileBytes)+
            " npu="+mcnpu_backend_status()+
-           " inference=LLAMA_CPU_FALLBACK_NPU_BRIDGE_READY";
+           " ggml_backend=MCNPU_ACCEl_MUL_MAT_F32_QNN "+
+           " inference=LLAMA_SCHEDULER_MCNPU_READY";
 }
 
 static std::string generateModel(const std::string &prompt, int maxTokens) {
