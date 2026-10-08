@@ -5,13 +5,17 @@
 namespace {
 static void rope(float *x, uint32_t dim, uint32_t rotary_dim, uint32_t pos, float theta) {
     const uint32_t rd = std::min(dim, rotary_dim);
-    for (uint32_t i=0; i+1<rd; i+=2) {
-        const float inv = std::pow(theta, -(float)i / (float)rd);
-        const float a = (float)pos * inv;
-        const float c = std::cos(a), s = std::sin(a);
-        const float x0=x[i], x1=x[i+1];
-        x[i]=x0*c-x1*s;
-        x[i+1]=x0*s+x1*c;
+    if(rd < 2u) return;
+    const uint32_t half = rd / 2u;
+    // Qwen3.5 applies rotate_half to the rotary slice, pairing the first
+    // half with the second half rather than adjacent dimensions.
+    for(uint32_t i=0;i<half;i++) {
+        const float inv = std::pow(theta, -(float)i/(float)half);
+        const float a = (float)pos*inv;
+        const float c = std::cos(a), sn = std::sin(a);
+        const float x0=x[i], x1=x[i+half];
+        x[i]=x0*c-x1*sn;
+        x[i+half]=x0*sn+x1*c;
     }
 }
 static void rms(float *x, uint32_t n, const float *weight=nullptr, float eps=1e-6f) {
