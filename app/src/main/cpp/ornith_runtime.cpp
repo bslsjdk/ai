@@ -43,6 +43,7 @@ struct RuntimeState {
     uint64_t last_prefill_us = 0;
     uint64_t last_first_token_us = 0;
     uint64_t last_decode_us = 0;
+    uint64_t effective_attention_window = 0;
     std::string last_generation_memory;
 #if MCNPU_HAS_LLAMA
     llama_model * model = nullptr;
@@ -272,6 +273,13 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
     g.mlx_info = std::move(info);
     g.mlx_cfg = cfg;
     g.mlx_runtime = std::move(layerRuntime);
+    g.effective_attention_window = 0;
+    for (const auto &attention_state : g.mlx_runtime.attention) {
+        if (attention_state.window_tokens) {
+            g.effective_attention_window = attention_state.window_tokens;
+            break;
+        }
+    }
     g.tokenizer = std::move(tok);
     g.mlx_loaded = true;
     g.loaded = true;
@@ -286,7 +294,8 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
     return "OK ORNITH15_RUNTIME/1 format=MLX_SAFE_TENSORS_4BIT"
            " arch=qwen3_5 layers=32 hidden=4096 vocab=248320"
            " context=" + std::to_string(requested) +
-           " attention_window=" + std::to_string(requested) +
+           " attention_window=" + std::to_string(
+               g.effective_attention_window ? g.effective_attention_window : requested) +
            " kv_storage=fp16"
            " file_bytes=" + std::to_string(g.fileBytes) +
            " header_bytes=" + std::to_string(g.mlx_info.header_bytes) +
@@ -456,7 +465,9 @@ Java_bslsjdk_mcnpu_Ornith15Runtime_nativeInfo(JNIEnv* env,jclass) {
     std::string s=g.loaded
         ? "OK ORNITH15_RUNTIME/1 loaded=true path="+g.path+
           " context="+std::to_string(g.context)+
-          " attention_window="+std::to_string(g.context)+
+          " attention_window="+std::to_string(
+              g.effective_attention_window ? g.effective_attention_window : g.context)+
+          " requested_context="+std::to_string(g.context)+
           " kv_storage="+(g.mlx_loaded ? "fp16" : "llama")+
           " mlx="+(g.mlx_loaded?"true":"false")+
           " last_gen_prompt_tokens="+std::to_string(g.last_prompt_tokens)+
