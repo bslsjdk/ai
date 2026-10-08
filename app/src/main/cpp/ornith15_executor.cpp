@@ -62,7 +62,12 @@ static void zero_centered_rms(float *x, uint32_t n, const std::vector<float> &w,
     float ss=0.0f;
     for(uint32_t i=0;i<n;i++) ss += x[i]*x[i];
     const float inv=1.0f/std::sqrt(ss/(float)n+eps);
-    for(uint32_t i=0;i<n;i++) x[i]=x[i]*inv*(w.empty()?1.0f:w[i]);
+    for(uint32_t i=0;i<n;i++) {
+        // Qwen3.5RMSNorm is zero-centered: weight is initialized at zero
+        // and applied as (1 + weight), not plain weight.
+        const float gain = w.empty() ? 1.0f : (1.0f + w[i]);
+        x[i]=x[i]*inv*gain;
+    }
 }
 
 }
