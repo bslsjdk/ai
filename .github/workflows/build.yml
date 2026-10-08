@@ -1,0 +1,240 @@
+name: MCNPU Android
+# CI smoke check: keep native compiler validation before Gradle packaging.
+on:
+  push:
+    branches: [main, bonsai2-pq2-baseline]
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-35 build-tools;35.0.0 cmake;3.31.6"
+
+      - name: Cache Android NDK
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ANDROID_SDK_ROOT }}/ndk/27.0.12077973
+          key: ${{ runner.os }}-android-ndk-27.0.12077973-v2
+
+      - name: Install NDK if cache missed
+        run: |
+          set -eux
+          if [ ! -d "$ANDROID_SDK_ROOT/ndk/27.0.12077973" ]; then
+            yes | sdkmanager "ndk;27.0.12077973"
+          fi
+          test -f "$ANDROID_SDK_ROOT/ndk/27.0.12077973/build/cmake/android.toolchain.cmake"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+
+      - name: Fetch verified QNN stack at known-good probe commit
+        run: |
+          set -eux
+          rm -rf qnn_probe
+          git clone --depth 1 https://github.com/bslsjdk/npu_probe.git qnn_probe
+          cd qnn_probe
+          git fetch --depth 1 origin 8fab2ee58cd4ce17ddc18e36a6a7b4992c85c52a
+          git checkout --detach 8fab2ee58cd4ce17ddc18e36a6a7b4992c85c52a
+          test "$(git rev-parse HEAD)" = "8fab2ee58cd4ce17ddc18e36a6a7b4992c85c52a"
+          cd ..
+          test -f qnn_probe/app/src/main/assets/qnnlibs/libQnnHtp.so
+          test -f qnn_probe/app/src/main/jniLibs/arm64-v8a/libQnnHtpV73Skel.so
+
+      - name: Fetch pinned llama.cpp for Ornith runtime
+        run: |
+          set -eux
+          rm -rf llama.cpp
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp.git llama.cpp
+          cd llama.cpp
+          git fetch --depth 1 origin 42c787e8c191d49c01c757f4b7029d69ec0bf2c8
+          git checkout --detach 42c787e8c191d49c01c757f4b7029d69ec0bf2c8
+          test "$(git rev-parse HEAD)" = "42c787e8c191d49c01c757f4b7029d69ec0bf2c8"
+          cd ..
+          test -f llama.cpp/include/llama.h
+          grep -q 'QWEN35' llama.cpp/src/llama.cpp llama.cpp/src/models/qwen35.cpp
+
+      - name: Stage QNN HTP V73 libraries
+        run: |
+          set -eux
+          rm -rf app/src/main/assets/qnnlibs
+          mkdir -p app/src/main/jniLibs/arm64-v8a app/src/main/assets/qnnlibs
+          cp qnn_probe/app/src/main/jniLibs/arm64-v8a/libc++_shared.so app/src/main/jniLibs/arm64-v8a/
+          cp qnn_probe/app/src/main/assets/qnnlibs/libQnnHtp.so app/src/main/assets/qnnlibs/
+          cp qnn_probe/app/src/main/assets/qnnlibs/libQnnHtpV73Stub.so app/src/main/assets/qnnlibs/
+          cp qnn_probe/app/src/main/assets/qnnlibs/libQnnHtpV73Skel.so app/src/main/assets/qnnlibs/
+          cp qnn_probe/app/src/main/assets/qnnlibs/libQnnHtpV73.so app/src/main/assets/qnnlibs/
+          cp qnn_probe/app/src/main/assets/qnnlibs/libQnnSystem.so app/src/main/assets/qnnlibs/
+          cp qnn_probe/app/src/main/assets/qnnlibs/libQnnHtpPrepare.so.gz app/src/main/assets/qnnlibs/
+          echo "npu_probe_commit=8fab2ee58cd4ce17ddc18e36a6a7b4992c85c52a" > app/src/main/assets/qnn-stack-version.txt
+          echo "source=npu_probe@8fab2ee58cd4ce17ddc18e36a6a7b4992c85c52a" >> app/src/main/assets/qnn-stack-version.txt
+          cat > /tmp/qnn_expected.sha256 <<'EOF'
+          ab2c47da90072d3b18c904f5ade34efce32ef27dbee01941e3a9dd17223d76f5  libQnnHtp.so
+          d499ebc604319f3214b4197398d2a72203524f5cdd697b9ef90010c181073a49  libQnnHtpPrepare.so.gz
+          a0e9f8b303ccd3317be867d1476576593f0f2f00399d505b5664511e726e45ac  libQnnHtpV73.so
+          68664240ce331750b0841d62afbb21ff8db6ca723b9c23f3dad894078b481c27  libQnnHtpV73Skel.so
+          97c80e62cfe6e10b24860a5a41f3d271cb131b419cee3bf2f8864ed8471109d5  libQnnHtpV73Stub.so
+          ec3f3c61e04754645ae2d2d4f97981dfd29d4c91a1b82d3fb4ca40c2c9ab4c37  libQnnSystem.so
+          EOF
+          (cd app/src/main/assets/qnnlibs && sha256sum -c /tmp/qnn_expected.sha256)
+          sha256sum app/src/main/assets/qnnlibs/* > app/src/main/assets/qnn-stack-sha256.txt
+          cat app/src/main/assets/qnn-stack-version.txt
+          cat app/src/main/assets/qnn-stack-sha256.txt
+          ls -lh app/src/main/assets/qnnlibs
+
+      # Gradle externalNativeBuild also compiles this library for the APK.
+      # Keep this standalone native build as an early CMake/compiler smoke check.
+      - name: Build native (early CMake check)
+        run: |
+          set -eux
+          rm -rf build/native
+          cmake -S app/src/main/cpp -B build/native -G Ninja             -DCMAKE_TOOLCHAIN_FILE="$ANDROID_SDK_ROOT/ndk/27.0.12077973/build/cmake/android.toolchain.cmake"             -DANDROID_ABI=arm64-v8a             -DANDROID_PLATFORM=android-35             -DCMAKE_BUILD_TYPE=Release             -DANDROID_STL=c++_static             -DQNN_INC="$GITHUB_WORKSPACE/qnn_probe/app/src/main/cpp/qnn_inc"             -DLLAMA_CPP_SRC="$GITHUB_WORKSPACE/llama.cpp"
+          mkdir -p build
+          cmake --build build/native --config Release --parallel 2 2>&1 | tee build/native.log
+          test -f build/native/libmcnpu.so
+          file build/native/libmcnpu.so
+
+      # Keep the compiler output in a file as well as the console: the Actions
+      # log archive is not reachable from every tool, so a failure has to be
+      # readable through the API too.
+      - name: Build unsigned release APK
+        env:
+          QNN_INC: ${{ github.workspace }}/qnn_probe/app/src/main/cpp/qnn_inc
+        run: |
+          set -o pipefail
+          mkdir -p build
+          gradle :app:assembleRelease --no-daemon --parallel --build-cache 2>&1 | tee build/gradle.log
+
+      - name: Report build errors
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            let text = '';
+            for (const f of ['build/native.log', 'build/gradle.log']) {
+              try { text += '===== ' + f + ' =====\n' + fs.readFileSync(f, 'utf8'); } catch (e) { }
+            }
+            if (!text) text = '(no build log captured)';
+            const lines = text.split('\n').filter(l => /error:|error \[|FAILED|Exception|Caused by|symbol:|location:/.test(l));
+            const picked = lines.slice(-60).join('\n').slice(0, 30000);
+            const body = ['CI failure on `' + context.sha + '`', '', '```', picked || text.slice(-10000), '```'].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'CI FAIL ' + context.sha.slice(0, 11),
+              body: body
+            });
+
+      - name: Verify APK contents
+        run: |
+          set -eux
+          APK=app/build/outputs/apk/release/app-release-unsigned.apk
+          test -f "$APK"
+          unzip -l "$APK" | grep -E 'lib/arm64-v8a/libmcnpu.so|assets/qnnlibs/libQnnHtp.so|assets/qnnlibs/libQnnHtpV73Skel.so|assets/qnnlibs/libQnnHtpV73Stub.so'
+          ls -lh "$APK"
+
+      - name: Sign APK
+        shell: bash
+        run: |
+          set -eux
+          mkdir -p build/signing
+          BUILD_TOOLS="$ANDROID_SDK_ROOT/build-tools/35.0.0"
+          ZIPALIGN="$BUILD_TOOLS/zipalign"
+          APKSIGNER="$BUILD_TOOLS/apksigner"
+          test -x "$ZIPALIGN"
+          test -x "$APKSIGNER"
+          if [ -n "${MCNPU_KEYSTORE_B64:-}" ]; then
+            echo "$MCNPU_KEYSTORE_B64" | base64 -d > build/signing/mcnpu-release.jks
+            KEY_PASS="$MCNPU_KEYSTORE_PASSWORD"
+            echo "keystore: fixed key from repository secrets (signature stable across builds)"
+          else
+            # Not a silent fallback any more. A freshly generated key signs differently
+            # from every earlier build, Android then refuses to install over the previous
+            # APK, and the only way through is uninstalling - which also wipes app data.
+            # Say so loudly rather than ship an APK that looks fine and cannot upgrade.
+            echo "::warning::MCNPU_KEYSTORE_B64 is not set - generating a throwaway key; this build will NOT install over the previous one."
+            keytool -genkeypair -v -keystore build/signing/mcnpu-release.jks -storepass changeit -keypass changeit -alias mcnpu -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=MCNPU,O=bslsjdk"
+            KEY_PASS=changeit
+            echo "keystore: THROWAWAY key - signature differs from every earlier build"
+          fi
+          "$ZIPALIGN" -f 4             app/build/outputs/apk/release/app-release-unsigned.apk             build/signing/mcnpu-aligned.apk
+          "$APKSIGNER" sign             --ks build/signing/mcnpu-release.jks             --ks-key-alias mcnpu             --ks-pass pass:"$KEY_PASS"             --key-pass pass:"$KEY_PASS"             --out app/build/outputs/apk/release/MCNPU-arm64-signed.apk             build/signing/mcnpu-aligned.apk
+          "$APKSIGNER" verify --verbose app/build/outputs/apk/release/MCNPU-arm64-signed.apk
+          sha256sum app/build/outputs/apk/release/MCNPU-arm64-signed.apk
+          # Signer digest, printed so two builds can be compared: an unchanged value
+          # means this APK installs over the previous one, a change means Android will
+          # demand an uninstall first. Read straight off the keystore - no pipes that
+          # can return non-zero and take the whole step down with them.
+          keytool -list -keystore build/signing/mcnpu-release.jks -alias mcnpu \
+            -storepass "$KEY_PASS" 2>/dev/null | grep -i 'SHA256:' \
+            || echo "(signer digest unavailable)"
+        env:
+          MCNPU_KEYSTORE_B64: ${{ secrets.MCNPU_KEYSTORE_B64 }}
+          MCNPU_KEYSTORE_PASSWORD: ${{ secrets.MCNPU_KEYSTORE_PASSWORD }}
+
+      # Delivery route: a release asset. It must NOT be a prerelease: GitHub's
+      # /releases/latest only resolves to a full release, so publishing as a
+      # prerelease makes that URL 404 and leaves no stable link to hand out. Release assets do NOT draw on the account's
+      # Actions storage quota, which is exhausted until the billing cycle resets, so this
+      # is the route that keeps working. The upload-artifact step was removed: while the
+      # quota is out it can only fail, and a permanently red annotation is worse than none.
+      # One rolling tag with the asset replaced each build, so no pile of old APKs.
+      - name: Publish APK as a prerelease (no Actions storage)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eux
+          APK=app/build/outputs/apk/release/MCNPU-arm64-signed.apk
+          test -f "$APK"
+          SUM=$(sha256sum "$APK" | cut -d' ' -f1)
+          SIZE=$(stat -c %s "$APK")
+          TAG=latest-apk
+          TITLE="MCNPU arm64 signed (${GITHUB_SHA::11})"
+          {
+            echo "Automatic prerelease build of ${GITHUB_SHA}."
+            echo ""
+            echo "- built: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "- run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo "- version: 0.2.${GITHUB_RUN_NUMBER} (versionCode ${GITHUB_RUN_NUMBER})"
+            echo "- size: ${SIZE} bytes"
+            echo "- sha256: ${SUM}"
+            echo "- signing: fixed repository key, so this installs over the previous build"
+            echo ""
+            echo "Engineering build for on-device testing."
+            echo "Signed with the same key, so it installs over the previous build."
+          } > build/release-notes.md
+          # Recreate instead of upload --clobber: GitHub keeps the ORIGINAL created_at on
+          # upload, so the page would keep saying "7 hours ago" while the APK inside is
+          # minutes old. Delete + create makes the timestamp match the asset.
+          # --cleanup-tag is required: without it the tag survives, the delete is a no-op,
+          # and created_at stays pinned to whenever the tag was first created (proven by
+          # run 360, where the title and asset updated but created_at did not move).
+          # The APK uploaded here is the one just built in this run, so deleting the
+          # previous release loses nothing.
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" "$APK" \
+            --title "$TITLE" --notes-file build/release-notes.md
+          gh release view "$TAG" --json tagName,isPrerelease,assets
