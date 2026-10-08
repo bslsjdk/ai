@@ -18,7 +18,12 @@ static void rms(float *x, uint32_t n, const float *weight=nullptr, float eps=1e-
     float ss=0.0f;
     for(uint32_t i=0;i<n;i++) ss += x[i]*x[i];
     const float inv=1.0f/std::sqrt(ss/(float)n+eps);
-    for(uint32_t i=0;i<n;i++) x[i]=x[i]*inv*(weight?weight[i]:1.0f);
+    for(uint32_t i=0;i<n;i++) {
+        // Qwen3.5 q/k RMSNorm uses the same zero-centered gain:
+        // normalized(x) * (1 + weight).
+        const float gain = weight ? (1.0f + weight[i]) : 1.0f;
+        x[i]=x[i]*inv*gain;
+    }
 }
 }
 
