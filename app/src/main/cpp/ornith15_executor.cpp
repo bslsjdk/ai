@@ -147,6 +147,11 @@ bool ornith15_executor_validate(const MlxSafetensorsInfo &info,
         for(const auto &name:common) {
             if(!has(name)) { error="required_tensor_missing="+name; return false; }
         }
+        if(!check_vec(lb+"input_layernorm.weight",cfg.hidden_size)) return false;
+        if(!check_vec(lb+"post_attention_layernorm.weight",cfg.hidden_size)) return false;
+        if(!check_affine(lb+"mlp.gate_proj.weight",cfg.intermediate_size,cfg.hidden_size)) return false;
+        if(!check_affine(lb+"mlp.up_proj.weight",cfg.intermediate_size,cfg.hidden_size)) return false;
+        if(!check_affine(lb+"mlp.down_proj.weight",cfg.hidden_size,cfg.intermediate_size)) return false;
         if(plan[i].type==Ornith15LayerType::LinearAttention) {
             const std::string linear[] = {
                 b+"linear_attn.in_proj_qkv.weight", b+"linear_attn.in_proj_qkv.scales", b+"linear_attn.in_proj_qkv.biases",
@@ -160,6 +165,14 @@ bool ornith15_executor_validate(const MlxSafetensorsInfo &info,
             for(const auto &name:linear) {
                 if(!has(name)) { error="required_tensor_missing="+name; return false; }
             }
+            if(!check_affine(b+"linear_attn.in_proj_qkv.weight",8192u,cfg.hidden_size)) return false;
+            if(!check_affine(b+"linear_attn.in_proj_z.weight",4096u,cfg.hidden_size)) return false;
+            if(!check_affine(b+"linear_attn.in_proj_b.weight",32u,cfg.hidden_size)) return false;
+            if(!check_affine(b+"linear_attn.in_proj_a.weight",32u,cfg.hidden_size)) return false;
+            if(!check_affine(b+"linear_attn.out_proj.weight",cfg.hidden_size,4096u)) return false;
+            if(!check_vec(b+"linear_attn.A_log",32u)) return false;
+            if(!check_vec(b+"linear_attn.dt_bias",32u)) return false;
+            if(!check_vec(b+"linear_attn.norm.weight",128u)) return false;
         } else {
             const std::string attn[] = {
                 b+"self_attn.q_proj.weight", b+"self_attn.q_proj.scales", b+"self_attn.q_proj.biases",
@@ -171,6 +184,12 @@ bool ornith15_executor_validate(const MlxSafetensorsInfo &info,
             for(const auto &name:attn) {
                 if(!has(name)) { error="required_tensor_missing="+name; return false; }
             }
+            if(!check_affine(b+"self_attn.q_proj.weight",8192u,cfg.hidden_size)) return false;
+            if(!check_affine(b+"self_attn.k_proj.weight",1024u,cfg.hidden_size)) return false;
+            if(!check_affine(b+"self_attn.v_proj.weight",1024u,cfg.hidden_size)) return false;
+            if(!check_affine(b+"self_attn.o_proj.weight",cfg.hidden_size,4096u)) return false;
+            if(!check_vec(b+"self_attn.q_norm.weight",256u)) return false;
+            if(!check_vec(b+"self_attn.k_norm.weight",256u)) return false;
         }
     }
     return true;
