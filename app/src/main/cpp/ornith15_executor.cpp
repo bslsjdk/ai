@@ -453,7 +453,7 @@ bool ornith15_executor_forward_token(const std::string &model_path,
         }
 
         std::copy(step.hidden.begin(),step.hidden.end(),runtime.work_c.begin());
-        zero_centered_rms(step.step.hidden.data(),cfg.hidden_size,
+        zero_centered_rms(step.hidden.data(),cfg.hidden_size,
                           runtime.static_weights[i].input_norm,cfg.rms_norm_eps);
 
         std::fill(runtime.work_b.begin(),runtime.work_b.end(),0.0f);
@@ -477,7 +477,7 @@ bool ornith15_executor_forward_token(const std::string &model_path,
 
         (void)pw;
         std::copy(step.hidden.begin(),step.hidden.end(),runtime.work_c.begin());
-        zero_centered_rms(step.step.hidden.data(),cfg.hidden_size,
+        zero_centered_rms(step.hidden.data(),cfg.hidden_size,
                           runtime.static_weights[i].post_norm,cfg.rms_norm_eps);
         std::fill(runtime.work_b.begin(),runtime.work_b.end(),0.0f);
         if(!ornith15_executor_apply_mlp(model_path,info,cfg,i,step.hidden.data(),
@@ -488,12 +488,12 @@ bool ornith15_executor_forward_token(const std::string &model_path,
     }
 
     if(runtime.final_norm.size()!=cfg.hidden_size) { error="final_norm_static_missing"; return false; }
-    zero_centered_rms(step.step.hidden.data(),cfg.hidden_size,runtime.final_norm,cfg.rms_norm_eps);
+    zero_centered_rms(step.hidden.data(),cfg.hidden_size,runtime.final_norm,cfg.rms_norm_eps);
 
     const std::string lm_name="language_model.lm_head.weight";
     step.logits.resize(cfg.vocab_size);
     Ornith15ProjectionStats ps;
-    if(!ornith15_run_projection_token(model_path,info,lm_name,step.step.hidden.data(),cfg.hidden_size,
+    if(!ornith15_run_projection_token(model_path,info,lm_name,step.hidden.data(),cfg.hidden_size,
                                       step.logits.data(),cfg.vocab_size,ps)) {
         error=ps.status;
         return false;
@@ -582,7 +582,7 @@ bool ornith15_executor_run_delta_layer(const std::string &model_path,
                                        std::string &error) {
     if(!hidden||!out||layer_index>=cfg.num_layers){error="delta_args";return false;}
     const std::string b="language_model.model.layers."+std::to_string(layer_index)+".linear_attn.";
-    std::vector<float> qkv(8192),z(4096),ba(64),q(2048),k(2048),v(4096),beta(32),a(32),decay(32),core(4096),normw(128);
+    std::vector<float> qkv(8192),z(4096),q(2048),k(2048),v(4096),beta(32),a(32),core(4096);
     Ornith15ProjectionStats ps;
     if(!ornith15_run_projection_token(model_path,info,b+"in_proj_qkv.weight",hidden,4096,qkv.data(),8192,ps)){error=ps.status;return false;}
     stats.npu_calls+=ps.npu_calls;
