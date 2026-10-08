@@ -1,4 +1,4 @@
-package bslsjdk.mcnpu;
+package bslsjdk.ornithnpu;
 
 import android.app.Activity;
 import android.os.Bundle;
