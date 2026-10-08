@@ -1235,6 +1235,7 @@ std::string runBatchXform(uint32_t n,int op){
         mg->dimsC[0]=Nb; mg->dimsC[1]=1;
         const std::string gn="mcnpu_xf_"+std::to_string(op)+"_"+std::to_string(Nb);
         rc=f.graphCreate(g.context,gn.c_str(),nullptr,&mg->graph);
+        ++g.graphCount;
         if(rc!=QNN_SUCCESS||!mg->graph){ g.matMulGraphs8.erase(inserted.first); return "ERR XF_GRAPH_CREATE rc="+std::to_string((int)rc); }
         mg->a=makeTensorQ("a",QNN_TENSOR_TYPE_APP_WRITE,QNN_DATATYPE_SFIXED_POINT_8,mg->dimsA,2,sc);
         mg->b=makeTensorQ("b",QNN_TENSOR_TYPE_APP_WRITE,QNN_DATATYPE_SFIXED_POINT_8,mg->dimsB,2,sc);
@@ -1259,7 +1260,7 @@ std::string runBatchXform(uint32_t n,int op){
         if(rc!=QNN_SUCCESS){ g.matMulGraphs8.erase(key); return "ERR XF_NODE rc="+std::to_string((int)rc); }
         rc=f.graphFinalize(mg->graph,nullptr,nullptr);
         if(rc!=QNN_SUCCESS){ g.matMulGraphs8.erase(key); return "ERR XF_FINALIZE rc="+std::to_string((int)rc); }
-        g.graphCount++;
+        
         I("XFORM GRAPH READY op=%d n=%u",op,(unsigned)Nb);
     }
     std::vector<int8_t> A(Nb,0),B(Nb,0),C(Nb,0);
@@ -1320,6 +1321,7 @@ std::string runMatMulInt8(uint32_t m,uint32_t k,uint32_t n){
         const std::string graphName="mcnpu_mm8_"+std::to_string(++g.graphSeq);
         auto tCreate0=std::chrono::steady_clock::now();
         rc=f.graphCreate(g.context,graphName.c_str(),nullptr,&mg->graph);
+        ++g.graphCount;
         createUs=std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-tCreate0).count();
         if(rc!=QNN_SUCCESS||!mg->graph){
             g.matMulGraphs8.erase(inserted.first);
@@ -1358,7 +1360,7 @@ std::string runMatMulInt8(uint32_t m,uint32_t k,uint32_t n){
             g.matMulGraphs8.erase(key);
             return "ERR MM8_GRAPH_FINALIZE rc="+std::to_string((int)rc)+" "+verbose(rc);
         }
-        g.graphCount++;
+        
         I("MATMUL8 GRAPH READY m=%u k=%u n=%u",(unsigned)m,(unsigned)k,(unsigned)n);
     }
 
@@ -1553,6 +1555,7 @@ std::string runMatMulInt8Buf(const int8_t* Ain,const int8_t* Bin,int8_t* Cout,ui
         mg->dimsC[0]=Nb; mg->dimsC[1]=Mb;
         const std::string graphName="mcnpu_mmb_"+std::to_string(Mb)+"x"+std::to_string(Kb)+"x"+std::to_string(Nb);
         rc=f.graphCreate(g.context,graphName.c_str(),nullptr,&mg->graph);
+        ++g.graphCount;
         if(rc!=QNN_SUCCESS||!mg->graph){
             g.matMulGraphs8.erase(inserted.first);
             return "ERR BUF_GRAPH_CREATE rc="+std::to_string((int)rc);
@@ -1614,7 +1617,7 @@ std::string runMatMulInt8Buf(const int8_t* Ain,const int8_t* Bin,int8_t* Cout,ui
                 return "ERR MATMUL8BUF_MEMORY_LIMIT " + graph_rss_error;
             }
         }
-        g.graphCount++;
+        
         // Count only a successfully finalized graph. The pre-create increment
         // above reserves no durable resource and caused every cached graph to count twice,
         // forcing premature context resets after only four real graphs.
@@ -1781,6 +1784,7 @@ std::string runMatMulFp16BufEx(const uint16_t* Ain,const uint16_t* Bin,uint16_t*
                                      std::to_string(Kb)+"x"+std::to_string(Nb)+
                                      (transposeB ? "_tb" : "");
         rc=f.graphCreate(g.context,graphName.c_str(),nullptr,&mg->graph);
+        ++g.graphCount;
         if(rc!=QNN_SUCCESS || !mg->graph){
             g.matMulGraphs.erase(inserted.first);
             return "ERR FP16BUF_GRAPH_CREATE rc="+std::to_string((int)rc)+" "+verbose(rc);
@@ -1843,7 +1847,7 @@ std::string runMatMulFp16BufEx(const uint16_t* Ain,const uint16_t* Bin,uint16_t*
                 return "ERR FP16BUF_MEMORY_LIMIT " + graph_rss_error;
             }
         }
-        g.graphCount++;
+        
         I("FP16BUF GRAPH READY bucket=%ux%ux%u",(unsigned)Mb,(unsigned)Kb,(unsigned)Nb);
     }
 
@@ -2988,9 +2992,10 @@ static std::string runPerlinDiag(uint32_t n){
     // probes. Diagnostic graphs are never executed, so that is acceptable.
     auto fresh = [&](const char* tag)->Qnn_ErrorHandle_t{
         ensureGraphBudget();
-        g.graphCount++;
         const std::string nm = std::string("mcnpu_diag_") + tag + std::to_string(++seq);
-        return f.graphCreate(g.context, nm.c_str(), nullptr, &gh);
+        const Qnn_ErrorHandle_t rc = f.graphCreate(g.context, nm.c_str(), nullptr, &gh);
+        if (rc == QNN_SUCCESS && gh) ++g.graphCount;
+        return rc;
     };
     auto reg = [&](TensorArena& A, const char* nm, Qnn_TensorType_t ty,
                    Qnn_DataType_t dt, uint32_t dim)->Qnn_Tensor_t{

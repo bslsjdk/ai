@@ -184,3 +184,7 @@ Ornith-1.5-9B-MLX-4bit：
 ## 2026-10-08 CMake 对照修复补记
 
 对提交后的实际文件再次检查时发现 CMake 源文件列表曾因一次排序修复留下两份 MCNPU_SOURCES 和两份 add_library。该重复块已删除，当前结构恢复为：先定义 QNN_INC/LLAMA_CPP_SRC，再定义一次 MCNPU_SOURCES，仅在 LLAMA_CPP_SRC 存在时追加 mcnpu_ggml_backend.cpp，最后只创建一次 mcnpu target。
+
+## 2026-10-08 QNN graph accounting hardening
+
+继续对照 `mcnpu.cpp` 后统一 QNN graph 计数：凡是可能长期占用 context 资源的缓存/诊断图，都在 graphCreate 成功后计数，而不是在 finalize 后或 create 前计数。这样 graph budget 与实际由 QNN context 持有的图数量保持一致，失败的 tensor/node/finalize 路径也不会让计数低估。
