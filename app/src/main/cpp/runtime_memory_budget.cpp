@@ -29,7 +29,7 @@ uint64_t ornith15_process_rss_bytes() {
     return read_rss_bytes();
 }
 
-uint64_t ornith15_effective_attention_tokens(
+uint64_t ornith15_memory_effective_attention_tokens(
     uint64_t requested_tokens,
     uint32_t kv_heads,
     uint32_t head_dim,
