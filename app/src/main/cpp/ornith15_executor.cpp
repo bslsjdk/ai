@@ -467,7 +467,7 @@ bool ornith15_executor_run_delta_layer(const std::string &model_path,
     for(uint32_t h=0;h<32;h++){
         float ss=0.0f; for(uint32_t d=0;d<128;d++){float x=core[h*128+d];ss+=x*x;}
         float inv=1.0f/std::sqrt(ss/128.0f+cfg.rms_norm_eps);
-        for(uint32_t d=0;d<128;d++){float x=core[h*128+d]*inv*normw[d]; float g=z[h*128+d]; core[h*128+d]=x*(g/(1.0f+std::exp(-g)));}
+        for(uint32_t d=0;d<128;d++){float x=core[h*128+d]*inv*normw[d]; float g=z[h*128+d]; const float sig=1.0f/(1.0f+std::exp(-g)); core[h*128+d]=x*(g*sig);}
     }
     if(!ornith15_run_projection_token(model_path,info,b+"out_proj.weight",core.data(),4096,out,4096,ps)){error=ps.status;return false;}
     stats.npu_calls+=ps.npu_calls;
