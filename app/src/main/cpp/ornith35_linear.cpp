@@ -55,9 +55,26 @@ bool ornith35_run_projection_tile(
                                             nn,k_tile,64,wf.data(),wf.size())) {
                     stats.status="ERR decode"; return false;
                 }
-                quantize_i8(wf.data(),wf.size(),qw,sw);
+                // MLX affine4 decodes each tile as [N,K]. MCNPU expects
+                // B in [K,N], so transpose at the quantization boundary.
+                qw.resize((size_t)k_tile*nn);
+                float wmx=0.0f;
+                for(size_t i=0;i<wf.size();++i) wmx=std::max(wmx,std::fabs(wf[i]));
+                if(wmx==0.0f) {
+                    sw=1.0f;
+                    std::fill(qw.begin(),qw.end(),0);
+                } else {
+                    sw=wmx/127.0f;
+                    for(uint32_t row=0; row<nn; ++row)
+                        for(uint32_t col=0; col<k_tile; ++col) {
+                            float q=wf[(size_t)row*k_tile+col]/sw;
+                            qw[(size_t)col*nn+row]=(int8_t)std::max(
+                                -127.0f,std::min(127.0f,std::lrintf(q)));
+                        }
+                }
                 qc.resize((size_t)mr*nn);
-                std::string s=mcnpu_backend_matmul_int8(qa.data(),qw.data(),qc.data(),mr,k_tile,nn,1.0f);
+                std::string s=mcnpu_backend_matmul_int8(
+                    qa.data(),qw.data(),qc.data(),mr,k_tile,nn,1.0f);
                 if(s.rfind("OK",0)!=0) { stats.status=s; return false; }
                 const float so=sa*sw;
                 for(uint32_t i=0;i<mr;i++)
