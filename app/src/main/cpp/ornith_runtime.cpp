@@ -7,6 +7,7 @@
 #include <algorithm>
 #include "mcnpu_backend.h"
 #include "mlx_safetensors.h"
+#include "ornith35_executor.h"
 #if MCNPU_HAS_LLAMA
 extern "C" ggml_backend_reg_t mcnpu_ggml_backend_reg(void);
 #endif
@@ -79,6 +80,9 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
     MlxQuantInfo q;
     if (!mlx_infer_affine4(info, q, error))
         return "ERR ORNITH15_MLX " + error;
+    Ornith35TextConfig cfg;
+    if (!ornith35_executor_validate(info, cfg, error))
+        return "ERR ORNITH15_MLX executor_preflight=" + error;
     // Metadata/format validation only. Do not mark the model runnable until
     // the tiled MLX-4bit inference kernel is wired to MCNPU.
     g.arch = "qwen3_5";
