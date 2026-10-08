@@ -204,3 +204,14 @@ Ornith-1.5-9B-MLX-4bit：
 - QNN graph budget 现在也覆盖 Perlin diagnostic/full/hybrid graph 的实际 graphCreate 生命周期；诊断 fresh graph 创建失败时不再忽略 budget reset 结果。
 - 生产 projection 仍保持 32-row bucket，以匹配已验证 HTP shape；logical_rows 只控制真实输出写入，不会把 32-row graph 错误地变成动态形状。
 - 当前 decode 的主要潜在速度瓶颈仍是每个 token 对多层 affine4 projection 做 streaming weight reads；mlx_safetensors.cpp 已使用线程局部 persistent ifstream 和连续 full-K tile reads。下一阶段应优先用 affine4_io profiler 实测 read_us/bytes，再决定是否增加有界 hot-tile cache，不能直接把数 GB 权重常驻内存。
+## 2026-10-08 final audit pass updates
+
+- 当前 `main` HEAD：7301aa7e1a224352f96f5e306a6354d28393de51。
+- 单 token projection 的输出写入边界已修复：`logical_rows=1` 时只写真实第 0 行，避免 32-row bucket 与 1-row 输出缓冲之间的越界。
+- `ornith15_run_projection_token` 已恢复与 header 一致的公开签名，内部仍固定使用 32-row HTP bucket 和 `logical_rows=1`。
+- decode forward 已复用 `step.hidden` 与 `runtime.work_c`，减少每 token/每层临时 native allocation，同时保持现有数学路径不变。
+- executor 的 binary16 helper 已补齐 subnormal 转换，避免静态参数被错误 flush-to-zero。
+- Perlin diagnostic/full/hybrid graph 已纳入 QNN graph budget 计数；diagnostic budget reset 失败不会再被静默忽略。
+- GGUF/llama.cpp 兼容后端的 `src0 × src1` 参数顺序已修正为 activation × weight，防止旧兼容路径返回错误矩阵。
+- 当前 CI 仍在 job steps 建立前失败，最新运行没有有效 compile steps/logs；因此 Java/C++/APK 仍不能标记为“已编译通过”。
+- 当前下一性能重点仍是 affine4 projection streaming I/O。目标是以 profiler 数据驱动有界复用/预取，而不是把多 GB 权重整体常驻，必须同时守住 <4 GiB runtime RAM 与可接受 decode 速度。
