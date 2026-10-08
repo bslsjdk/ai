@@ -13,7 +13,7 @@ import android.os.Build;
  * this path is a normal app start.
  *
  * Trigger it manually with:
- *   adb shell am broadcast -a bslsjdk.ornithnpu.action.WAKE -n bslsjdk.ornithnpu/.NpuWakeReceiver
+ *   adb shell am broadcast -a bslsjdk.ornithnpu.action.WAKE -n bslsjdk.mcnpu/.NpuWakeReceiver
  */
 public final class NpuWakeReceiver extends BroadcastReceiver {
     public static final String ACTION_WAKE = "bslsjdk.ornithnpu.action.WAKE";
