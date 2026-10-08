@@ -42,6 +42,6 @@ struct Ornith35MlpStats {
     std::string status;
 };
 
-bool ornith35_run_mlp(const float *hidden, float *out, uint32_t hidden_size,
+bool ornith35_run_mlp(const std::string &model_path, const float *hidden, float *out, uint32_t hidden_size,
                       uint32_t intermediate_size, const std::string &layer_prefix,
                       const MlxSafetensorsInfo &model, Ornith35MlpStats &stats);
