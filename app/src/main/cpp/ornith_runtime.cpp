@@ -5,6 +5,9 @@
 #include <cstring>
 #include <vector>
 #include <algorithm>
+#include <cmath>
+#include <random>
+#include <utility>
 #include "mcnpu_backend.h"
 #include "mlx_safetensors.h"
 #include "ornith15_executor.h"
@@ -27,7 +30,11 @@ struct RuntimeState {
     uint64_t vocab = 0;
     std::string arch;
     bool loaded = false;
-#if MCNPU_HAS_LLAMA
+    bool mlx_loaded = false;
+    MlxSafetensorsInfo mlx_info;
+    Ornith15TextConfig mlx_cfg;
+    Ornith15LayerRuntime mlx_runtime;
+    Ornith15Tokenizer tokenizer;#if MCNPU_HAS_LLAMA
     llama_model * model = nullptr;
     llama_context * ctx = nullptr;
     llama_sampler * sampler = nullptr;
@@ -73,7 +80,88 @@ static bool skipValue(std::ifstream &f, uint32_t type, int depth=0) {
     }
 }
 
+static int32_t sample_mlx_logits(const std::vector<float> &logits, std::mt19937 &rng) {
+    if (logits.empty()) return -1;
+    constexpr size_t TOP_K = 20;
+    std::vector<int32_t> top;
+    top.reserve(TOP_K);
+    for (int32_t id = 0; id < (int32_t)logits.size(); ++id) {
+        if (!std::isfinite(logits[(size_t)id])) continue;
+        auto it = top.begin();
+        while (it != top.end() && logits[(size_t)*it] >= logits[(size_t)id]) ++it;
+        top.insert(it, id);
+        if (top.size() > TOP_K) top.pop_back();
+    }
+    if (top.empty()) return -1;
+    constexpr float temperature = 0.6f;
+    float mx = -INFINITY;
+    for (int32_t id : top) mx = std::max(mx, logits[(size_t)id] / temperature);
+    std::vector<float> p(top.size());
+    float sum = 0.0f;
+    for (size_t i = 0; i < top.size(); ++i) {
+        p[i] = std::exp((logits[(size_t)top[i]] / temperature) - mx);
+        sum += p[i];
+    }
+    if (sum <= 0.0f || !std::isfinite(sum)) return top.front();
+    std::uniform_real_distribution<float> dist(0.0f, sum);
+    float pick = dist(rng);
+    for (size_t i = 0; i < p.size(); ++i) {
+        pick -= p[i];
+        if (pick <= 0.0f) return top[i];
+    }
+    return top.back();
+}
+
+static std::string generateMlxModel(const std::string &prompt, int maxTokens) {
+    if (!g.loaded || !g.mlx_loaded) return "ERR ORNITH15_RUNTIME not_loaded";
+    if (prompt.empty()) return "ERR ORNITH15_RUNTIME empty_prompt";
+    if (maxTokens <= 0 || maxTokens > 1024) return "ERR ORNITH15_RUNTIME bad_max_tokens";
+    if (!g.tokenizer.loaded) return "ERR ORNITH15_RUNTIME tokenizer_not_loaded";
+
+    const std::string chat =
+        "<|im_start|>system\\nYou are Ornith, a helpful local assistant.<|im_end|>\\n"
+        "<|im_start|>user\\n" + prompt + "<|im_end|>\\n"
+        "<|im_start|>assistant\\n";
+    std::vector<int32_t> ids;
+    std::string error;
+    if (!ornith15_tokenizer_encode(g.tokenizer, chat, ids, error) || ids.empty())
+        return "ERR ORNITH15_RUNTIME tokenize=" + error;
+    if (ids.size() > g.mlx_cfg.context_length)
+        return "ERR ORNITH15_RUNTIME prompt_context_exceeded";
+
+    if (!ornith15_executor_init_runtime(g.mlx_cfg,
+                                        std::min<uint32_t>(g.mlx_cfg.context_length, 4096u),
+                                        g.mlx_runtime, error))
+        return "ERR ORNITH15_RUNTIME runtime_init=" + error;
+
+    Ornith15DecoderStep step;
+    for (size_t i = 0; i < ids.size(); ++i) {
+        if (!ornith15_executor_forward_token(g.path, g.mlx_info, g.mlx_cfg,
+                                             (uint32_t)ids[i], (uint32_t)i,
+                                             g.mlx_runtime, step, error))
+            return "ERR ORNITH15_RUNTIME forward=" + error;
+    }
+
+    std::mt19937 rng(0x4f524e49u);
+    std::vector<int32_t> generated;
+    generated.reserve((size_t)maxTokens);
+    for (int i = 0; i < maxTokens; ++i) {
+        const int32_t next = sample_mlx_logits(step.logits, rng);
+        if (next < 0) return "ERR ORNITH15_RUNTIME sample_failed";
+        if (next == g.tokenizer.eos) break;
+        generated.push_back(next);
+        const uint32_t pos = (uint32_t)ids.size() + (uint32_t)i;
+        if (!ornith15_executor_forward_token(g.path, g.mlx_info, g.mlx_cfg,
+                                             (uint32_t)next, pos,
+                                             g.mlx_runtime, step, error))
+            return "ERR ORNITH15_RUNTIME forward=" + error;
+    }
+    const std::string out = ornith15_tokenizer_decode(g.tokenizer, generated);
+    return "OK ORNITH15_GENERATE/1 text=" + out;
+}
 static std::string loadMlxModel(const std::string &path, uint64_t requested) {
+    if (!mcnpu_backend_ready())
+        return "ERR ORNITH15_MLX npu_not_ready "+mcnpu_backend_status();
     MlxSafetensorsInfo info;
     std::string error;
     if (!mlx_safetensors_probe(path, info, error))
@@ -84,35 +172,49 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
     Ornith15TextConfig cfg;
     if (!ornith15_executor_validate(info, cfg, error))
         return "ERR ORNITH15_MLX executor_preflight=" + error;
-    // MLX-4bit has its own executor path. Keep the runtime explicitly
-    // non-runnable until the full token loop is attached; never report a
-    // probe as generation.
-    g.arch = "qwen3_5";
-    g.blocks = 32;
-    g.hidden = 4096;
-    g.vocab = 248320;
-    g.context = 262144;
-    if (requested > g.context)
+    if (requested > cfg.context_length)
         return "ERR ORNITH15_RUNTIME requested_context=" + std::to_string(requested) + " native=262144";
+
+#if MCNPU_HAS_LLAMA
+    if (g.sampler) { llama_sampler_free(g.sampler); g.sampler=nullptr; }
+    if (g.ctx) { llama_free(g.ctx); g.ctx=nullptr; }
+    if (g.model) { llama_model_free(g.model); g.model=nullptr; }
+#endif
+    std::string tokPath = path + ".tokenizer";
+    Ornith15Tokenizer tok;
+    if (!ornith15_tokenizer_load(tokPath, tok, error))
+        return "ERR ORNITH15_MLX tokenizer=" + error;
+    Ornith15LayerRuntime layerRuntime;
+    if (!ornith15_executor_init_runtime(cfg,
+                                        std::min<uint32_t>((uint32_t)requested, 4096u),
+                                        layerRuntime, error))
+        return "ERR ORNITH15_MLX runtime_init=" + error;
+
     g.path = path;
     g.context = requested;
     g.fileBytes = info.file_bytes;
-    g.loaded = false;
-    const std::string npuProbe = mlx_affine4_npu_probe(path, info);
+    g.arch = "qwen3_5";
+    g.blocks = cfg.num_layers;
+    g.hidden = cfg.hidden_size;
+    g.vocab = cfg.vocab_size;
+    g.mlx_info = std::move(info);
+    g.mlx_cfg = cfg;
+    g.mlx_runtime = std::move(layerRuntime);
+    g.tokenizer = std::move(tok);
+    g.mlx_loaded = true;
+    g.loaded = true;
+    const std::string npuProbe = mlx_affine4_npu_probe(g.path, g.mlx_info);
     return "OK ORNITH15_RUNTIME/1 format=MLX_SAFE_TENSORS_4BIT"
            " arch=qwen3_5 layers=32 hidden=4096 vocab=248320"
            " context=" + std::to_string(requested) +
-           " file_bytes=" + std::to_string(info.file_bytes) +
-           " header_bytes=" + std::to_string(info.header_bytes) +
-           " tensors=" + std::to_string(info.tensor_count) +
+           " file_bytes=" + std::to_string(g.fileBytes) +
+           " header_bytes=" + std::to_string(g.mlx_info.header_bytes) +
+           " tensors=" + std::to_string(g.mlx_info.tensor_count) +
            " affine4=bits4_group64 weight_triplets=" + std::to_string(q.quantized_weight_count) +
-           " quantized_marked=" + std::to_string(info.quantized_tensor_count) +
-           " " + info.quantization_summary +
            " npu=" + mcnpu_backend_status() +
            " weight_npu_probe=" + npuProbe +
-           " inference=MLX4BIT_PROBE_ONLY";
+           " inference=MLX4BIT_NPU_EXECUTOR";
 }
-
 static std::string loadModel(const std::string &path, uint64_t requested) {
     if (path.size() >= 11 && path.compare(path.size()-11, 11, ".safetensors") == 0)
         return loadMlxModel(path, requested);
@@ -210,6 +312,7 @@ static std::string loadModel(const std::string &path, uint64_t requested) {
 }
 
 static std::string generateModel(const std::string &prompt, int maxTokens) {
+    if (g.mlx_loaded) return generateMlxModel(prompt, maxTokens);
 #if !MCNPU_HAS_LLAMA
     return "ERR ORNITH15_RUNTIME llama_backend_not_compiled";
 #else
@@ -265,7 +368,7 @@ Java_bslsjdk_mcnpu_Ornith15Runtime_nativeGenerate(JNIEnv* env,jclass,jstring jpr
 extern "C" JNIEXPORT jstring JNICALL
 Java_bslsjdk_mcnpu_Ornith15Runtime_nativeInfo(JNIEnv* env,jclass) {
     std::string s=g.loaded
-        ? "OK ORNITH15_RUNTIME/1 loaded=true path="+g.path+" context="+std::to_string(g.context)
+        ? "OK ORNITH15_RUNTIME/1 loaded=true path="+g.path+" context="+std::to_string(g.context)+" mlx="+(g.mlx_loaded?"true":"false")
         : "OK ORNITH15_RUNTIME/1 loaded=false";
     return env->NewStringUTF(s.c_str());
 }
