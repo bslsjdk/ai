@@ -166,11 +166,10 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
     std::string error;
     if (!mlx_safetensors_probe(path, info, error))
         return "ERR ORNITH15_MLX " + error;
-    // Exact identity guard for the single supported model. The official
-    // model index reports this immutable current file size.
-    constexpr uint64_t ORNITH15_9B_MLX4_BYTES = 5038040064ull;
-    if (info.file_bytes != ORNITH15_9B_MLX4_BYTES)
-        return "ERR ORNITH15_MLX unexpected_model_bytes=" + std::to_string(info.file_bytes);
+    // The single-model policy is enforced by the complete tensor-layout
+    // validator below, not by a brittle byte-for-byte file-size assumption.
+    if (info.file_bytes < (4ull << 30))
+        return "ERR ORNITH15_MLX model_file_too_small=" + std::to_string(info.file_bytes);
     MlxQuantInfo q;
     if (!mlx_infer_affine4(info, q, error))
         return "ERR ORNITH15_MLX " + error;
