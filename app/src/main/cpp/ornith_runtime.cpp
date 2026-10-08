@@ -219,6 +219,7 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
     return "OK ORNITH15_RUNTIME/1 format=MLX_SAFE_TENSORS_4BIT"
            " arch=qwen3_5 layers=32 hidden=4096 vocab=248320"
            " context=" + std::to_string(requested) +
+           " attention_window=4096"
            " file_bytes=" + std::to_string(g.fileBytes) +
            " header_bytes=" + std::to_string(g.mlx_info.header_bytes) +
            " tensors=" + std::to_string(g.mlx_info.tensor_count) +
