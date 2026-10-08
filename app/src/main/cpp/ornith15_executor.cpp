@@ -374,10 +374,20 @@ bool ornith15_executor_run_attention_layer(const std::string &model_path,
                                            std::string &error) {
     if(!hidden||!out||layer_index>=cfg.num_layers){error="attention_args";return false;}
     const std::string b="language_model.model.layers."+std::to_string(layer_index)+".self_attn.";
-    std::vector<float> q(8192),k(1024),v(1024),qnorm(256),knorm(256),att(4096),gate(4096);
+    std::vector<float> qg(8192),q(4096),k(1024),v(1024),qnorm(256),knorm(256),att(4096),gate(4096);
     Ornith15ProjectionStats ps;
-    if(!ornith15_run_projection_token(model_path,info,b+"q_proj.weight",hidden,4096,q.data(),8192,ps)){error=ps.status;return false;}
+    if(!ornith15_run_projection_token(model_path,info,b+"q_proj.weight",hidden,4096,qg.data(),8192,ps)){error=ps.status;return false;}
     stats.npu_calls+=ps.npu_calls;
+    // Qwen3.5 stores q_proj output interleaved per head: [Q_256, gate_256]
+    // for each of the 16 heads. Deinterleave before q/k attention.
+    for(uint32_t h=0;h<16;h++){
+        std::copy(qg.begin()+(size_t)h*512,
+                  qg.begin()+(size_t)h*512+256,
+                  q.begin()+(size_t)h*256);
+        std::copy(qg.begin()+(size_t)h*512+256,
+                  qg.begin()+(size_t)h*512+512,
+                  gate.begin()+(size_t)h*256);
+    }
     if(!ornith15_run_projection_token(model_path,info,b+"k_proj.weight",hidden,4096,k.data(),1024,ps)){error=ps.status;return false;}
     stats.npu_calls+=ps.npu_calls;
     if(!ornith15_run_projection_token(model_path,info,b+"v_proj.weight",hidden,4096,v.data(),1024,ps)){error=ps.status;return false;}
@@ -385,7 +395,6 @@ bool ornith15_executor_run_attention_layer(const std::string &model_path,
     const auto *qt=tx(info,b+"q_norm.weight"),*kt=tx(info,b+"k_norm.weight");
     if(!qt||!kt||!read_vec(model_path,*qt,256,qnorm,error)||!read_vec(model_path,*kt,256,knorm,error)) return false;
     if(!ornith15_attention_step(state,q.data(),k.data(),v.data(),16,4,256,position,10000000.0f,att,error,qnorm.data(),knorm.data())) return false;
-    for(uint32_t i=0;i<4096;i++) gate[i]=q[4096+i];
     for(uint32_t i=0;i<4096;i++) att[i]*=1.0f/(1.0f+std::exp(-gate[i]));
     if(!ornith15_run_projection_token(model_path,info,b+"o_proj.weight",att.data(),4096,out,4096,ps)){error=ps.status;return false;}
     stats.npu_calls+=ps.npu_calls;
