@@ -43,7 +43,7 @@ static bool readU64(std::ifstream &f, uint64_t &v) {
 static bool skipString(std::ifstream &f, std::string *out=nullptr) {
     uint64_t n;
     if(!readU64(f,n) || n>(1u<<20)) return false;
-    std::string s((size_t)n,'\\0');
+    std::string s((size_t)n, '\0');
     if(n && !f.read(s.data(),(std::streamsize)n)) return false;
     if(out) *out=std::move(s);
     return true;
@@ -151,7 +151,7 @@ static std::string loadModel(const std::string &path, uint64_t requested) {
            " vocab="+std::to_string(g.vocab)+
            " context="+std::to_string(requested)+
            " file_bytes="+std::to_string(g.fileBytes)+
-           " inference=LLAMA_CPU_BASELINE";
+           " inference=LLAMA_CPU_BASELINE_NPU_READY";
 }
 
 static std::string generateModel(const std::string &prompt, int maxTokens) {
