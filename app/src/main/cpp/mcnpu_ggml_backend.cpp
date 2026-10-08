@@ -89,7 +89,7 @@ static ggml_backend_buffer_type_t dev_buft(ggml_backend_dev_t) { return &g_buft;
 
 static bool supported_op(ggml_backend_dev_t, const ggml_tensor * op) {
     if (!mcnpu_backend_ready() || !op || op->op != GGML_OP_MUL_MAT) return false;
-    if (op->n_dims != 2 || !op->src[0] || !op->src[1] || !op->data) return false;
+    if (op->ne[2] != 1 || op->ne[3] != 1 || !op->src[0] || !op->src[1] || !op->data) return false;
     if (op->src[0]->type != GGML_TYPE_F32 || op->src[1]->type != GGML_TYPE_F32 || op->type != GGML_TYPE_F32) return false;
     const int64_t k = op->src[0]->ne[0], m = op->src[0]->ne[1], n = op->src[1]->ne[1];
     return k > 0 && m > 0 && n > 0 && k <= 65536 && m <= 65536 && n <= 65536;
@@ -111,8 +111,9 @@ static ggml_backend_t dev_init(ggml_backend_dev_t dev, const char *) {
     b->iface.free = [](ggml_backend_t b) { delete b; };
     b->iface.graph_compute = [](ggml_backend_t b, ggml_cgraph * g) -> enum ggml_status {
         (void) b;
-        for (int i = 0; i < g->n_nodes; ++i) {
-            ggml_tensor * op = g->nodes[i];
+        const int n_nodes = ggml_graph_n_nodes(g);
+        for (int i = 0; i < n_nodes; ++i) {
+            ggml_tensor * op = ggml_graph_node(g, i);
             if (!op || op->op != GGML_OP_MUL_MAT || !supported_op(&g_dev, op)) return GGML_STATUS_FAILED;
 
             const ggml_tensor * a = op->src[0];
