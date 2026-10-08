@@ -51,7 +51,7 @@ bool ornith35_attention_step(
     for(uint32_t h=0;h<kv_heads;h++) {
         std::copy(k+(size_t)h*head_dim,k+(size_t)(h+1)*head_dim,kr.begin());
         rms(kr.data(),head_dim,k_norm_weight);
-        rope(kr.data(),head_dim,position,rope_theta);
+        rope(kr.data(),head_dim,64u,position,rope_theta);
         std::copy(kr.begin(),kr.end(),
                   s.keys.begin()+(size_t)position*kv_heads*head_dim+h*head_dim);
         std::copy(v+(size_t)h*head_dim,v+(size_t)(h+1)*head_dim,
@@ -64,7 +64,7 @@ bool ornith35_attention_step(
     for(uint32_t h=0;h<q_heads;h++) {
         std::copy(q+(size_t)h*head_dim,q+(size_t)(h+1)*head_dim,qr.begin());
         rms(qr.data(),head_dim,q_norm_weight);
-        rope(qr.data(),head_dim,position,rope_theta);
+        rope(qr.data(),head_dim,64u,position,rope_theta);
         const uint32_t kh=h/group;
         float mx=-INFINITY;
         for(uint32_t t=0;t<count;t++) {
