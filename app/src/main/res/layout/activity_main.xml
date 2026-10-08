@@ -1,0 +1,212 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F7FA"
+    android:fillViewport="true"
+    android:clipToPadding="false"
+    android:paddingBottom="24dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="MC NPU"
+            android:textColor="#111827"
+            android:textSize="32sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="独立 NPU 加速服务  ·  QNN / HTP V73"
+            android:textColor="#64748B"
+            android:textSize="14sp"
+            android:layout_marginTop="3dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#FFFFFF"
+            android:elevation="3dp"
+            android:padding="18dp"
+            android:layout_marginTop="20dp">
+
+            <TextView
+                android:id="@+id/npuState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="● NPU 服务：检测中"
+                android:textColor="#111827"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/npuDetail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="等待 QNN / HTP 初始化结果"
+                android:textColor="#64748B"
+                android:textSize="14sp"
+                android:layout_marginTop="7dp" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/start"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="启动 NPU 服务"
+            android:textSize="16sp"
+            android:layout_marginTop="14dp" />
+
+        <Button
+            android:id="@+id/test"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="执行 HTP Graph 测试"
+            android:textSize="16sp"
+            android:layout_marginTop="8dp" />
+
+        <Button
+            android:id="@+id/importTest"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="导入 NPU 测试任务"
+            android:textSize="16sp"
+            android:layout_marginTop="8dp" />
+
+        <Button
+            android:id="@+id/importBin"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="导入二进制 .binadd（9×9）"
+            android:textSize="16sp"
+            android:layout_marginTop="8dp" />
+
+        <Button
+            android:id="@+id/ipcWhitelist"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="配置 IPC 客户端白名单"
+            android:textSize="16sp"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Shizuku"
+            android:textColor="#111827"
+            android:textSize="21sp"
+            android:textStyle="bold"
+            android:layout_marginTop="28dp" />
+
+        <TextView
+            android:id="@+id/shizukuState"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="检测中"
+            android:textColor="#64748B"
+            android:textSize="14sp"
+            android:layout_marginTop="5dp" />
+
+        <Button
+            android:id="@+id/shizukuRequest"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="申请 MC NPU Shizuku 权限"
+            android:textSize="16sp"
+            android:layout_marginTop="9dp" />
+
+        <Button
+            android:id="@+id/shizukuOpen"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="打开 Shizuku 管理器"
+            android:textSize="16sp"
+            android:layout_marginTop="7dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="诊断日志"
+            android:textColor="#111827"
+            android:textSize="21sp"
+            android:textStyle="bold"
+            android:layout_marginTop="28dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="日志会保存在 App 内，不会因为状态刷新而消失。复制后直接粘贴给 GPT 即可。"
+            android:textColor="#64748B"
+            android:textSize="13sp"
+            android:layout_marginTop="4dp" />
+
+        <ScrollView
+            android:id="@+id/logScroll"
+            android:layout_width="match_parent"
+            android:layout_height="360dp"
+            android:layout_marginTop="8dp"
+            android:background="#FFFFFF"
+            android:elevation="2dp"
+            android:fillViewport="true"
+            android:overScrollMode="ifContentScrolls"
+            android:nestedScrollingEnabled="true">
+            <TextView
+                android:id="@+id/log"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="360dp"
+                android:text="等待服务..."
+                android:textColor="#334155"
+                android:textIsSelectable="true"
+                android:fontFamily="monospace"
+                android:textSize="12sp"
+                android:gravity="top|start"
+                android:padding="14dp" />
+        </ScrollView>
+
+        <Button
+            android:id="@+id/refreshLog"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="刷新日志"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+
+
+                    <Button
+                android:id="@+id/copyLog"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:text="复制日志"
+                android:textSize="14sp" />
+
+            <Space
+                android:layout_width="8dp"
+                android:layout_height="1dp" />
+
+            <Button
+                android:id="@+id/shareLog"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:text="分享日志"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
