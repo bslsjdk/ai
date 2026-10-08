@@ -77,3 +77,7 @@ MlxNpuTileResult mlx_affine4_npu_matmul_tile(
         const float * biases,
         uint32_t m, uint32_t k, uint32_t n,
         uint32_t group_size);
+
+bool mlx_read_affine4_row(const std::string &path, const MlxSafetensorsInfo &info,
+                          const std::string &weight_name, uint32_t row,
+                          std::vector<float> &out, std::string &error);
