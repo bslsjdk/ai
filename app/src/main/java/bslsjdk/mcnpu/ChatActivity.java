@@ -14,12 +14,19 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.net.Uri;
+import android.content.Intent;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 public final class ChatActivity extends Activity {
     private static final String PREFS = "chat";
     private static final String HISTORY = "history";
+    private static final String MODEL_PATH = "model_path";
+    private static final int PICK_MODEL = 4201;
     private LinearLayout messages;
     private ScrollView scroll;
     private EditText input;
@@ -50,6 +57,7 @@ public final class ChatActivity extends Activity {
 
         loadHistory();
         updateRuntimeState();
+        findViewById(R.id.chatTitle).setOnClickListener(v -> chooseModel());
         initLocalRuntime();
     }
 
@@ -58,7 +66,7 @@ public final class ChatActivity extends Activity {
             boolean ok = NpuRuntime.init(getApplicationContext());
             main.post(() -> {
                 updateRuntimeState();
-                if (ok) statusLine.setText("本地 NPU 在线 · Bonsai 2 PQ2_0 内核待接入");
+                if (ok) statusLine.setText("本地 NPU 在线 · Ornith-1.5-9B");
             });
         }, "mcnpu-init").start();
     }
@@ -73,8 +81,8 @@ public final class ChatActivity extends Activity {
         runtimeState.setText(npu ? "NPU 在线" : "本地");
         runtimeState.setTextColor(npu ? Color.rgb(22, 120, 75) : Color.rgb(100, 116, 139));
         statusLine.setText(npu
-                ? "Bonsai 2 · PQ2_0 · MCNPU HTP V73"
-                : "Bonsai 2 · PQ2_0 · 等待本地推理内核");
+                ? "Ornith-1.5-9B · MCNPU HTP V73"
+                : "Ornith-1.5-9B · 等待本地推理内核");
     }
 
     private void sendMessage() {
@@ -85,21 +93,63 @@ public final class ChatActivity extends Activity {
         input.setText("");
         saveHistory();
 
-        /*
-         * Deliberately do not fake an AI answer here. The chat shell is ready, but
-         * Bonsai 2 inference is not yet wired into this Activity. The next runtime
-         * layer will replace this status path with streaming local tokens.
-         */
         if (!NpuRuntime.isReady()) {
             addBubble("system",
-                    "本地推理内核尚未启动。聊天界面已经就位，Bonsai 2 PQ2_0 推理接入后将在这里流式输出。");
+                    "本地 NPU 尚未启动。先点顶部模型名称选择本地 Ornith-1.5-9B GGUF。");
             saveHistory();
             return;
         }
 
-        addBubble("system",
-                "MCNPU 已在线，但 Bonsai 2 推理引擎尚未接入聊天通道。当前不会伪造模型输出。");
-        saveHistory();
+        String modelPath = getSharedPreferences(PREFS, MODE_PRIVATE).getString(MODEL_PATH, "");
+        if (modelPath.isEmpty() || !Ornith15Runtime.isLoaded()) {
+            addBubble("system", "MCNPU 已在线，但尚未加载 Ornith-1.5-9B。点击顶部“Ornith AI”选择本地 GGUF。");
+            saveHistory();
+            return;
+        }
+        final String prompt = text;
+        new Thread(() -> {
+            String reply = Ornith15Runtime.generate(prompt, 256);
+            String shown = reply != null && reply.startsWith("OK ORNITH15_GENERATE/1 text=")
+                    ? reply.substring("OK ORNITH15_GENERATE/1 text=".length())
+                    : reply;
+            main.post(() -> { addBubble("assistant", shown == null ? "推理失败" : shown); saveHistory(); });
+        }, "ornith-generate").start();
+    }
+
+    private void chooseModel() {
+        try {
+            Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            i.addCategory(Intent.CATEGORY_OPENABLE);
+            i.setType("*/*");
+            startActivityForResult(i, PICK_MODEL);
+        } catch (Throwable t) {
+            Toast.makeText(this, "无法打开模型选择器: " + t.getClass().getSimpleName(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != PICK_MODEL || resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        Uri uri = data.getData();
+        new Thread(() -> {
+            try {
+                File dir = new File(getFilesDir(), "models");
+                if (!dir.exists() && !dir.mkdirs()) throw new java.io.IOException("无法创建模型目录");
+                File dst = new File(dir, "ornith-1.5-9b.gguf");
+                try (java.io.InputStream in = getContentResolver().openInputStream(uri);
+                     FileOutputStream out = new FileOutputStream(dst)) {
+                    if (in == null) throw new java.io.IOException("无法打开模型文件");
+                    byte[] buf = new byte[1024 * 1024]; int n;
+                    while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+                }
+                String r = Ornith15Runtime.load(dst.getAbsolutePath(), 65536);
+                if (!r.startsWith("OK ORNITH15_RUNTIME/1")) throw new java.io.IOException(r);
+                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(MODEL_PATH, dst.getAbsolutePath()).apply();
+                main.post(() -> { statusLine.setText("Ornith-1.5-9B · 64K 本地上下文 · MCNPU"); Toast.makeText(this, "模型已加载", Toast.LENGTH_SHORT).show(); });
+            } catch (Throwable t) {
+                main.post(() -> Toast.makeText(this, "模型加载失败: " + t.getMessage(), Toast.LENGTH_LONG).show());
+            }
+        }, "ornith-model-load").start();
     }
 
     private void addBubble(String role, String text) {
