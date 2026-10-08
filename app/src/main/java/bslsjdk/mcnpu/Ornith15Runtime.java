@@ -28,7 +28,7 @@ public final class Ornith15Runtime {
             return "ERR ORNITH15_RUNTIME model_missing=" + modelPath;
 
         try {
-            System.loadLibrary("mcnpu");
+            System.loadLibrary("ornithnpu");
             String r = nativeLoad(modelPath, contextTokens);
             lastInfo = r == null ? "ERR ORNITH15_RUNTIME null_native_reply" : r;
             loaded = r != null && r.startsWith("OK ORNITH15_RUNTIME/1") && !r.contains("inference=MLX4BIT_PROBE_ONLY");
