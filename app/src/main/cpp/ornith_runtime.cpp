@@ -81,11 +81,12 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
     MlxQuantInfo q;
     if (!mlx_infer_affine4(info, q, error))
         return "ERR ORNITH15_MLX " + error;
-    Ornith35TextConfig cfg;
-    if (!ornith35_executor_validate(info, cfg, error))
+    Ornith15TextConfig cfg;
+    if (!ornith15_executor_validate(info, cfg, error))
         return "ERR ORNITH15_MLX executor_preflight=" + error;
-    // Metadata/format validation only. Do not mark the model runnable until
-    // the tiled MLX-4bit inference kernel is wired to MCNPU.
+    // MLX-4bit has its own executor path. Keep the runtime explicitly
+    // non-runnable until the full token loop is attached; never report a
+    // probe as generation.
     g.arch = "qwen3_5";
     g.blocks = 32;
     g.hidden = 4096;
