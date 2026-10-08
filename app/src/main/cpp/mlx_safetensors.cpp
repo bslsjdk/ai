@@ -5,7 +5,7 @@
 #include <sstream>
 
 namespace {
-bool is_ws(char c) { return c==' ' || c=='\\t' || c=='\\r' || c=='\\n'; }
+bool is_ws(char c) { return c==' ' || c=='\t' || c=='\r' || c=='\n'; }
 
 void skip_ws(const std::string &s, size_t &p) { while (p<s.size() && is_ws(s[p])) ++p; }
 
@@ -16,10 +16,10 @@ bool json_string(const std::string &s, size_t &p, std::string &out) {
     while (p<s.size()) {
         char c=s[p++];
         if (c=='"') return true;
-        if (c=='\\\\') {
+        if (c=='\\') {
             if (p>=s.size()) return false;
             char e=s[p++];
-            switch(e) { case '"': case '\\\\': case '/': out.push_back(e); break;
+            switch(e) { case '"': case '\\': case '/': out.push_back(e); break;
                 case 'b': out.push_back('\\b'); break; case 'f': out.push_back('\\f'); break;
                 case 'n': out.push_back('\\n'); break; case 'r': out.push_back('\\r'); break;
                 case 't': out.push_back('\\t'); break; default: out.push_back(e); break; }
