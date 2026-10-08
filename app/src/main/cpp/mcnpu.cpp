@@ -1691,6 +1691,29 @@ void shutdownRuntime(){
 
 }
 
+// ---- In-process backend bridge ------------------------------------------------
+// Ornith uses these functions directly. No loopback socket, service process, or
+// external app is involved in the production chat path.
+bool mcnpu_backend_ready() {
+    std::lock_guard<std::mutex> lock(gRuntimeMutex);
+    return g.ready && g.api && g.context;
+}
+
+std::string mcnpu_backend_status() {
+    std::lock_guard<std::mutex> lock(gRuntimeMutex);
+    if (g.ready && g.api && g.context) {
+        return "READY backend=QNN_HTP_V73 in_process=1 ipc=0";
+    }
+    return "OFFLINE in_process=1 reason=" + (g.err.empty() ? std::string("not_initialized") : g.err);
+}
+
+std::string mcnpu_backend_matmul_int8(
+        const int8_t* a, const int8_t* b, int8_t* c,
+        uint32_t m, uint32_t k, uint32_t n, float& scaleC) {
+    return runMatMulInt8Buf(a, b, c, m, k, n, scaleC);
+}
+
+
 extern "C" JNIEXPORT jboolean JNICALL Java_bslsjdk_mcnpu_NpuRuntime_nativeInit(JNIEnv* e,jclass,jstring jq,jstring jw){
     if(!jq || !jw) return JNI_FALSE;
     const char* p=e->GetStringUTFChars(jq,nullptr);
