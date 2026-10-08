@@ -5,6 +5,33 @@
 #include <cstring>
 
 namespace {
+static uint16_t rd16(const unsigned char *p){ return (uint16_t)p[0] | ((uint16_t)p[1]<<8); }
+static float half_to_f(uint16_t h){
+    const uint32_t s=(h>>15)&1u, e=(h>>10)&31u, f=h&1023u;
+    uint32_t out;
+    if(e==0) out=s<<31;
+    else if(e==31) out=(s<<31)|0x7f800000u|(f<<13);
+    else out=(s<<31)|((e-15+127)<<23)|(f<<13);
+    float v; std::memcpy(&v,&out,sizeof(v)); return v;
+}
+static float bf16_to_f(uint16_t h){ uint32_t u=(uint32_t)h<<16; float v; std::memcpy(&v,&u,4); return v; }
+static bool read_vec(const std::string &path,const MlxTensorInfo &t,uint32_t n,std::vector<float>&out,std::string&err){
+    if(t.shape.size()!=1 || t.shape[0]!=n){err="vector_shape";return false;}
+    const size_t bytes = t.dtype=="F32" ? (size_t)n*4 : (size_t)n*2;
+    std::vector<unsigned char>b(bytes);
+    if(!mlx_read_tensor_range(path,t,0,b.data(),bytes,err)) return false;
+    out.resize(n);
+    if(t.dtype=="F32") std::memcpy(out.data(),b.data(),bytes);
+    else if(t.dtype=="F16") for(uint32_t i=0;i<n;i++) out[i]=half_to_f(rd16(b.data()+2*i));
+    else if(t.dtype=="BF16") for(uint32_t i=0;i<n;i++) out[i]=bf16_to_f(rd16(b.data()+2*i));
+    else {err="vector_dtype";return false;}
+    return true;
+}
+static const MlxTensorInfo *tx(const MlxSafetensorsInfo&i,const std::string&n){
+    for(const auto&t:i.tensors) if(t.name==n) return &t; return nullptr;
+}
+}
+
 static const MlxTensorInfo *find_tensor(const MlxSafetensorsInfo &m,const std::string &n){
     for(const auto &t:m.tensors) if(t.name==n) return &t;
     return nullptr;
@@ -106,5 +133,36 @@ bool ornith35_executor_apply_mlp(const std::string &model_path,
         return false;
     }
     stats.npu_calls += ms.projection_calls;
+    return true;
+}
+
+
+bool ornith35_executor_run_attention_layer(const std::string &model_path,
+                                           const MlxSafetensorsInfo &info,
+                                           const Ornith35TextConfig &cfg,
+                                           uint32_t layer_index,
+                                           const float *hidden,
+                                           float *out,
+                                           Ornith35AttentionState &state,
+                                           uint32_t position,
+                                           Ornith35ExecutorStats &stats,
+                                           std::string &error) {
+    if(!hidden||!out||layer_index>=cfg.num_layers){error="attention_args";return false;}
+    const std::string b="language_model.model.layers."+std::to_string(layer_index)+".self_attn.";
+    std::vector<float> q(8192),k(1024),v(1024),qnorm(256),knorm(256),att(4096),gate(4096);
+    Ornith35ProjectionStats ps;
+    if(!ornith35_run_projection_token(model_path,info,b+"q_proj.weight",hidden,4096,q.data(),8192,ps)){error=ps.status;return false;}
+    stats.npu_calls+=ps.npu_calls;
+    if(!ornith35_run_projection_token(model_path,info,b+"k_proj.weight",hidden,4096,k.data(),1024,ps)){error=ps.status;return false;}
+    stats.npu_calls+=ps.npu_calls;
+    if(!ornith35_run_projection_token(model_path,info,b+"v_proj.weight",hidden,4096,v.data(),1024,ps)){error=ps.status;return false;}
+    stats.npu_calls+=ps.npu_calls;
+    const auto *qt=tx(info,b+"q_norm.weight"),*kt=tx(info,b+"k_norm.weight");
+    if(!qt||!kt||!read_vec(model_path,*qt,256,qnorm,error)||!read_vec(model_path,*kt,256,knorm,error)) return false;
+    if(!ornith35_attention_step(state,q.data(),k.data(),v.data(),16,4,256,position,10000000.0f,att,error,qnorm.data(),knorm.data())) return false;
+    for(uint32_t i=0;i<4096;i++) gate[i]=q[4096+i];
+    for(uint32_t i=0;i<4096;i++) att[i]*=1.0f/(1.0f+std::exp(-gate[i]));
+    if(!ornith35_run_projection_token(model_path,info,b+"o_proj.weight",att.data(),4096,out,4096,ps)){error=ps.status;return false;}
+    stats.npu_calls+=ps.npu_calls;
     return true;
 }
