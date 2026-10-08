@@ -152,11 +152,11 @@ bool ornith15_executor_validate(const MlxSafetensorsInfo &info,
         for(const auto &name:common) {
             if(!has(name)) { error="required_tensor_missing="+name; return false; }
         }
-        if(!check_vec(lb+"input_layernorm.weight",cfg.hidden_size)) return false;
-        if(!check_vec(lb+"post_attention_layernorm.weight",cfg.hidden_size)) return false;
-        if(!check_affine(lb+"mlp.gate_proj.weight",cfg.intermediate_size,cfg.hidden_size)) return false;
-        if(!check_affine(lb+"mlp.up_proj.weight",cfg.intermediate_size,cfg.hidden_size)) return false;
-        if(!check_affine(lb+"mlp.down_proj.weight",cfg.hidden_size,cfg.intermediate_size)) return false;
+        if(!check_vec(b+"input_layernorm.weight",cfg.hidden_size)) return false;
+        if(!check_vec(b+"post_attention_layernorm.weight",cfg.hidden_size)) return false;
+        if(!check_affine(b+"mlp.gate_proj.weight",cfg.intermediate_size,cfg.hidden_size)) return false;
+        if(!check_affine(b+"mlp.up_proj.weight",cfg.intermediate_size,cfg.hidden_size)) return false;
+        if(!check_affine(b+"mlp.down_proj.weight",cfg.hidden_size,cfg.intermediate_size)) return false;
         if(plan[i].type==Ornith15LayerType::LinearAttention) {
             const std::string linear[] = {
                 b+"linear_attn.in_proj_qkv.weight", b+"linear_attn.in_proj_qkv.scales", b+"linear_attn.in_proj_qkv.biases",
