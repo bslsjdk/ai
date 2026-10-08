@@ -94,6 +94,31 @@ bool ornith15_executor_validate(const MlxSafetensorsInfo &info,
     auto has=[&](const std::string &name)->bool {
         return find_tensor(info,name)!=nullptr;
     };
+    auto check_affine=[&](const std::string &name,uint32_t rows,uint32_t cols)->bool {
+        const MlxTensorInfo *w=find_tensor(info,name);
+        if(!w || w->dtype!="U32" || w->shape.size()!=2 ||
+           w->shape[0]!=rows || w->shape[1]*8ull!=cols) {
+            error="affine_shape_mismatch="+name; return false;
+        }
+        const uint32_t groups=cols/64u;
+        const MlxTensorInfo *sc=find_tensor(info,name.substr(0,name.size()-7)+".scales");
+        const MlxTensorInfo *bi=find_tensor(info,name.substr(0,name.size()-7)+".biases");
+        if(!sc || !bi || sc->shape.size()!=2 || sc->shape[0]!=rows ||
+           sc->shape[1]!=groups || bi->shape!=sc->shape ||
+           (sc->dtype!="F16" && sc->dtype!="BF16" && sc->dtype!="F32") ||
+           bi->dtype!=sc->dtype) {
+            error="affine_quant_shape_mismatch="+name; return false;
+        }
+        return true;
+    };
+    auto check_vec=[&](const std::string &name,uint32_t n)->bool {
+        const MlxTensorInfo *t=find_tensor(info,name);
+        if(!t || t->shape.size()!=1 || t->shape[0]!=n ||
+           (t->dtype!="F16" && t->dtype!="BF16" && t->dtype!="F32")) {
+            error="vector_shape_mismatch="+name; return false;
+        }
+        return true;
+    };
     const std::string prefix="language_model.model.";
     const char *globalRequired[] = {
         "language_model.model.embed_tokens.weight",
@@ -107,6 +132,9 @@ bool ornith15_executor_validate(const MlxSafetensorsInfo &info,
     for(const char *name:globalRequired) {
         if(!has(name)) { error=std::string("required_tensor_missing=")+name; return false; }
     }
+    if(!check_affine("language_model.model.embed_tokens.weight",cfg.vocab_size,cfg.hidden_size)) return false;
+    if(!check_affine("language_model.lm_head.weight",cfg.vocab_size,cfg.hidden_size)) return false;
+    if(!check_vec("language_model.model.norm.weight",cfg.hidden_size)) return false;
     for(uint32_t i=0;i<cfg.num_layers;i++) {
         const std::string b=prefix+"layers."+std::to_string(i)+".";
         const std::string common[] = {
