@@ -7,7 +7,9 @@ add_library(mcnpu SHARED mcnpu.cpp mcnpu_backend.h mcnpu_ggml_backend.cpp bonsai
     ornith15_attention.cpp
     ornith15_tokenizer.cpp
     ornith15_executor.cpp
-    ornith15_executor.h)
+    ornith15_executor.h
+    runtime_memory_budget.cpp
+    runtime_memory_budget.h)
 set(QNN_INC "" CACHE PATH "QNN headers")
 set(LLAMA_CPP_SRC "" CACHE PATH "Optional llama.cpp source tree for real Ornith inference")
 if(LLAMA_CPP_SRC)
