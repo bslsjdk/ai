@@ -435,7 +435,9 @@ bool ornith15_executor_run_delta_layer(const std::string &model_path,
     if(!read_vec(model_path,*dt,32,dtv,error)) return false;
     for(uint32_t i=0;i<32;i++){
         beta[i]=1.0f/(1.0f+std::exp(-beta[i]));
-        float sp=std::log1p(std::exp(std::min(a[i]+dtv[i],20.0f)));
+        const float x=a[i]+dtv[i];
+        // Stable softplus without the previous hard cap at 20.
+        const float sp=x>20.0f ? x : std::log1p(std::exp(x));
         decay[i]=-std::exp(decay[i])*sp;
     }
 
