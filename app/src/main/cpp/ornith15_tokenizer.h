@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 struct Ornith15Tokenizer {
     std::vector<std::string> tokens;
@@ -9,6 +10,9 @@ struct Ornith15Tokenizer {
     int32_t bos = 0;
     int32_t eos = 0;
     bool loaded = false;
+    std::unordered_map<std::string, int32_t> bytes_to_id;
+    std::vector<std::string> special_text;
+    std::vector<int32_t> special_ids;
 };
 
 // Loads the compact sidecar emitted by the app's model-preparation step.
