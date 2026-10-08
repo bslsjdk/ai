@@ -56,6 +56,10 @@ bool ornith15_executor_init_runtime(const Ornith15TextConfig &cfg,
                                      Ornith15LayerRuntime &runtime,
                                      std::string &error);
 
+// Clear recurrent/KV state before replaying a conversation prompt. A prompt replay
+// must start from a clean model state; otherwise previous turns are counted twice.
+void ornith15_executor_reset_runtime(Ornith15LayerRuntime &runtime);
+
 bool ornith15_executor_apply_mlp(const std::string &model_path,
                                   const MlxSafetensorsInfo &info,
                                   const Ornith15TextConfig &cfg,
