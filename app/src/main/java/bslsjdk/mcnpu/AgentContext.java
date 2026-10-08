@@ -31,6 +31,13 @@ public final class AgentContext {
         final int budget = Math.max(4096, maxChars);
         final StringBuilder out = new StringBuilder(Math.min(budget, 14000));
         final Set<Integer> used = new HashSet<>();
+        // ChatActivity appends the current USER message explicitly at the end.
+        // Reserve its history entry so it is not duplicated in the recalled sections.
+        int last = history.length() - 1;
+        if (last >= 0 && isUser(history.optJSONObject(last)) &&
+            current != null && current.equals(history.optJSONObject(last).optString("text", ""))) {
+            used.add(last);
+        }
 
         appendSection(out, "Conversation continuity:",
                 "Treat the USER history below as authoritative context. Preserve earlier goals, constraints, decisions and unfinished work unless the latest USER message explicitly changes them.");
@@ -86,12 +93,13 @@ public final class AgentContext {
         }
 
         int target = Math.min(48, users.size());
-        while (picks.size() < target) {
-            double step = (double)(users.size() - 1) / Math.max(1, target - 1);
-            int pos = (int)Math.round((picks.size()) * step);
-            pos = Math.max(0, Math.min(users.size() - 1, pos));
-            picks.add(users.get(pos));
-            if (picks.size() == users.size()) break;
+        if (target == 1) {
+            picks.add(users.get(0));
+        } else {
+            for (int slot = 0; slot < target; slot++) {
+                int pos = (int)Math.round((double)slot * (users.size() - 1) / (target - 1));
+                picks.add(users.get(pos));
+            }
         }
 
         List<Integer> sorted = new ArrayList<>(picks);
