@@ -168,7 +168,7 @@ bool ornith15_tokenizer_encode(const Ornith15Tokenizer &tok,
     size_t segment_start = 0;
     size_t pos = 0;
     while (pos < text.size()) {
-        size_t matched = std::numeric_limits<size_t>::max();
+        size_t matched = 0;
         int32_t special_id = -1;
         for (size_t i = 0; i < tok.special_text.size(); ++i) {
             const std::string &sp = tok.special_text[i];
@@ -178,7 +178,7 @@ bool ornith15_tokenizer_encode(const Ornith15Tokenizer &tok,
                 special_id = tok.special_ids[i];
             }
         }
-        if (matched == std::numeric_limits<size_t>::max()) {
+        if (matched == 0) {
             ++pos;
             continue;
         }
