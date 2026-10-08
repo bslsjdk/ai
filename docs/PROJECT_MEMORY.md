@@ -180,3 +180,7 @@ Ornith-1.5-9B-MLX-4bit：
 ## 2026-10-08 LM-head 临时内存修复
 
 单 token projection 的 M=32 是为了命中 HTP bucket，但调用方只消费第 0 行。当前实现让 projection tile 在 logical_rows=1 时只清零和写入 1×N 逻辑输出，LM-head 不再分配完整 32×248320 F32 输出缓冲；这是内存和速度优化，不改变 NPU 图的 M=32 bucket。
+
+## 2026-10-08 CMake 对照修复补记
+
+对提交后的实际文件再次检查时发现 CMake 源文件列表曾因一次排序修复留下两份 MCNPU_SOURCES 和两份 add_library。该重复块已删除，当前结构恢复为：先定义 QNN_INC/LLAMA_CPP_SRC，再定义一次 MCNPU_SOURCES，仅在 LLAMA_CPP_SRC 存在时追加 mcnpu_ggml_backend.cpp，最后只创建一次 mcnpu target。
