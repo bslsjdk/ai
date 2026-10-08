@@ -405,7 +405,11 @@ Java_bslsjdk_mcnpu_Ornith15Runtime_nativeGenerate(JNIEnv* env,jclass,jstring jpr
 extern "C" JNIEXPORT jstring JNICALL
 Java_bslsjdk_mcnpu_Ornith15Runtime_nativeInfo(JNIEnv* env,jclass) {
     std::string s=g.loaded
-        ? "OK ORNITH15_RUNTIME/1 loaded=true path="+g.path+" context="+std::to_string(g.context)+" mlx="+(g.mlx_loaded?"true":"false")
+        ? "OK ORNITH15_RUNTIME/1 loaded=true path="+g.path+
+          " context="+std::to_string(g.context)+
+          " attention_window="+std::to_string(g.mlx_loaded ? g.context : g.context)+
+          " kv_storage="+(g.mlx_loaded ? "fp16" : "llama")+
+          " mlx="+(g.mlx_loaded?"true":"false")
         : "OK ORNITH15_RUNTIME/1 loaded=false";
     return env->NewStringUTF(s.c_str());
 }
