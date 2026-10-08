@@ -20,4 +20,6 @@ bool ornith35_attention_step(
     uint32_t position,
     float rope_theta,
     std::vector<float> &out,
-    std::string &error);
+    std::string &error,
+    const float *q_norm_weight = nullptr,
+    const float *k_norm_weight = nullptr);
