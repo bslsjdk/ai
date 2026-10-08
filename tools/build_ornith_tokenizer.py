@@ -63,8 +63,10 @@ def main() -> int:
         raise ValueError(f"unexpected tokenizer model type: {model.get('type')!r}")
     if not isinstance(vocab, dict):
         raise ValueError("tokenizer model.vocab is not an object")
-    if len(vocab) != 248320:
-        raise ValueError(f"unexpected Ornith-1.5 vocab size: {len(vocab)}")
+    # The official tokenizer has 248044 base BPE entries; the model config exposes 248320 slots.
+    if len(vocab) != 248044:
+        raise ValueError(f"unexpected Ornith-1.5 base vocab size: {len(vocab)}")
+    model_vocab_size = 248320
 
     max_id = max((int(v) for v in vocab.values()), default=-1)
     tokens = [b""] * (max_id + 1)
@@ -142,6 +144,12 @@ def main() -> int:
                 raise ValueError(f"special token id out of range: {idx}")
             if not tokens[idx]:
                 tokens[idx] = text.encode("utf-8")
+    if len(tokens) > model_vocab_size:
+        raise ValueError(f"Ornith tokenizer id exceeds model vocab size: {len(tokens)} > {model_vocab_size}")
+    if len(tokens) < model_vocab_size:
+        tokens.extend([b""] * (model_vocab_size - len(tokens)))
+        ranks.extend([-1] * (model_vocab_size - len(ranks)))
+
     # OTK2:
     # magic[4], version[u32], vocab_count[u32], bos[i32], eos[i32],
     # special_count[u32], then vocab entries (len[u32], bytes, rank[i32]),
@@ -160,7 +168,7 @@ def main() -> int:
             out.write(raw)
             out.write(struct.pack("<I", idx))
 
-    print(f"wrote {dst} vocab={len(tokens)} merges={len(merges)} specials={len(specials)} eos={eos}")
+    print(f"wrote {dst} vocab={len(tokens)} base_vocab={len(vocab)} merges={len(merges)} specials={len(specials)} eos={eos}")
     return 0
 
 
