@@ -39,7 +39,7 @@ static bool quantize_i8_rows(const float *src,
     for(uint32_t r=0;r<active_rows;r++)
         for(uint32_t i=0;i<cols;i++) {
             const float q=src[(size_t)r*row_stride+i]/scale;
-            dst[(size_t)r*cols+i]=(int8_t)std::max(-127.0f,std::min(127.0f,std::lrintf(q)));
+            dst[(size_t)r*cols+i]=(int8_t)std::max(-127.0f,std::min(127.0f,(float)std::lrintf(q)));
         }
     return true;
 }
@@ -70,7 +70,7 @@ static bool affine4_quantize_transposed(const MlxAffine4Tile &tile,
             const uint32_t q=(word>>((k&7u)*4u))&0xFu;
             const size_t g=(size_t)r*groups+(k/64u);
             const float w=(float)q*tile.scales[g]+tile.biases[g];
-            out[(size_t)k*rows+r]=(int8_t)std::max(-127.0f,std::min(127.0f,std::lrintf(w/scale)));
+            out[(size_t)k*rows+r]=(int8_t)std::max(-127.0f,std::min(127.0f,(float)std::lrintf(w/scale)));
         }
     return true;
 }
