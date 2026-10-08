@@ -36,6 +36,7 @@ public final class ChatActivity extends Activity {
     private ScrollView scroll;
     private EditText input;
     private TextView runtimeState;
+    private TextView modelState;
     private TextView statusLine;
     private final Handler main = new Handler(Looper.getMainLooper());
 
@@ -52,6 +53,7 @@ public final class ChatActivity extends Activity {
         scroll = findViewById(R.id.messagesScroll);
         input = findViewById(R.id.input);
         runtimeState = findViewById(R.id.runtimeState);
+        modelState = findViewById(R.id.modelState);
         statusLine = findViewById(R.id.statusLine);
 
         findViewById(R.id.send).setOnClickListener(v -> sendMessage());
@@ -67,7 +69,7 @@ public final class ChatActivity extends Activity {
 
         loadHistory();
         updateRuntimeState();
-        findViewById(R.id.chatTitle).setOnClickListener(v -> importOrnithModel());
+        findViewById(R.id.importModel).setOnClickListener(v -> importOrnithModel());
         initLocalRuntime();
     }
 
@@ -98,8 +100,9 @@ public final class ChatActivity extends Activity {
     private void updateRuntimeState() {
         boolean npu = NpuRuntime.isReady();
         boolean model = Ornith15Runtime.isLoaded();
-        runtimeState.setText(npu ? "NPU 在线" : "本地");
+        runtimeState.setText(npu ? "● NPU 在线" : "○ NPU 未就绪");
         runtimeState.setTextColor(npu ? Color.rgb(22, 120, 75) : Color.rgb(100, 116, 139));
+        modelState.setText(model ? "Ornith-1.5-9B · 已加载" : "未加载模型");
         if (!npu) {
             statusLine.setText("Ornith-1.5-9B · 等待本地推理内核");
         } else if (!model) {
@@ -272,7 +275,8 @@ public final class ChatActivity extends Activity {
                         .putString(MODEL_PATH, dst.getAbsolutePath()).apply();
                 main.post(() -> {
                     statusLine.setText("Ornith-1.5-9B · 本地模型已识别 · MCNPU");
-                    Toast.makeText(this, "Ornith-1.5-9B-MLX-4bit 已识别", Toast.LENGTH_SHORT).show();
+                    updateRuntimeState();
+                    Toast.makeText(this, "Ornith-1.5-9B-MLX-4bit 已加载", Toast.LENGTH_SHORT).show();
                 });
             } catch (Throwable t) {
                 main.post(() -> Toast.makeText(
