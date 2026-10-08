@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(mcnpu)
 add_library(mcnpu SHARED mcnpu.cpp mcnpu_backend.h mcnpu_ggml_backend.cpp bonsai_pq2.cpp ornith_kv.cpp mlx_safetensors.cpp mlx_safetensors.h ornith_runtime.cpp
-    ornith35_arch.cpp
-    ornith35_linear.cpp
-    ornith35_deltanet.cpp
-    ornith35_attention.cpp
-    ornith35_tokenizer.cpp
-    ornith35_executor.cpp
-    ornith35_executor.h)
+    ornith15_arch.cpp
+    ornith15_linear.cpp
+    ornith15_deltanet.cpp
+    ornith15_attention.cpp
+    ornith15_tokenizer.cpp
+    ornith15_executor.cpp
+    ornith15_executor.h)
 set(QNN_INC "" CACHE PATH "QNN headers")
 set(LLAMA_CPP_SRC "" CACHE PATH "Optional llama.cpp source tree for real Ornith inference")
 if(LLAMA_CPP_SRC)
