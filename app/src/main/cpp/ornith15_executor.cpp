@@ -444,7 +444,7 @@ bool ornith15_executor_forward_token(const std::string &model_path,
         }
 
         std::copy(step.hidden.begin(),step.hidden.end(),runtime.work_c.begin());
-        zero_centered_rms(step.hidden.data(),cfg.hidden_size,
+        zero_centered_rms(step.step.hidden.data(),cfg.hidden_size,
                           runtime.static_weights[i].input_norm,cfg.rms_norm_eps);
 
         std::fill(runtime.work_b.begin(),runtime.work_b.end(),0.0f);
@@ -453,11 +453,11 @@ bool ornith15_executor_forward_token(const std::string &model_path,
         }
         bool ok=false;
         if (plan[i].type == Ornith15LayerType::LinearAttention) {
-            ok=ornith15_executor_run_delta_layer(model_path,info,cfg,i,hidden.data(),
+            ok=ornith15_executor_run_delta_layer(model_path,info,cfg,i,step.hidden.data(),
                                                  runtime.work_b.data(),runtime.delta[i],
                                                  runtime.static_weights[i],stats,error);
         } else {
-            ok=ornith15_executor_run_attention_layer(model_path,info,cfg,i,hidden.data(),
+            ok=ornith15_executor_run_attention_layer(model_path,info,cfg,i,step.hidden.data(),
                                                       runtime.work_b.data(),runtime.attention[i],
                                                       runtime.static_weights[i],position,stats,error);
         }
@@ -468,10 +468,10 @@ bool ornith15_executor_forward_token(const std::string &model_path,
 
         (void)pw;
         std::copy(step.hidden.begin(),step.hidden.end(),runtime.work_c.begin());
-        zero_centered_rms(step.hidden.data(),cfg.hidden_size,
+        zero_centered_rms(step.step.hidden.data(),cfg.hidden_size,
                           runtime.static_weights[i].post_norm,cfg.rms_norm_eps);
         std::fill(runtime.work_b.begin(),runtime.work_b.end(),0.0f);
-        if(!ornith15_executor_apply_mlp(model_path,info,cfg,i,hidden.data(),
+        if(!ornith15_executor_apply_mlp(model_path,info,cfg,i,step.hidden.data(),
                                          runtime.work_b.data(),stats,error)) return false;
         for(uint32_t d=0;d<cfg.hidden_size;d++)
             step.hidden[d]=runtime.work_c[d]+runtime.work_b[d];
@@ -479,12 +479,12 @@ bool ornith15_executor_forward_token(const std::string &model_path,
     }
 
     if(runtime.final_norm.size()!=cfg.hidden_size) { error="final_norm_static_missing"; return false; }
-    zero_centered_rms(step.hidden.data(),cfg.hidden_size,runtime.final_norm,cfg.rms_norm_eps);
+    zero_centered_rms(step.step.hidden.data(),cfg.hidden_size,runtime.final_norm,cfg.rms_norm_eps);
 
     const std::string lm_name="language_model.lm_head.weight";
     step.logits.resize(cfg.vocab_size);
     Ornith15ProjectionStats ps;
-    if(!ornith15_run_projection_token(model_path,info,lm_name,step.hidden.data(),cfg.hidden_size,
+    if(!ornith15_run_projection_token(model_path,info,lm_name,step.step.hidden.data(),cfg.hidden_size,
                                       step.logits.data(),cfg.vocab_size,ps)) {
         error=ps.status;
         return false;
