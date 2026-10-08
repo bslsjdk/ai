@@ -110,6 +110,19 @@ def main() -> int:
             eos = int(vocab[candidate])
             break
 
+    # Added/special tokens may live outside model.vocab. Extend the ID table
+    # to the highest added-token ID so the runtime can embed them directly.
+    if specials:
+        max_special = max(specials.values())
+        if max_special >= len(tokens):
+            grow = max_special + 1 - len(tokens)
+            tokens.extend([b""] * grow)
+            ranks.extend([-1] * grow)
+        for text, idx in specials.items():
+            if idx < 0 or idx >= len(tokens):
+                raise ValueError(f"special token id out of range: {idx}")
+            if not tokens[idx]:
+                tokens[idx] = text.encode("utf-8")
     # OTK2:
     # magic[4], version[u32], vocab_count[u32], bos[i32], eos[i32],
     # special_count[u32], then vocab entries (len[u32], bytes, rank[i32]),
