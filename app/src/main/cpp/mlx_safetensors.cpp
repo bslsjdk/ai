@@ -1,7 +1,10 @@
 #include "mlx_safetensors.h"
 #include <algorithm>
 #include <cctype>
+#include <cmath>
+#include <cstdint>
 #include <fstream>
+#include <limits>
 #include <sstream>
 
 namespace {
@@ -20,9 +23,9 @@ bool json_string(const std::string &s, size_t &p, std::string &out) {
             if (p>=s.size()) return false;
             char e=s[p++];
             switch(e) { case '"': case '\\': case '/': out.push_back(e); break;
-                case 'b': out.push_back('\\b'); break; case 'f': out.push_back('\\f'); break;
-                case 'n': out.push_back('\\n'); break; case 'r': out.push_back('\\r'); break;
-                case 't': out.push_back('\\t'); break; default: out.push_back(e); break; }
+                case 'b': out.push_back('\b'); break; case 'f': out.push_back('\f'); break;
+                case 'n': out.push_back('\n'); break; case 'r': out.push_back('\r'); break;
+                case 't': out.push_back('\t'); break; default: out.push_back(e); break; }
         } else out.push_back(c);
     }
     return false;
@@ -98,7 +101,7 @@ bool mlx_safetensors_probe(const std::string &path, MlxSafetensorsInfo &out, std
     uint64_t n=0; for(int i=0;i<8;i++) n|=(uint64_t)h[i]<<(8*i);
     if(n==0 || n>64ull*1024ull*1024ull || 8+n>(uint64_t)out.file_bytes){error="invalid_header_length";return false;}
     out.header_bytes=n;
-    std::string json((size_t)n,'\\0'); if(!f.read(json.data(),(std::streamsize)n)){error="header_read_failed";return false;}
+    std::string json((size_t)n,'\0'); if(!f.read(json.data(),(std::streamsize)n)){error="header_read_failed";return false;}
     size_t p=0; if(!find_matching_object(json,p,out)){error="header_json_parse_failed";return false;}
     out.tensor_count=out.tensors.size();
     std::ostringstream q; q<<"safetensors tensors="<<out.tensor_count<<" quantized_marked="<<out.quantized_tensor_count;
