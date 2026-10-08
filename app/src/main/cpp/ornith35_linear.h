@@ -21,3 +21,17 @@ bool ornith35_run_projection_tile(
     float * output,
     uint32_t n,
     Ornith35ProjectionStats & stats);
+
+/*
+ * Decode-time projection. MCNPU HTP uses bucketed M=32, so a single-token
+ * vector is zero-padded to one 32-row bucket and only row zero is returned.
+ */
+bool ornith35_run_projection_token(
+    const std::string & model_path,
+    const MlxSafetensorsInfo & info,
+    const std::string & weight_name,
+    const float * input,
+    uint32_t k,
+    float * output,
+    uint32_t n,
+    Ornith35ProjectionStats & stats);
