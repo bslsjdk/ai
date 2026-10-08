@@ -64,6 +64,11 @@ Ornith-1.5-9B-MLX-4bit：
 如果仓库里仍存在旧的 ornith35 文件/符号，它们属于错误命名遗留，必须在修复过程中迁移到 ornith15，并确保 CMake/include/调用点一致。
 
 ## 2026-10-08 当前实现进度
+- 已按官方 Qwen3.5 实现修正 full-attention 的 q_proj 8192 维交错布局：[Q_256, gate_256] per head。
+- 已按官方实现修正 partial RoPE：前 32 维与后 32 维配对，频率分母为 32，而不是相邻维配对。
+- 已修正 Qwen3.5 zero-centered RMSNorm：输入/后置/最终/q-k norm 使用 `(1 + weight)`；GatedDeltaNet 输出 norm 使用 `weight * SiLU(z)`。
+- 已修正 DeltaNet softplus 高值截断，采用稳定 softplus。
+- MLX projection 主桶按输出维动态选择，普通大投影优先 4096，32/64/128/256/512/1024 等小投影不再无意义地扩大到 4096。
 - 聊天入口已收敛为单一本地 Ornith-1.5-9B-MLX-4bit 导入路径，不提供模型列表、Provider、API、Endpoint 或云端回退。
 - 新增官方 tokenizer.json → 紧凑 OTK2 sidecar 的 CI 构建工具，并在 APK 构建前自动生成 tokenizer 资产。
 - Native MLX 路径已从 PROBE_ONLY 接到真实 token forward/generate 入口；加载阶段仍要求真实 QNN HTP V73 tile probe 成功后才报告 loaded。
