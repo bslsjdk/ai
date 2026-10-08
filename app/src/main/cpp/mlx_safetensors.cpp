@@ -489,7 +489,7 @@ MlxNpuTileResult mlx_affine4_npu_matmul_tile(
     std::vector<int8_t> qa(na), qw((size_t)k*n), qc(nc);
     for(size_t i=0;i<na;i++) {
         const float x=activation[i]/sa;
-        qa[i]=(int8_t)std::max(-127.0f,std::min(127.0f,std::lrintf(x)));
+        qa[i]=(int8_t)std::max(-127.0f,std::min(127.0f,(float)std::lrintf(x)));
     }
     // The MLX tile is stored [N,K], while the MCNPU bridge consumes the
     // conventional [M,K] x [K,N] row-major layout. Transpose while quantizing
@@ -498,7 +498,7 @@ MlxNpuTileResult mlx_affine4_npu_matmul_tile(
         for(uint32_t col=0; col<k; ++col) {
             const float x=wf[(size_t)row*k+col]/sw;
             qw[(size_t)col*n+row]=(int8_t)std::max(
-                -127.0f,std::min(127.0f,std::lrintf(x)));
+                -127.0f,std::min(127.0f,(float)std::lrintf(x)));
         }
     }
 
