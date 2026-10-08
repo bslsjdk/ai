@@ -167,9 +167,11 @@ bool ornith15_run_projection_tile(
                 // Only accumulate the real columns; writing all nn columns would
                 // overflow the caller's output when n is not a multiple of 4096
                 // (LM head is 248320 rows, i.e. 60 full tiles + 2560 real columns).
-                for(uint32_t i=0;i<mr;i++)
+                const uint32_t active_write =
+                    r0 < active_rows ? std::min<uint32_t>(mr, active_rows-r0) : 0;
+                for(uint32_t i=0;i<active_write;i++)
                     for(uint32_t j=0;j<actual_nn;j++)
-                        output[(size_t)i*n+n0+j]+=((float)qc[(size_t)i*nn+j])*so;
+                        output[(size_t)(r0+i)*n+n0+j]+=((float)qc[(size_t)i*nn+j])*so;
                 stats.tiles++; stats.npu_calls++;
             }
         }
