@@ -42,13 +42,35 @@ bool ornith15_run_projection_tile(
     for(uint32_t r0=0;r0<m;r0+=row_tile) {
         const uint32_t mr=std::min(row_tile,m-r0);
         for(uint32_t n0=0;n0<n;n0+=col_tile) {
-            const uint32_t nn=std::min(col_tile,n-n0);
-            if(mr!=32 || nn!=32) { stats.status="ERR nonbucket_edge"; return false; }
+            const uint32_t actual_nn=std::min(col_tile,n-n0);
+            if(mr!=32 || actual_nn==0) { stats.status="ERR nonbucket_edge"; return false; }
+            const uint32_t nn=col_tile;
             for(uint32_t k0=0;k0<k;k0+=k_tile) {
                 MlxAffine4Tile tile;
                 std::string err;
-                if(!mlx_read_affine4_tile(model_path,info,weight_name,n0,nn,k0,k_tile,tile,err)) {
+                if(!mlx_read_affine4_tile(model_path,info,weight_name,n0,actual_nn,k0,k_tile,tile,err)) {
                     stats.status="ERR tile_read="+err; return false;
+                }
+                if(actual_nn != nn) {
+                    const size_t packed_per_row=(size_t)k_tile/8u;
+                    const size_t groups_per_row=(size_t)k_tile/64u;
+                    MlxAffine4Tile padded;
+                    padded.rows=nn; padded.cols=k_tile; padded.tensor_name=tile.tensor_name;
+                    padded.packed_weight.assign((size_t)nn*packed_per_row,0u);
+                    padded.scales.assign((size_t)nn*groups_per_row,0.0f);
+                    padded.biases.assign((size_t)nn*groups_per_row,0.0f);
+                    for(uint32_t rr=0;rr<actual_nn;rr++) {
+                        std::copy(tile.packed_weight.begin()+(size_t)rr*packed_per_row,
+                                  tile.packed_weight.begin()+(size_t)(rr+1)*packed_per_row,
+                                  padded.packed_weight.begin()+(size_t)rr*packed_per_row);
+                        std::copy(tile.scales.begin()+(size_t)rr*groups_per_row,
+                                  tile.scales.begin()+(size_t)(rr+1)*groups_per_row,
+                                  padded.scales.begin()+(size_t)rr*groups_per_row);
+                        std::copy(tile.biases.begin()+(size_t)rr*groups_per_row,
+                                  tile.biases.begin()+(size_t)(rr+1)*groups_per_row,
+                                  padded.biases.begin()+(size_t)rr*groups_per_row);
+                    }
+                    tile=std::move(padded);
                 }
                 float sa=1.0f, sw=1.0f;
                 quantize_i8(input+(size_t)r0*k+k0,mr*k_tile,qa,sa);
