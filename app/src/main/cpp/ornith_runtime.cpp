@@ -160,6 +160,14 @@ static std::string generateMlxModel(const std::string &prompt, int maxTokens) {
     return "OK ORNITH15_GENERATE/1 text=" + out;
 }
 static std::string loadMlxModel(const std::string &path, uint64_t requested) {
+    // A reload must be transactional. Never leave the previous model marked
+    // loaded if validation or tokenizer preparation for the new file fails.
+    g.loaded = false;
+    g.mlx_loaded = false;
+    g.mlx_info = MlxSafetensorsInfo{};
+    g.mlx_cfg = Ornith15TextConfig{};
+    g.mlx_runtime = Ornith15LayerRuntime{};
+    g.tokenizer = Ornith15Tokenizer{};
     if (!mcnpu_backend_ready())
         return "ERR ORNITH15_MLX npu_not_ready "+mcnpu_backend_status();
     MlxSafetensorsInfo info;
