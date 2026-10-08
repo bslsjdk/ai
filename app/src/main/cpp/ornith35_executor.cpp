@@ -52,7 +52,7 @@ bool ornith35_executor_greedy_step(const std::string &model_path,
     if(!mlx_read_affine4_row(model_path,info,emb->name,token_id,row,error)) return false;
     step.hidden=std::move(row);
     if(step.hidden.size()!=cfg.hidden_size){error="embedding_decode_size";return false;}
-    step.position++;
+    step.position = step.position == 0 ? 1 : step.position + 1;
     step.stats.layers_done=0;
     step.stats.status="EMBEDDING_READY_EXECUTOR_NEXT";
     return true;
