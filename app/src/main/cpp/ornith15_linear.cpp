@@ -134,8 +134,12 @@ bool ornith15_run_projection_tile(
                 // 0.001 input scales. Convert that result back to this tile's
                 // actual dynamic activation and weight scales.
                 const float so=npu_scale*(sa*sw/1.0e-6f);
+                // The last N tile may be padded to the next HTP bucket.
+                // Only accumulate the real columns; writing all nn columns would
+                // overflow the caller's output when n is not a multiple of 4096
+                // (LM head is 248320 rows, i.e. 60 full tiles + 2560 real columns).
                 for(uint32_t i=0;i<mr;i++)
-                    for(uint32_t j=0;j<nn;j++)
+                    for(uint32_t j=0;j<actual_nn;j++)
                         output[(size_t)(r0+i)*n+n0+j]+=((float)qc[(size_t)i*nn+j])*so;
                 stats.tiles++; stats.npu_calls++;
             }
