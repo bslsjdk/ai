@@ -29,7 +29,7 @@ public final class Ornith15Runtime {
             System.loadLibrary("mcnpu");
             String r = nativeLoad(modelPath, contextTokens);
             lastInfo = r == null ? "ERR ORNITH15_RUNTIME null_native_reply" : r;
-            loaded = r != null && r.startsWith("OK ORNITH15_RUNTIME/1");
+            loaded = r != null && r.startsWith("OK ORNITH15_RUNTIME/1") && !r.contains("inference=MLX4BIT_PROBE_ONLY");
             return lastInfo;
         } catch (Throwable t) {
             loaded = false;
