@@ -310,7 +310,7 @@ bool ornith15_executor_forward_token(const std::string &model_path,
                                        std::string &error) {
     if (token_id >= cfg.vocab_size) { error="token_id_oob"; return false; }
     if (runtime.initialized_layers != cfg.num_layers) {
-        if (!ornith15_executor_init_runtime(cfg, std::min<uint32_t>(cfg.context_length, 4096u), runtime, error))
+        if (!ornith15_executor_init_runtime(cfg, std::min<uint32_t>(cfg.context_length, 65536u), runtime, error))
             return false;
     }
 
