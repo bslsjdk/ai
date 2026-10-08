@@ -233,9 +233,11 @@ bool ornith15_executor_init_runtime(const Ornith15TextConfig &cfg,
                                      std::string &error) {
     if (!ornith15_validate_config(cfg, error)) return false;
     if (!max_attention_tokens) { error = "max_attention_tokens_zero"; return false; }
-    // Never preallocate the full 262K attention cache. The runtime is deliberately
-    // bounded; a paged KV cache will extend context later without blowing RAM.
-    const uint32_t bounded_attention_tokens = std::min(max_attention_tokens, 4096u);
+    // Full-attention KV is stored as FP16. Keep the first long-context target at
+    // 64K tokens so the resident cache remains comfortably below 4 GiB.
+    constexpr uint32_t MAX_RESIDENT_ATTENTION_TOKENS = 65536u;
+    const uint32_t bounded_attention_tokens =
+        std::min(max_attention_tokens, MAX_RESIDENT_ATTENTION_TOKENS);
     runtime.delta.clear();
     runtime.attention.clear();
     runtime.delta.resize(cfg.num_layers);
