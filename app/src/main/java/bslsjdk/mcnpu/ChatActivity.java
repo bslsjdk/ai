@@ -234,7 +234,8 @@ public final class ChatActivity extends Activity {
         try {
             Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             i.addCategory(Intent.CATEGORY_OPENABLE);
-            i.setType("application/octet-stream");
+            i.setType("*/*");
+            i.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/octet-stream", "application/x-safetensors", "*/*"});
             startActivityForResult(i, PICK_MODEL);
         } catch (Throwable t) {
             Toast.makeText(this, "无法打开模型选择器: " + t.getClass().getSimpleName(), Toast.LENGTH_SHORT).show();
