@@ -13,20 +13,20 @@ import android.os.Build;
  * this path is a normal app start.
  *
  * Trigger it manually with:
- *   adb shell am broadcast -a bslsjdk.mcnpu.action.WAKE -n bslsjdk.mcnpu/.NpuWakeReceiver
+ *   adb shell am broadcast -a bslsjdk.ornithnpu.action.WAKE -n bslsjdk.ornithnpu/.NpuWakeReceiver
  */
 public final class NpuWakeReceiver extends BroadcastReceiver {
-    public static final String ACTION_WAKE = "bslsjdk.mcnpu.action.WAKE";
+    public static final String ACTION_WAKE = "bslsjdk.ornithnpu.action.WAKE";
 
     @Override public void onReceive(Context ctx, Intent intent) {
         if (intent == null || !ACTION_WAKE.equals(intent.getAction())) return;
-        android.util.Log.i("MCNPU", "WAKE received - starting service");
+        android.util.Log.i("OrnithNPU", "WAKE received - starting service");
         try {
             Intent svc = new Intent(ctx, NpuService.class);
             if (Build.VERSION.SDK_INT >= 26) ctx.startForegroundService(svc);
             else ctx.startService(svc);
         } catch (Throwable t) {
-            android.util.Log.e("MCNPU", "WAKE failed", t);
+            android.util.Log.e("OrnithNPU", "WAKE failed", t);
         }
     }
 }
