@@ -255,6 +255,8 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
                                         (uint32_t)requested,
                                         layerRuntime, error))
         return "ERR ORNITH15_MLX runtime_init=" + error;
+    if (!ornith15_executor_prepare_static_weights(path, info, cfg, layerRuntime, error))
+        return "ERR ORNITH15_MLX static_weights=" + error;
 
     g.path = path;
     g.context = requested;

@@ -21,7 +21,8 @@ bool ornith15_run_projection_tile(
     uint32_t k,
     float * output,
     uint32_t n,
-    Ornith15ProjectionStats & stats);
+    Ornith15ProjectionStats & stats,
+    uint32_t logical_rows = 0);
 
 /*
  * Decode-time projection. MCNPU HTP uses bucketed M=32, so a single-token

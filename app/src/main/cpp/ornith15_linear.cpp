@@ -21,16 +21,57 @@ static uint32_t projection_col_tile(uint32_t n) {
     if (n <= 2048u) return 2048u;
     return 4096u;
 }
-static bool quantize_i8(const float *src, size_t count, std::vector<int8_t> &dst, float &scale) {
+static bool quantize_i8_rows(const float *src,
+                                uint32_t rows,
+                                uint32_t row_stride,
+                                uint32_t cols,
+                                uint32_t active_rows,
+                                std::vector<int8_t> &dst,
+                                float &scale) {
+    if (!src || !rows || !cols || row_stride < cols || active_rows > rows) return false;
     float mx=0.0f;
-    for(size_t i=0;i<count;i++) mx=std::max(mx,std::fabs(src[i]));
-    if(mx==0.0f) { scale=1.0f; dst.assign(count,0); return true; }
-    scale=mx/127.0f;
-    dst.resize(count);
-    for(size_t i=0;i<count;i++) {
-        float q=src[i]/scale;
-        dst[i]=(int8_t)std::max(-127.0f,std::min(127.0f,std::lrintf(q)));
-    }
+    for(uint32_t r=0;r<active_rows;r++)
+        for(uint32_t i=0;i<cols;i++)
+            mx=std::max(mx,std::fabs(src[(size_t)r*row_stride+i]));
+    scale=mx>0.0f ? mx/127.0f : 1.0f;
+    dst.assign((size_t)rows*cols,0);
+    if(mx==0.0f) return true;
+    for(uint32_t r=0;r<active_rows;r++)
+        for(uint32_t i=0;i<cols;i++) {
+            const float q=src[(size_t)r*row_stride+i]/scale;
+            dst[(size_t)r*cols+i]=(int8_t)std::max(-127.0f,std::min(127.0f,std::lrintf(q)));
+        }
+    return true;
+}
+
+static bool affine4_quantize_transposed(const MlxAffine4Tile &tile,
+                                        uint32_t rows,
+                                        uint32_t cols,
+                                        std::vector<int8_t> &out,
+                                        float &scale) {
+    if (!tile.packed_weight.data() || !rows || !cols ||
+        tile.rows!=rows || tile.cols!=cols || (cols&63u)) return false;
+    const size_t groups=cols/64u;
+    float wmax=0.0f;
+    for(uint32_t r=0;r<rows;r++)
+        for(uint32_t k=0;k<cols;k++) {
+            const uint32_t word=tile.packed_weight[(size_t)r*(cols/8u)+(k/8u)];
+            const uint32_t q=(word>>((k&7u)*4u))&0xFu;
+            const size_t g=(size_t)r*groups+(k/64u);
+            const float w=(float)q*tile.scales[g]+tile.biases[g];
+            wmax=std::max(wmax,std::fabs(w));
+        }
+    scale=wmax>0.0f ? wmax/127.0f : 1.0f;
+    out.assign((size_t)rows*cols,0);
+    if(wmax==0.0f) return true;
+    for(uint32_t r=0;r<rows;r++)
+        for(uint32_t k=0;k<cols;k++) {
+            const uint32_t word=tile.packed_weight[(size_t)r*(cols/8u)+(k/8u)];
+            const uint32_t q=(word>>((k&7u)*4u))&0xFu;
+            const size_t g=(size_t)r*groups+(k/64u);
+            const float w=(float)q*tile.scales[g]+tile.biases[g];
+            out[(size_t)k*rows+r]=(int8_t)std::max(-127.0f,std::min(127.0f,std::lrintf(w/scale)));
+        }
     return true;
 }
 }
@@ -56,6 +97,8 @@ bool ornith15_run_projection_tile(
     // buckets. Keeping both matrix axes at 4096 dramatically cuts graph-execute
     // count without materializing the full 5-GB model.
     const uint32_t row_tile=32, k_tile=4096;
+    const uint32_t active_rows = logical_rows ? std::min(logical_rows,m) : m;
+    if(active_rows==0 || active_rows>m) { stats.status="ERR logical_rows"; return false; }
     for(uint32_t r0=0;r0<m;r0+=row_tile) {
         const uint32_t mr=std::min(row_tile,m-r0);
         const uint32_t col_tile=projection_col_tile(n);
@@ -91,17 +134,12 @@ bool ornith15_run_projection_tile(
                     tile=std::move(padded);
                 }
                 float sa=1.0f, sw=1.0f;
-                quantize_i8(input+(size_t)r0*k+k0,mr*k_tile,qa,sa);
-                std::vector<float> wf((size_t)nn*k_tile);
-                if(!mlx_decode_affine4_tile(tile.packed_weight.data(),tile.packed_weight.size(),
-                                            tile.scales.data(),tile.biases.data(),
-                                            nn,k_tile,64,wf.data(),wf.size())) {
-                    stats.status="ERR decode"; return false;
+                const uint32_t active_in_tile = active_rows > r0 ? std::min<uint32_t>(active_rows-r0,mr) : 0;
+                if(!quantize_i8_rows(input+(size_t)r0*k+k0,
+                                     mr,k,k_tile,active_in_tile,qa,sa)) {
+                    stats.status="ERR activation_quantize"; return false;
                 }
-                // MLX affine4 decodes each tile as [N,K]. MCNPU expects
-                // B in [K,N], so transpose at the quantization boundary.
                 const uint64_t tile_temp_bytes =
-                    (uint64_t)nn * k_tile * sizeof(float) +
                     (uint64_t)k_tile * nn * sizeof(int8_t) +
                     (uint64_t)mr * k_tile * sizeof(int8_t) +
                     (uint64_t)mr * nn * sizeof(int8_t);
@@ -110,20 +148,8 @@ bool ornith15_run_projection_tile(
                     stats.status = "ERR " + mem_error;
                     return false;
                 }
-                qw.resize((size_t)k_tile*nn);
-                float wmx=0.0f;
-                for(size_t i=0;i<wf.size();++i) wmx=std::max(wmx,std::fabs(wf[i]));
-                if(wmx==0.0f) {
-                    sw=1.0f;
-                    std::fill(qw.begin(),qw.end(),0);
-                } else {
-                    sw=wmx/127.0f;
-                    for(uint32_t row=0; row<nn; ++row)
-                        for(uint32_t col=0; col<k_tile; ++col) {
-                            float q=wf[(size_t)row*k_tile+col]/sw;
-                            qw[(size_t)col*nn+row]=(int8_t)std::max(
-                                -127.0f,std::min(127.0f,std::lrintf(q)));
-                        }
+                if(!affine4_quantize_transposed(tile,nn,k_tile,qw,sw)) {
+                    stats.status="ERR weight_quantize"; return false;
                 }
                 qc.resize((size_t)mr*nn);
                 float npu_scale = 0.0f;
@@ -165,15 +191,20 @@ bool ornith15_run_projection_token(
 
     const uint32_t kp = (k + 63u) & ~63u;
     const uint32_t np = (n + 31u) & ~31u;
-    std::vector<float> padded((size_t)32 * kp, 0.0f);
-    std::copy(input, input + k, padded.begin());
+    std::vector<float> padded;
+    const float *source = input;
+    if (kp != k) {
+        padded.assign((size_t)32 * kp, 0.0f);
+        std::copy(input, input + k, padded.begin());
+        source = padded.data();
+    }
 
     std::vector<float> tmp((size_t)32 * np, 0.0f);
     Ornith15ProjectionStats inner;
     if (!ornith15_run_projection_tile(
             model_path, info, weight_name,
-            padded.data(), 32, kp,
-            tmp.data(), np, inner)) {
+            source, 32, kp,
+            tmp.data(), np, inner, 1)) {
         stats = inner;
         return false;
     }

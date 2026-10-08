@@ -115,7 +115,7 @@ Ornith-1.5-9B-MLX-4bit：
 - 真机 64K 的 VmRSS/VmHWM/VmPeak、PSS、TTFT、prefill、decode tok/s 和 QNN staging 内存。
 - 64K 长上下文下 full-attention QK/AV 的实际 HTP 稳定性与图缓存内存。
 - 目前 runtime 仍使用 FP16 resident KV；Q8 K/Q8 V、Q8 K/Q5 V 只是 probe/planner 研究路径，尚未成为生产 KV。
-- 当前 projection 仍按 token 顺序反复从 Safetensors 流式读取权重；这是 4 GiB 友好但很可能成为 decode 速度的主要瓶颈，后续必须用 profiler 实测并优化 hot-tile 复用，而不能凭空宣称性能达标。
+- 大矩阵 projection 仍保持按 token 的 Safetensors tile/streaming 读取，但本轮已去掉每个 tile 约 64 MiB 的 F32 权重展开，改为 packed affine4 直接转置量化到 INT8；小型静态 norm/A_log/dt/conv 权重也改为模型加载时一次读取并跨 token 复用。这样同时降低峰值内存与 CPU/I/O 搬运，但 hot-tile 跨 token 复用与最终 decode tok/s 仍必须用真机 profiler 实测。
 
 ## 当前工作方式
 用户只用手机/MT 管理器，不会直接维护复杂 C++ 工程。
@@ -169,3 +169,10 @@ Ornith-1.5-9B-MLX-4bit：
 - GitHub Actions runner infrastructure has repeatedly failed before executing build steps (steps=null), including rerun attempts. This is not compile evidence.
 - A previously published latest-apk predates the current runtime work and must not be treated as a current build.
 - Real-device 64K VmHWM, TTFT, prefill, decode tok/s and actual QNN staging memory remain unmeasured until a current APK is built and run on hardware.
+## 2026-10-08 性能/编译完整性继续修复
+
+本轮追加修复：
+- 小型非量化模型权重（layer norm、Q/K norm、A_log、dt_bias、GDN norm、conv1d、final norm）在模型加载时一次读取并驻留，generation 期间不再逐 token 从约 5 GiB Safetensors 文件重复读取。
+- affine4 大矩阵 tile 不再先完整解码成约 64 MiB 的 F32 权重矩阵再量化；直接从 packed U32 affine4 + scales/biases 生成转置 INT8 B 矩阵，降低 CPU 临时内存和内存带宽。
+- 单 token projection 已避免为已对齐 K 维创建多余的 32xK F32 输入填充，只保留必要的 M=32 输出桶。
+- 以上改动仍需真实 Android/QNN 设备验证，尤其要测 decode tok/s、TTFT、RSS/HWM/PSS 和 HTP graph staging；代码通过静态结构检查不等于编译通过。

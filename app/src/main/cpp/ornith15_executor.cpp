@@ -228,6 +228,70 @@ bool ornith15_executor_greedy_step(const std::string &model_path,
 }
 
 
+bool ornith15_executor_prepare_static_weights(const std::string &model_path,
+                                              const MlxSafetensorsInfo &info,
+                                              const Ornith15TextConfig &cfg,
+                                              Ornith15LayerRuntime &runtime,
+                                              std::string &error) {
+    if (!ornith15_validate_config(cfg, error)) return false;
+    runtime.static_weights.clear();
+    runtime.static_weights.resize(cfg.num_layers);
+    runtime.final_norm.clear();
+
+    const auto plan = ornith15_make_layer_plan();
+    for (uint32_t i = 0; i < cfg.num_layers; ++i) {
+        const std::string b = "language_model.model.layers." + std::to_string(i) + ".";
+        auto &w = runtime.static_weights[i];
+
+        const auto *input_norm = tx(info, b + "input_layernorm.weight");
+        const auto *post_norm = tx(info, b + "post_attention_layernorm.weight");
+        if (!input_norm || !post_norm ||
+            !read_vec(model_path, *input_norm, cfg.hidden_size, w.input_norm, error) ||
+            !read_vec(model_path, *post_norm, cfg.hidden_size, w.post_norm, error)) {
+            return false;
+        }
+
+        if (plan[i].type == Ornith15LayerType::FullAttention) {
+            const auto *qn = tx(info, b + "self_attn.q_norm.weight");
+            const auto *kn = tx(info, b + "self_attn.k_norm.weight");
+            if (!qn || !kn ||
+                !read_vec(model_path, *qn, cfg.head_dim, w.q_norm, error) ||
+                !read_vec(model_path, *kn, cfg.head_dim, w.k_norm, error)) {
+                return false;
+            }
+        } else {
+            const auto *al = tx(info, b + "linear_attn.A_log");
+            const auto *dt = tx(info, b + "linear_attn.dt_bias");
+            const auto *nw = tx(info, b + "linear_attn.norm.weight");
+            const auto *ct = tx(info, b + "linear_attn.conv1d.weight");
+            if (!al || !dt || !nw || !ct ||
+                !read_vec(model_path, *al, 32u, w.a_log, error) ||
+                !read_vec(model_path, *dt, 32u, w.dt_bias, error) ||
+                !read_vec(model_path, *nw, 128u, w.delta_norm, error)) {
+                return false;
+            }
+            uint64_t conv_elems = 1;
+            for (uint64_t d : ct->shape) {
+                if (!d || conv_elems > UINT64_MAX / d) {
+                    error = "static_conv_shape_overflow_" + std::to_string(i);
+                    return false;
+                }
+                conv_elems *= d;
+            }
+            if (conv_elems != 8192ull * 4ull) {
+                error = "static_conv_shape_" + std::to_string(i);
+                return false;
+            }
+            if (!read_flat_tensor(model_path, *ct, conv_elems, w.conv1d, error)) return false;
+        }
+    }
+
+    const auto *fw = tx(info, "language_model.model.norm.weight");
+    if (!fw || !read_vec(model_path, *fw, cfg.hidden_size, runtime.final_norm, error))
+        return false;
+    return true;
+}
+
 uint64_t ornith15_effective_attention_tokens(const Ornith15TextConfig &cfg,
                                                 uint64_t requested_tokens,
                                                 std::string &diagnostic) {
@@ -280,6 +344,8 @@ bool ornith15_executor_init_runtime(const Ornith15TextConfig &cfg,
 
     runtime.delta.clear();
     runtime.attention.clear();
+    runtime.static_weights.clear();
+    runtime.final_norm.clear();
     runtime.delta.resize(cfg.num_layers);
     runtime.attention.resize(cfg.num_layers);
     const auto plan = ornith15_make_layer_plan();
@@ -354,31 +420,39 @@ bool ornith15_executor_forward_token(const std::string &model_path,
         const std::string lb="language_model.model.layers."+std::to_string(i)+".";
         const MlxTensorInfo *iw=tx(info,lb+"input_layernorm.weight");
         const MlxTensorInfo *pw=tx(info,lb+"post_attention_layernorm.weight");
-        if(!iw || !pw) { error="layer_norm_weight_missing_"+std::to_string(i); return false; }
+        (void)iw; (void)pw;
+        if(i >= runtime.static_weights.size() ||
+           runtime.static_weights[i].input_norm.size()!=cfg.hidden_size ||
+           runtime.static_weights[i].post_norm.size()!=cfg.hidden_size) {
+            error="layer_static_norm_missing_"+std::to_string(i); return false;
+        }
 
-        std::vector<float> normw;
-        if(!read_vec(model_path,*iw,cfg.hidden_size,normw,error)) return false;
         std::vector<float> residual=hidden;
-        zero_centered_rms(hidden.data(),cfg.hidden_size,normw,cfg.rms_norm_eps);
+        zero_centered_rms(hidden.data(),cfg.hidden_size,
+                          runtime.static_weights[i].input_norm,cfg.rms_norm_eps);
 
         std::fill(runtime.work_b.begin(),runtime.work_b.end(),0.0f);
+        if (i >= runtime.static_weights.size()) {
+            error="static_weights_missing_"+std::to_string(i); return false;
+        }
         bool ok=false;
         if (plan[i].type == Ornith15LayerType::LinearAttention) {
             ok=ornith15_executor_run_delta_layer(model_path,info,cfg,i,hidden.data(),
                                                  runtime.work_b.data(),runtime.delta[i],
-                                                 stats,error);
+                                                 runtime.static_weights[i],stats,error);
         } else {
             ok=ornith15_executor_run_attention_layer(model_path,info,cfg,i,hidden.data(),
                                                       runtime.work_b.data(),runtime.attention[i],
-                                                      position,stats,error);
+                                                      runtime.static_weights[i],position,stats,error);
         }
         if(!ok) return false;
 
         for(uint32_t d=0;d<cfg.hidden_size;d++) hidden[d]=residual[d]+runtime.work_b[d];
 
+        (void)pw;
         residual=hidden;
-        if(!read_vec(model_path,*pw,cfg.hidden_size,normw,error)) return false;
-        zero_centered_rms(hidden.data(),cfg.hidden_size,normw,cfg.rms_norm_eps);
+        zero_centered_rms(hidden.data(),cfg.hidden_size,
+                          runtime.static_weights[i].post_norm,cfg.rms_norm_eps);
         std::fill(runtime.work_b.begin(),runtime.work_b.end(),0.0f);
         if(!ornith15_executor_apply_mlp(model_path,info,cfg,i,hidden.data(),
                                          runtime.work_b.data(),stats,error)) return false;
@@ -386,11 +460,8 @@ bool ornith15_executor_forward_token(const std::string &model_path,
         stats.layers_done=i+1;
     }
 
-    const MlxTensorInfo *fw=tx(info,prefix+"norm.weight");
-    if(!fw) { error="final_norm_weight_missing"; return false; }
-    std::vector<float> finalw;
-    if(!read_vec(model_path,*fw,cfg.hidden_size,finalw,error)) return false;
-    zero_centered_rms(hidden.data(),cfg.hidden_size,finalw,cfg.rms_norm_eps);
+    if(runtime.final_norm.size()!=cfg.hidden_size) { error="final_norm_static_missing"; return false; }
+    zero_centered_rms(hidden.data(),cfg.hidden_size,runtime.final_norm,cfg.rms_norm_eps);
 
     const std::string lm_name="language_model.lm_head.weight";
     step.logits.resize(cfg.vocab_size);
@@ -435,12 +506,13 @@ bool ornith15_executor_run_attention_layer(const std::string &model_path,
                                            const float *hidden,
                                            float *out,
                                            Ornith15AttentionState &state,
+                                           const Ornith15LayerStaticWeights &static_weights,
                                            uint32_t position,
                                            Ornith15ExecutorStats &stats,
                                            std::string &error) {
     if(!hidden||!out||layer_index>=cfg.num_layers){error="attention_args";return false;}
     const std::string b="language_model.model.layers."+std::to_string(layer_index)+".self_attn.";
-    std::vector<float> qg(8192),q(4096),k(1024),v(1024),qnorm(256),knorm(256),att(4096),gate(4096);
+    std::vector<float> qg(8192),q(4096),k(1024),v(1024),att(4096),gate(4096);
     Ornith15ProjectionStats ps;
     if(!ornith15_run_projection_token(model_path,info,b+"q_proj.weight",hidden,4096,qg.data(),8192,ps)){error=ps.status;return false;}
     stats.npu_calls+=ps.npu_calls;
@@ -458,9 +530,12 @@ bool ornith15_executor_run_attention_layer(const std::string &model_path,
     stats.npu_calls+=ps.npu_calls;
     if(!ornith15_run_projection_token(model_path,info,b+"v_proj.weight",hidden,4096,v.data(),1024,ps)){error=ps.status;return false;}
     stats.npu_calls+=ps.npu_calls;
-    const auto *qt=tx(info,b+"q_norm.weight"),*kt=tx(info,b+"k_norm.weight");
-    if(!qt||!kt||!read_vec(model_path,*qt,256,qnorm,error)||!read_vec(model_path,*kt,256,knorm,error)) return false;
-    if(!ornith15_attention_step(state,q.data(),k.data(),v.data(),16,4,256,position,10000000.0f,att,error,qnorm.data(),knorm.data())) return false;
+    if(static_weights.q_norm.size()!=256u || static_weights.k_norm.size()!=256u) {
+        error="attention_static_norm_missing"; return false;
+    }
+    if(!ornith15_attention_step(state,q.data(),k.data(),v.data(),16,4,256,position,
+                                 10000000.0f,att,error,
+                                 static_weights.q_norm.data(),static_weights.k_norm.data())) return false;
     for(uint32_t i=0;i<4096;i++) att[i]*=1.0f/(1.0f+std::exp(-gate[i]));
     if(!ornith15_run_projection_token(model_path,info,b+"o_proj.weight",att.data(),4096,out,4096,ps)){error=ps.status;return false;}
     stats.npu_calls+=ps.npu_calls;
@@ -475,6 +550,7 @@ bool ornith15_executor_run_delta_layer(const std::string &model_path,
                                        const float *hidden,
                                        float *out,
                                        Ornith15DeltaState &state,
+                                       const Ornith15LayerStaticWeights &static_weights,
                                        Ornith15ExecutorStats &stats,
                                        std::string &error) {
     if(!hidden||!out||layer_index>=cfg.num_layers){error="delta_args";return false;}
@@ -490,24 +566,22 @@ bool ornith15_executor_run_delta_layer(const std::string &model_path,
     if(!ornith15_run_projection_token(model_path,info,b+"in_proj_a.weight",hidden,4096,a.data(),32,ps)){error=ps.status;return false;}
     stats.npu_calls+=ps.npu_calls;
 
-    const auto *at=tx(info,b+"A_log"), *dt=tx(info,b+"dt_bias");
-    if(!at||!dt||!read_vec(model_path,*at,32,decay,error)) return false;
-    std::vector<float> dtv;
-    if(!read_vec(model_path,*dt,32,dtv,error)) return false;
+    if(static_weights.a_log.size()!=32u || static_weights.dt_bias.size()!=32u ||
+       static_weights.delta_norm.size()!=128u || static_weights.conv1d.size()!=8192u*4u) {
+        error="delta_static_weights_missing"; return false;
+    }
+    std::vector<float> decay(32);
+    const std::vector<float> &decayBase=static_weights.a_log;
+    const std::vector<float> &dtv=static_weights.dt_bias;
     for(uint32_t i=0;i<32;i++){
         beta[i]=1.0f/(1.0f+std::exp(-beta[i]));
         const float x=a[i]+dtv[i];
         // Stable softplus without the previous hard cap at 20.
         const float sp=x>20.0f ? x : std::log1p(std::exp(x));
-        decay[i]=-std::exp(decay[i])*sp;
+        decay[i]=-std::exp(decayBase[i])*sp;
     }
 
-    const auto *ct=tx(info,b+"conv1d.weight");
-    if(!ct){error="conv1d_weight_not_found";return false;}
-    size_t conv_elems=1; for(auto d:ct->shape) conv_elems*=d;
-    if(conv_elems!=8192u*4u){error="conv1d_shape";return false;}
-    std::vector<float> cw;
-    if(!read_flat_tensor(model_path,*ct,(uint64_t)conv_elems,cw,error)) return false;
+    const std::vector<float> &cw=static_weights.conv1d;
     if(state.conv.size()!=8192u*4u) state.conv.assign(8192u*4u,0.0f);
     std::vector<float> conv(8192);
     for(uint32_t ch=0;ch<8192;ch++){
@@ -523,10 +597,7 @@ bool ornith15_executor_run_delta_layer(const std::string &model_path,
     std::copy(conv.begin()+4096,conv.end(),v.begin());
 
     if(!ornith15_deltanet_step(state,q.data(),k.data(),v.data(),beta.data(),decay.data(),16,32,128,128,core,error)) return false;
-    const auto *nw=tx(info,b+"norm.weight");
-    if(nw && nw->shape.size()==1 && nw->shape[0]==128) {
-        if(!read_vec(model_path,*nw,128,normw,error)) return false;
-    } else { error="delta_norm_weight_not_found"; return false; }
+    const std::vector<float> &normw=static_weights.delta_norm;
     for(uint32_t h=0;h<32;h++){
         float ss=0.0f; for(uint32_t d=0;d<128;d++){float x=core[h*128+d];ss+=x*x;}
         float inv=1.0f/std::sqrt(ss/128.0f+cfg.rms_norm_eps);
