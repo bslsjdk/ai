@@ -251,7 +251,7 @@ jobs:
             echo ""
             echo "- built: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
             echo "- run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-            echo "- version: 0.2.${GITHUB_RUN_NUMBER} (versionCode ${GITHUB_RUN_NUMBER})"
+            echo "- version: 1.0.${GITHUB_RUN_NUMBER} (versionCode ${GITHUB_RUN_NUMBER})"
             echo "- size: ${SIZE} bytes"
             echo "- sha256: ${SUM}"
             echo "- signing: fixed repository key, so this installs over the previous build"
