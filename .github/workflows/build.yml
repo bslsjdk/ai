@@ -199,9 +199,11 @@ jobs:
           APKSIGNER="$BUILD_TOOLS/apksigner"
           test -x "$ZIPALIGN"
           test -x "$APKSIGNER"
-          if [ -n "${OrnithNPU_KEYSTORE_B64:-}" ]; then
-            echo "$OrnithNPU_KEYSTORE_B64" | base64 -d > build/signing/ornithnpu-release.jks
-            KEY_PASS="$OrnithNPU_KEYSTORE_PASSWORD"
+          SIGNING_B64="${OrnithNPU_KEYSTORE_B64:-${MCNPU_KEYSTORE_B64:-}}"
+          SIGNING_PASS="${OrnithNPU_KEYSTORE_PASSWORD:-${MCNPU_KEYSTORE_PASSWORD:-}}"
+          if [ -n "$SIGNING_B64" ]; then
+            echo "$SIGNING_B64" | base64 -d > build/signing/ornithnpu-release.jks
+            KEY_PASS="$SIGNING_PASS"
             echo "keystore: fixed key from repository secrets (signature stable across builds)"
           else
             # Not a silent fallback any more. A freshly generated key signs differently
@@ -225,8 +227,10 @@ jobs:
             -storepass "$KEY_PASS" 2>/dev/null | grep -i 'SHA256:' \
             || echo "(signer digest unavailable)"
         env:
-          OrnithNPU_KEYSTORE_B64: ${{ secrets.OrnithNPU_KEYSTORE_B64 }}
-          OrnithNPU_KEYSTORE_PASSWORD: ${{ secrets.OrnithNPU_KEYSTORE_PASSWORD }}
+          OrnithNPU_KEYSTORE_B64: ${{ secrets.ORNITHNPU_KEYSTORE_B64 }}
+          OrnithNPU_KEYSTORE_PASSWORD: ${{ secrets.ORNITHNPU_KEYSTORE_PASSWORD }}
+          MCNPU_KEYSTORE_B64: ${{ secrets.MCNPU_KEYSTORE_B64 }}
+          MCNPU_KEYSTORE_PASSWORD: ${{ secrets.MCNPU_KEYSTORE_PASSWORD }}
 
       # Delivery route: a release asset. It must NOT be a prerelease: GitHub's
       # /releases/latest only resolves to a full release, so publishing as a
