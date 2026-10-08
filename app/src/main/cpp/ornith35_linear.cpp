@@ -87,3 +87,38 @@ bool ornith35_run_projection_tile(
     stats.rows=m; stats.cols=n; stats.status="OK ORNITH35_PROJECTION_NPU_TILED";
     return true;
 }
+
+bool ornith35_run_projection_token(
+    const std::string & model_path,
+    const MlxSafetensorsInfo & info,
+    const std::string & weight_name,
+    const float * input,
+    uint32_t k,
+    float * output,
+    uint32_t n,
+    Ornith35ProjectionStats & stats) {
+    if (!input || !output || !k || !n) {
+        stats.status = "ERR invalid_args";
+        return false;
+    }
+
+    const uint32_t kp = (k + 63u) & ~63u;
+    const uint32_t np = (n + 31u) & ~31u;
+    std::vector<float> padded((size_t)32 * kp, 0.0f);
+    std::copy(input, input + k, padded.begin());
+
+    std::vector<float> tmp((size_t)32 * np, 0.0f);
+    Ornith35ProjectionStats inner;
+    if (!ornith35_run_projection_tile(
+            model_path, info, weight_name,
+            padded.data(), 32, kp,
+            tmp.data(), np, inner)) {
+        stats = inner;
+        return false;
+    }
+
+    std::copy(tmp.begin(), tmp.begin() + n, output);
+    stats = inner;
+    stats.status = "OK ORNITH35_PROJECTION_TOKEN_BUCKET32";
+    return true;
+}
