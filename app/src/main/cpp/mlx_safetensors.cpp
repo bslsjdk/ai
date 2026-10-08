@@ -226,6 +226,91 @@ static const MlxTensorInfo * find_tensor(const MlxSafetensorsInfo &info,
 
 #include "mcnpu_backend.h"
 
+
+bool mlx_read_affine4_tile(const std::string & path,
+                           const MlxSafetensorsInfo & info,
+                           const std::string & tensor_suffix,
+                           uint32_t row0, uint32_t rows,
+                           uint32_t col0, uint32_t cols,
+                           MlxAffine4Tile & out,
+                           std::string & error) {
+    out = MlxAffine4Tile{};
+    if(!rows || !cols || (col0 & 7u) || (cols & 7u) ||
+       (col0 + cols < col0) || (row0 + rows < row0)) {
+        error="bad_tile";
+        return false;
+    }
+    const MlxTensorInfo * w=nullptr;
+    for(const auto &t: info.tensors) {
+        if(t.dtype=="U32" && t.shape.size()==2 &&
+           t.name.size()>=tensor_suffix.size() &&
+           t.name.compare(t.name.size()-tensor_suffix.size(),
+                          tensor_suffix.size(),tensor_suffix)==0 &&
+           t.name.size()>=7 &&
+           t.name.compare(t.name.size()-7,7,".weight")==0) {
+            w=&t; break;
+        }
+    }
+    if(!w) { error="affine4_weight_not_found:"+tensor_suffix; return false; }
+    if(row0 + rows > w->shape[0]) { error="row_oob"; return false; }
+    const uint64_t logicalK=w->shape[1]*8ull;
+    if((uint64_t)col0 + cols > logicalK || logicalK%64ull!=0) {
+        error="col_oob_or_bad_group"; return false;
+    }
+    const std::string base=w->name.substr(0,w->name.size()-7);
+    const MlxTensorInfo *sc=find_tensor(info,base+".scales");
+    const MlxTensorInfo *bi=find_tensor(info,base+".biases");
+    if(!sc || !bi || sc->shape.size()!=2 || bi->shape!=sc->shape ||
+       sc->shape[0]!=w->shape[0] || sc->shape[1]!=(logicalK/64ull) ||
+       sc->dtype!=bi->dtype ||
+       (sc->dtype!="F16" && sc->dtype!="BF16" && sc->dtype!="F32")) {
+        error="affine4_metadata_mismatch:"+w->name; return false;
+    }
+    if(col0%64u || cols%64u) { error="tile_must_align_to_group64"; return false; }
+
+    const size_t packedPerRow=(size_t)cols/8u;
+    out.rows=rows; out.cols=cols; out.tensor_name=w->name;
+    out.packed_weight.resize((size_t)rows*packedPerRow);
+    const size_t rowBytes=(size_t)w->shape[1]*sizeof(uint32_t);
+    for(uint32_t r=0;r<rows;r++) {
+        const uint64_t off=(uint64_t)(row0+r)*rowBytes+(uint64_t)(col0/8u)*sizeof(uint32_t);
+        if(!mlx_read_tensor_range(path,*w,off,
+                                   out.packed_weight.data()+(size_t)r*packedPerRow,
+                                   packedPerRow*sizeof(uint32_t),error))
+            return false;
+    }
+
+    const size_t scalarBytes=sc->dtype=="F32"?4u:2u;
+    const size_t group0=col0/64u;
+    const size_t groups=cols/64u;
+    std::vector<unsigned char> rawS((size_t)rows*groups*scalarBytes);
+    std::vector<unsigned char> rawB(rawS.size());
+    const size_t scaleRowBytes=(size_t)sc->shape[1]*scalarBytes;
+    for(uint32_t r=0;r<rows;r++) {
+        const uint64_t off=(uint64_t)(row0+r)*scaleRowBytes+
+                           (uint64_t)group0*scalarBytes;
+        if(!mlx_read_tensor_range(path,*sc,off,
+                                   rawS.data()+(size_t)r*groups*scalarBytes,
+                                   groups*scalarBytes,error) ||
+           !mlx_read_tensor_range(path,*bi,off,
+                                   rawB.data()+(size_t)r*groups*scalarBytes,
+                                   groups*scalarBytes,error))
+            return false;
+    }
+    out.scales.resize((size_t)rows*groups);
+    out.biases.resize(out.scales.size());
+    for(size_t i=0;i<out.scales.size();i++) {
+        out.scales[i]=decode_scalar(rawS.data()+i*scalarBytes,sc->dtype);
+        out.biases[i]=decode_scalar(rawB.data()+i*scalarBytes,bi->dtype);
+        if(!std::isfinite(out.scales[i]) || !std::isfinite(out.biases[i])) {
+            error="nonfinite_affine_params";
+            return false;
+        }
+    }
+    return true;
+}
+
+
 std::string mlx_affine4_npu_probe(const std::string & path,
                                   const MlxSafetensorsInfo & info) {
     if(!mcnpu_backend_ready())
