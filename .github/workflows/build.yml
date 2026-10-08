@@ -2,7 +2,7 @@ name: MCNPU Android
 # CI smoke check: keep native compiler validation before Gradle packaging.
 concurrency:
   group: mcnpu-build-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 on:
   push:
@@ -13,7 +13,10 @@ permissions:
   issues: write
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    # Ubuntu 22.04 entered deprecation on 2026-09-17; 24.04 is the supported
+    # fixed label and matches the last known-good hosted runner image.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v5
