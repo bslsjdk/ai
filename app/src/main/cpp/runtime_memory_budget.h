@@ -11,7 +11,7 @@ constexpr uint64_t ORNITH15_NON_STATE_RESERVE_BYTES = 640ull << 20;
 constexpr uint64_t ORNITH15_MODEL_STATE_BUDGET_BYTES = 2304ull << 20;
 
 uint64_t ornith15_process_rss_bytes();
-uint64_t ornith15_effective_attention_tokens(
+uint64_t ornith15_memory_effective_attention_tokens(
     uint64_t requested_tokens,
     uint32_t kv_heads,
     uint32_t head_dim,
