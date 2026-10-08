@@ -410,7 +410,8 @@ Java_bslsjdk_mcnpu_Ornith15Runtime_nativeInfo(JNIEnv* env,jclass) {
           " context="+std::to_string(g.context)+
           " attention_window="+std::to_string(g.context)+
           " kv_storage="+(g.mlx_loaded ? "fp16" : "llama")+
-          " mlx="+(g.mlx_loaded?"true":"false")
+          " mlx="+(g.mlx_loaded?"true":"false")+
+          " mem="+ornith15_memory_status()
         : "OK ORNITH15_RUNTIME/1 loaded=false";
     return env->NewStringUTF(s.c_str());
 }
