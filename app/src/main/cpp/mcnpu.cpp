@@ -1800,8 +1800,26 @@ std::string runMatMulFp16BufEx(const uint16_t* Ain,const uint16_t* Bin,uint16_t*
         op.v1.name="matmul";
         op.v1.packageName="qti.aisw";
         op.v1.typeName=QNN_OP_MAT_MUL;
-        op.v1.numOfParams=0;
-        op.v1.params=nullptr;
+        Qnn_Scalar_t t0{};
+        Qnn_Scalar_t t1{};
+        Qnn_Param_t params[2]{};
+        if (transposeB) {
+            t0.dataType=QNN_DATATYPE_UINT_32;
+            t0.uint32Value=0;
+            t1.dataType=QNN_DATATYPE_UINT_32;
+            t1.uint32Value=1;
+            params[0].paramType=QNN_PARAMTYPE_SCALAR;
+            params[0].name=QNN_OP_MAT_MUL_PARAM_TRANSPOSE_IN0;
+            params[0].scalarParam=t0;
+            params[1].paramType=QNN_PARAMTYPE_SCALAR;
+            params[1].name=QNN_OP_MAT_MUL_PARAM_TRANSPOSE_IN1;
+            params[1].scalarParam=t1;
+            op.v1.numOfParams=2;
+            op.v1.params=params;
+        } else {
+            op.v1.numOfParams=0;
+            op.v1.params=nullptr;
+        }
         op.v1.numOfInputs=2;
         op.v1.inputTensors=ins;
         op.v1.numOfOutputs=1;
