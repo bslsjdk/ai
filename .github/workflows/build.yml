@@ -75,6 +75,16 @@ jobs:
           test -f llama.cpp/include/llama.h
           grep -q 'QWEN35' llama.cpp/src/llama.cpp llama.cpp/src/models/qwen35.cpp
 
+      - name: Bundle official Ornith tokenizer
+        run: |
+          set -eux
+          mkdir -p app/src/main/assets
+          curl -fL --retry 3 --retry-delay 2 \
+            https://huggingface.co/ornith-ai/Ornith-1.5-9B-MLX-4bit/resolve/main/tokenizer.json \
+            -o /tmp/ornith-tokenizer.json
+          python3 tools/build_ornith_tokenizer.py /tmp/ornith-tokenizer.json app/src/main/assets/ornith15.tokenizer
+          test -s app/src/main/assets/ornith15.tokenizer
+          ls -lh app/src/main/assets/ornith15.tokenizer
       - name: Stage QNN HTP V73 libraries
         run: |
           set -eux
