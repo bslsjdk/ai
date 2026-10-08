@@ -13,7 +13,7 @@ public final class NpuRuntime {
     public static synchronized boolean init(Context context) {
         if (ready) return true;
         try {
-            System.loadLibrary("mcnpu");
+            System.loadLibrary("ornithnpu");
             String qnnDir = extractQnnLibs(context.getApplicationContext());
             File work = new File(context.getFilesDir(), "qnnwork");
             if (!work.exists() && !work.mkdirs()) throw new IllegalStateException("mkdir qnnwork failed");
