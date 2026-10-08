@@ -265,7 +265,7 @@ bool ornith15_attention_step(
             }
             seg.values.resize((size_t)group*seg.length);
             const uint16_t *kbase =
-                s.keys.data() + (size_t)kh*head_dim*capacity + seg.start;
+                s.keys + (size_t)kh*head_dim*capacity + seg.start;
             std::vector<uint16_t> result((size_t)32*seg.length,0);
             const std::string npu = mcnpu_backend_matmul_fp16(
                 qmat.data(),kbase,result.data(),32,head_dim,seg.length);
@@ -321,7 +321,7 @@ bool ornith15_attention_step(
             }
 
             const uint16_t *vbase =
-                s.values.data() + ((size_t)kh*capacity+seg.start)*head_dim;
+                s.values + ((size_t)kh*capacity+seg.start)*head_dim;
             std::vector<uint16_t> vout((size_t)32*head_dim,0);
             const std::string npu = mcnpu_backend_matmul_fp16(
                 weights.data(),vbase,vout.data(),32,seg.length,head_dim);
