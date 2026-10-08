@@ -1,4 +1,4 @@
-package bslsjdk.mcnpu;
+package bslsjdk.ornithnpu;
 
 public enum AgentPermission {
     SAFE,
