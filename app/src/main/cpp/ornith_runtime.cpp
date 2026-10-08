@@ -153,10 +153,15 @@ static std::string generateMlxModel(const std::string &prompt, int maxTokens) {
     if (ids.size() > g.context)
         return "ERR ORNITH15_RUNTIME prompt_context_exceeded=" + std::to_string(g.context);
 
-    if (!ornith15_executor_init_runtime(g.mlx_cfg,
-                                        (uint32_t)g.context,
-                                        g.mlx_runtime, error))
-        return "ERR ORNITH15_RUNTIME runtime_init=" + error;
+    // Runtime state is allocated once when the model is loaded. Reuse the
+    // 64K KV/recurrent buffers across turns; rebuilding them for every message
+    // would add multi-gigabyte allocation churn before the first token.
+    if (g.mlx_runtime.initialized_layers != g.mlx_cfg.num_layers) {
+        if (!ornith15_executor_init_runtime(g.mlx_cfg,
+                                            (uint32_t)g.context,
+                                            g.mlx_runtime, error))
+            return "ERR ORNITH15_RUNTIME runtime_init=" + error;
+    }
 
     // Each generation replays the complete working prompt. Reset recurrent and
     // KV state first, otherwise the previous request would be silently replayed twice.
