@@ -3,11 +3,10 @@ package bslsjdk.mcnpu;
 import java.io.File;
 
 /**
- * Runtime boundary for the local Ornith-1.5-9B model.
+ * Runtime boundary for the single local Ornith-1.5-9B-MLX-4bit model.
  *
- * This is deliberately a loader/validation boundary first. It does not fake
- * token generation and it does not expose a network server. The next native
- * layer can attach a real GGUF inference engine behind this stable interface.
+ * The native side owns the real Safetensors/MLX executor and QNN HTP path.
+ * There is no network endpoint, provider registry, or cloud-model fallback.
  */
 public final class Ornith15Runtime {
     private static volatile boolean loaded;
@@ -39,9 +38,8 @@ public final class Ornith15Runtime {
     }
 
     /**
-     * Runs the real local llama.cpp baseline when the optional llama backend is
-     * compiled. No network transport is involved. This is intentionally a
-     * synchronous correctness path before MCNPU acceleration is inserted.
+     * Runs the loaded local model synchronously through the native inference path.
+     * No network transport or remote provider is involved.
      */
     public static synchronized String generate(String prompt, int maxTokens) {
         if (!loaded) return "ERR ORNITH15_RUNTIME not_loaded";
