@@ -17,6 +17,7 @@ import android.net.Uri;
 import android.content.Intent;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.Locale;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -96,11 +97,65 @@ public final class ChatActivity extends Activity {
 
     private void updateRuntimeState() {
         boolean npu = NpuRuntime.isReady();
+        boolean model = Ornith15Runtime.isLoaded();
         runtimeState.setText(npu ? "NPU 在线" : "本地");
         runtimeState.setTextColor(npu ? Color.rgb(22, 120, 75) : Color.rgb(100, 116, 139));
-        statusLine.setText(npu
-                ? "Ornith-1.5-9B · MCNPU HTP V73"
-                : "Ornith-1.5-9B · 等待本地推理内核");
+        if (!npu) {
+            statusLine.setText("Ornith-1.5-9B · 等待本地推理内核");
+        } else if (!model) {
+            statusLine.setText("Ornith-1.5-9B · 等待本地模型");
+        } else {
+            statusLine.setText(compactRuntimeInfo(Ornith15Runtime.info()));
+        }
+    }
+
+    private static long longField(String s, String key) {
+        if (s == null) return -1L;
+        int i = s.indexOf(key);
+        if (i < 0) return -1L;
+        int j = i + key.length();
+        int k = j;
+        while (k < s.length()) {
+            char ch = s.charAt(k);
+            if ((ch >= '0' && ch <= '9') || ch == '-') k++;
+            else break;
+        }
+        if (k == j) return -1L;
+        try { return Long.parseLong(s.substring(j, k)); }
+        catch (Throwable ignored) { return -1L; }
+    }
+
+    private static String compactRuntimeInfo(String info) {
+        if (info == null || info.isEmpty()) return "Ornith-1.5-9B · NPU HTP V73";
+        long prompt = longField(info, "last_gen_prompt_tokens=");
+        long generated = longField(info, "last_gen_tokens=");
+        long prefillUs = longField(info, "last_prefill_us=");
+        long firstUs = longField(info, "last_first_token_us=");
+        long decodeUs = longField(info, "last_decode_us=");
+        long hwm = longField(info, "hwm_bytes=");
+        if (hwm < 0) hwm = longField(info, "rss_bytes=");
+
+        double hwmGiB = hwm > 0 ? hwm / 1073741824.0 : 0.0;
+        if (generated > 0 && decodeUs > 0) {
+            double prefillSec = prefillUs > 0 ? prefillUs / 1000000.0 : 0.0;
+            double ttftSec = firstUs > 0 ? firstUs / 1000000.0 : 0.0;
+            double tokPerSec = generated * 1000000.0 / decodeUs;
+            return String.format(Locale.US,
+                    "Ornith · %d prompt · %d tok · Prefill %.1fs · TTFT %.1fs · %.2f tok/s · HWM %.2fGiB",
+                    prompt > 0 ? prompt : 0,
+                    generated,
+                    prefillSec,
+                    ttftSec,
+                    tokPerSec,
+                    hwmGiB);
+        }
+        if (prompt > 0 || hwm > 0) {
+            return String.format(Locale.US,
+                    "Ornith · %d prompt · 64K · HWM %.2fGiB",
+                    prompt > 0 ? prompt : 0,
+                    hwmGiB);
+        }
+        return "Ornith-1.5-9B · MCNPU HTP V73 · 已加载";
     }
 
     private void sendMessage() {
