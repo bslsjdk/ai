@@ -220,7 +220,8 @@ bool ornith15_attention_step(
         rms(kr.data(),head_dim,k_norm_weight);
         rope(kr.data(),head_dim,64u,position,rope_theta);
         for(uint32_t d=0;d<head_dim;d++)
-            s.keys[((size_t)h*head_dim+d)*capacity+slot]=float_to_half(kr[d]);
+            // Token-major K matches V: [kv_head][token][head_dim].
+            s.keys[((size_t)h*capacity+slot)*head_dim+d]=float_to_half(kr[d]);
         for(uint32_t d=0;d<head_dim;d++)
             s.values[((size_t)h*capacity+slot)*head_dim+d]=float_to_half(v[(size_t)h*head_dim+d]);
     }
@@ -255,38 +256,22 @@ bool ornith15_attention_step(
         }
 
         for(auto &seg:segments) {
-            // K is stored [head_dim][capacity] so QNN can consume a KxN
-            // matrix without a transpose when the segment begins at slot 0.
-            // After the ring wraps, however, each K row still has stride
-            // capacity rather than seg.length. Pack only those wrapped/offset
-            // segments into a contiguous KxN buffer before sending to QNN.
-            const bool k_contiguous = (seg.start == 0u);
-            const uint64_t kpack_bytes = k_contiguous ? 0ull :
-                (uint64_t)head_dim * seg.length * sizeof(uint16_t);
+            // K is token-major [N,K]. QNN's transpose_in1 makes this
+            // the logical [K,N] operand directly, so arbitrary ring segments
+            // stay contiguous and require no host-side repacking.
             const uint64_t qk_temp_bytes =
                 (uint64_t)group * seg.length * sizeof(uint16_t) * 2ull +
-                (uint64_t)32u * seg.length * sizeof(uint16_t) + kpack_bytes;
+                (uint64_t)32u * seg.length * sizeof(uint16_t);
             std::string mem_error;
             if (!ornith15_memory_headroom(qk_temp_bytes, "attention_qk_temp", mem_error)) {
                 error = mem_error;
                 return false;
             }
             seg.values.resize((size_t)group*seg.length);
-            std::vector<uint16_t> kpacked;
-            const uint16_t *kbase = nullptr;
-            if (k_contiguous) {
-                kbase = s.keys + (size_t)kh*head_dim*capacity;
-            } else {
-                kpacked.resize((size_t)head_dim * seg.length);
-                for (uint32_t d=0; d<head_dim; ++d) {
-                    std::memcpy(kpacked.data() + (size_t)d*seg.length,
-                                s.keys + ((size_t)kh*head_dim + d)*capacity + seg.start,
-                                (size_t)seg.length*sizeof(uint16_t));
-                }
-                kbase = kpacked.data();
-            }
+            const uint16_t *kbase =
+                s.keys + ((size_t)kh*capacity + seg.start)*head_dim;
             std::vector<uint16_t> result((size_t)32*seg.length,0);
-            const std::string npu = mcnpu_backend_matmul_fp16(
+            const std::string npu = mcnpu_backend_matmul_fp16_transpose_b(
                 qmat.data(),kbase,result.data(),32,head_dim,seg.length);
             if(npu.rfind("OK",0)!=0) {
                 error="attention_qk_npu="+npu;
