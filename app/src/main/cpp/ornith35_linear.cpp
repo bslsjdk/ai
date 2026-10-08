@@ -134,9 +134,9 @@ bool ornith35_run_mlp(
     }
     std::vector<float> gate(intermediate_size), up(intermediate_size), fused(intermediate_size);
     Ornith35ProjectionStats ps;
-    const std::string gate_name=layer_prefix+"mlp.gate_proj.weight";
-    const std::string up_name=layer_prefix+"mlp.up_proj.weight";
-    const std::string down_name=layer_prefix+"mlp.down_proj.weight";
+    const std::string gate_name=layer_prefix+"gate_proj.weight";
+    const std::string up_name=layer_prefix+"up_proj.weight";
+    const std::string down_name=layer_prefix+"down_proj.weight";
     if(!ornith35_run_projection_token(model_path,model,gate_name,hidden,hidden_size,
                                       gate.data(),intermediate_size,ps)) {
         stats.status="ERR gate="+ps.status; return false;
