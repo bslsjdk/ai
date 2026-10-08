@@ -13,11 +13,11 @@ static void rope(float *x, uint32_t dim, uint32_t pos, float theta) {
         x[i+1]=x0*s+x1*c;
     }
 }
-static void rms(float *x, uint32_t n, float eps=1e-6f) {
+static void rms(float *x, uint32_t n, const float *weight=nullptr, float eps=1e-6f) {
     float ss=0.0f;
     for(uint32_t i=0;i<n;i++) ss += x[i]*x[i];
     const float inv=1.0f/std::sqrt(ss/(float)n+eps);
-    for(uint32_t i=0;i<n;i++) x[i]*=inv;
+    for(uint32_t i=0;i<n;i++) x[i]=x[i]*inv*(weight?weight[i]:1.0f);
 }
 }
 
