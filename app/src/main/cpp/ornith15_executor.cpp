@@ -238,6 +238,28 @@ bool ornith15_executor_init_runtime(const Ornith15TextConfig &cfg,
     constexpr uint32_t MAX_RESIDENT_ATTENTION_TOKENS = 65536u;
     const uint32_t bounded_attention_tokens =
         std::min(max_attention_tokens, MAX_RESIDENT_ATTENTION_TOKENS);
+
+    // Eight full-attention layers are present in the Ornith-1.5 plan. Two
+    // FP16 caches (K and V) therefore consume about 2 GiB at the 64K limit.
+    // Keep a hard model-runtime budget below 3 GiB for KV + recurrent state,
+    // leaving headroom for QNN buffers, activations, tokenizer and Java/native glue.
+    uint32_t full_layers = 0;
+    const auto memory_plan = ornith15_make_layer_plan();
+    for (const auto &layer : memory_plan) {
+        if (layer.type == Ornith15LayerType::FullAttention) ++full_layers;
+    }
+    const uint64_t kv_bytes =
+        (uint64_t)bounded_attention_tokens * cfg.num_kv_heads * cfg.head_dim * 2ull * 2ull *
+        full_layers;
+    const uint64_t delta_bytes =
+        (uint64_t)(cfg.num_layers - full_layers) * 32ull * 128ull * 128ull * sizeof(float);
+    constexpr uint64_t RUNTIME_STATE_BUDGET = 3ull << 30;
+    if (kv_bytes + delta_bytes > RUNTIME_STATE_BUDGET) {
+        error = "runtime_state_budget_exceeded kv_bytes=" + std::to_string(kv_bytes) +
+                " delta_bytes=" + std::to_string(delta_bytes);
+        return false;
+    }
+
     runtime.delta.clear();
     runtime.attention.clear();
     runtime.delta.resize(cfg.num_layers);
