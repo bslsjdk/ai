@@ -28,6 +28,7 @@ bool ornith15_attention_init(Ornith15AttentionState &s, uint32_t max_tokens) {
     s.keys.assign((size_t)max_tokens*s.kv_heads*s.head_dim,0.0f);
     s.values.assign((size_t)max_tokens*s.kv_heads*s.head_dim,0.0f);
     s.tokens=0;
+    s.window_tokens=max_tokens;
     return true;
 }
 
@@ -39,12 +40,19 @@ bool ornith15_attention_step(
     std::vector<float> &out, std::string &error,
     const float *q_norm_weight, const float *k_norm_weight) {
 
+    const uint32_t capacity = s.window_tokens;
     if(!q||!k||!v||q_heads!=s.q_heads||kv_heads!=s.kv_heads||
-       head_dim!=s.head_dim||(q_heads%kv_heads)!=0||
-       position >= s.keys.size()/(size_t)(kv_heads*head_dim)) {
+       head_dim!=s.head_dim||(q_heads%kv_heads)!=0||!capacity ||
+       s.keys.size() != (size_t)capacity*kv_heads*head_dim) {
         error="full_attention_shape_mismatch";
         return false;
     }
+
+    // Keep only the newest bounded window. This preserves the logical 262K
+    // position range without allocating a multi-GB KV cache on the phone.
+    const uint32_t slot = position % capacity;
+    const uint32_t count = std::min(position + 1u, capacity);
+    const uint32_t first_position = position + 1u - count;
 
     std::vector<float> qr(head_dim), kr(head_dim);
     const uint32_t group=q_heads/kv_heads;
@@ -53,13 +61,12 @@ bool ornith15_attention_step(
         rms(kr.data(),head_dim,k_norm_weight);
         rope(kr.data(),head_dim,64u,position,rope_theta);
         std::copy(kr.begin(),kr.end(),
-                  s.keys.begin()+(size_t)position*kv_heads*head_dim+h*head_dim);
+                  s.keys.begin()+(size_t)slot*kv_heads*head_dim+h*head_dim);
         std::copy(v+(size_t)h*head_dim,v+(size_t)(h+1)*head_dim,
-                  s.values.begin()+(size_t)position*kv_heads*head_dim+h*head_dim);
+                  s.values.begin()+(size_t)slot*kv_heads*head_dim+h*head_dim);
     }
 
     out.assign((size_t)q_heads*head_dim,0.0f);
-    const uint32_t count=position+1;
     std::vector<float> scores(count);
     for(uint32_t h=0;h<q_heads;h++) {
         std::copy(q+(size_t)h*head_dim,q+(size_t)(h+1)*head_dim,qr.begin());
@@ -68,7 +75,9 @@ bool ornith15_attention_step(
         const uint32_t kh=h/group;
         float mx=-INFINITY;
         for(uint32_t t=0;t<count;t++) {
-            const float *kt=s.keys.data()+(size_t)t*kv_heads*head_dim+kh*head_dim;
+            const uint32_t logical_position = first_position + t;
+            const uint32_t cache_slot = logical_position % capacity;
+            const float *kt=s.keys.data()+(size_t)cache_slot*kv_heads*head_dim+kh*head_dim;
             float dot=0.0f;
             for(uint32_t d=0;d<head_dim;d++) dot+=qr[d]*kt[d];
             scores[t]=dot/std::sqrt((float)head_dim);
@@ -81,7 +90,9 @@ bool ornith15_attention_step(
         }
         const float inv=1.0f/std::max(denom,1e-20f);
         for(uint32_t t=0;t<count;t++) {
-            const float *vt=s.values.data()+(size_t)t*kv_heads*head_dim+kh*head_dim;
+            const uint32_t logical_position = first_position + t;
+            const uint32_t cache_slot = logical_position % capacity;
+            const float *vt=s.values.data()+(size_t)cache_slot*kv_heads*head_dim+kh*head_dim;
             for(uint32_t d=0;d<head_dim;d++)
                 out[(size_t)h*head_dim+d]+=scores[t]*inv*vt[d];
         }
