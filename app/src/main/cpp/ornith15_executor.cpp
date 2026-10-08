@@ -11,10 +11,25 @@ namespace {
 static uint16_t rd16(const unsigned char *p){ return (uint16_t)p[0] | ((uint16_t)p[1]<<8); }
 static float half_to_f(uint16_t h){
     const uint32_t s=(h>>15)&1u, e=(h>>10)&31u, f=h&1023u;
-    uint32_t out;
-    if(e==0) out=s<<31;
-    else if(e==31) out=(s<<31)|0x7f800000u|(f<<13);
-    else out=(s<<31)|((e-15+127)<<23)|(f<<13);
+    uint32_t out=0;
+    if(e==0){
+        if(f==0) {
+            out=s<<31;
+        } else {
+            // Normalize the binary16 subnormal rather than silently flushing it
+            // to zero. Static Q/K norms and recurrent parameters are small enough
+            // that this distinction is worth preserving.
+            uint32_t mant=f;
+            int32_t exp=-14;
+            while((mant&0x400u)==0){ mant<<=1; --exp; }
+            mant&=0x3ffu;
+            out=(s<<31)|((uint32_t)(exp+127)<<23)|(mant<<13);
+        }
+    } else if(e==31) {
+        out=(s<<31)|0x7f800000u|(f<<13);
+    } else {
+        out=(s<<31)|((e-15+127)<<23)|(f<<13);
+    }
     float v; std::memcpy(&v,&out,sizeof(v)); return v;
 }
 static float bf16_to_f(uint16_t h){ uint32_t u=(uint32_t)h<<16; float v; std::memcpy(&v,&u,4); return v; }
