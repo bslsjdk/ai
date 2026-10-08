@@ -1,5 +1,9 @@
 name: MCNPU Android
 # CI smoke check: keep native compiler validation before Gradle packaging.
+concurrency:
+  group: mcnpu-build-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main, bonsai2-pq2-baseline]
@@ -9,7 +13,7 @@ permissions:
   issues: write
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v5
@@ -48,6 +52,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.13"
+
+      - name: Compile Java and Android resources first
+        run: |
+          set -o pipefail
+          mkdir -p build
+          gradle :app:compileReleaseJavaWithJavac --no-daemon --stacktrace 2>&1 | tee build/java-resources.log
+          test -s build/java-resources.log
 
       - name: Fetch verified QNN stack at known-good probe commit
         run: |
