@@ -138,7 +138,7 @@ static ggml_backend_t dev_init(ggml_backend_dev_t dev, const char *) {
 
             float so = 1.0f;
             const std::string r = mcnpu_backend_matmul_int8(
-                qw.data(), qa.data(), qc.data(), (uint32_t)m, (uint32_t)k, (uint32_t)n, so);
+                qa.data(), qw.data(), qc.data(), (uint32_t)m, (uint32_t)k, (uint32_t)n, so);
             if (r.rfind("OK", 0) != 0) return GGML_STATUS_FAILED;
 
             float * out = static_cast<float *>(op->data);
