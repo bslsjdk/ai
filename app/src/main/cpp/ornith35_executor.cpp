@@ -30,6 +30,13 @@ static bool read_vec(const std::string &path,const MlxTensorInfo &t,uint32_t n,s
 static const MlxTensorInfo *tx(const MlxSafetensorsInfo&i,const std::string&n){
     for(const auto&t:i.tensors) if(t.name==n) return &t; return nullptr;
 }
+static void zero_centered_rms(float *x, uint32_t n, const std::vector<float> &w, float eps) {
+    float ss=0.0f;
+    for(uint32_t i=0;i<n;i++) ss += x[i]*x[i];
+    const float inv=1.0f/std::sqrt(ss/(float)n+eps);
+    for(uint32_t i=0;i<n;i++) x[i]=x[i]*inv*(1.0f+(w.empty()?0.0f:w[i]));
+}
+
 }
 
 static const MlxTensorInfo *find_tensor(const MlxSafetensorsInfo &m,const std::string &n){
@@ -223,7 +230,7 @@ bool ornith35_executor_run_delta_layer(const std::string &model_path,
     const auto *nw=tx(info,b+"norm.weight");
     if(nw && nw->shape.size()==1 && nw->shape[0]==128) {
         if(!read_vec(model_path,*nw,128,normw,error)) return false;
-    } else std::fill(normw.begin(),normw.end(),1.0f);
+    } else { error="delta_norm_weight_not_found"; return false; }
     for(uint32_t h=0;h<32;h++){
         float ss=0.0f; for(uint32_t d=0;d<128;d++){float x=core[h*128+d];ss+=x*x;}
         float inv=1.0f/std::sqrt(ss/128.0f+cfg.rms_norm_eps);
