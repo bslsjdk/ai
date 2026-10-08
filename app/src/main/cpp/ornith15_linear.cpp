@@ -41,6 +41,7 @@ bool ornith15_run_projection_tile(
     // Decode-time M is only 32, while K/N can use the larger measured HTP
     // buckets. Keeping both matrix axes at 4096 dramatically cuts graph-execute
     // count without materializing the full 5-GB model.
+    const uint32_t row_tile=32, col_tile=4096, k_tile=4096;
     for(uint32_t r0=0;r0<m;r0+=row_tile) {
         const uint32_t mr=std::min(row_tile,m-r0);
         for(uint32_t n0=0;n0<n;n0+=col_tile) {
