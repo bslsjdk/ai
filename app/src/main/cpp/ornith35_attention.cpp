@@ -3,9 +3,10 @@
 #include <cmath>
 
 namespace {
-static void rope(float *x, uint32_t dim, uint32_t pos, float theta) {
-    for (uint32_t i=0; i+1<dim; i+=2) {
-        const float inv = std::pow(theta, -(float)i / (float)dim);
+static void rope(float *x, uint32_t dim, uint32_t rotary_dim, uint32_t pos, float theta) {
+    const uint32_t rd = std::min(dim, rotary_dim);
+    for (uint32_t i=0; i+1<rd; i+=2) {
+        const float inv = std::pow(theta, -(float)i / (float)rd);
         const float a = (float)pos * inv;
         const float c = std::cos(a), s = std::sin(a);
         const float x0=x[i], x1=x[i+1];
