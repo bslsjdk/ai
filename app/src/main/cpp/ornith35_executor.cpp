@@ -57,3 +57,54 @@ bool ornith35_executor_greedy_step(const std::string &model_path,
     step.stats.status="EMBEDDING_READY_EXECUTOR_NEXT";
     return true;
 }
+
+
+bool ornith35_executor_init_runtime(const Ornith35TextConfig &cfg,
+                                     uint32_t max_attention_tokens,
+                                     Ornith35LayerRuntime &runtime,
+                                     std::string &error) {
+    if (!ornith35_validate_config(cfg, error)) return false;
+    if (!max_attention_tokens) { error = "max_attention_tokens_zero"; return false; }
+    runtime.delta.clear();
+    runtime.attention.clear();
+    runtime.delta.resize(cfg.num_layers);
+    runtime.attention.resize(cfg.num_layers);
+    for (uint32_t i = 0; i < cfg.num_layers; ++i) {
+        const auto plan = ornith35_make_layer_plan();
+        if (plan[i] == Ornith35LayerType::LinearAttention) {
+            if (!ornith35_deltanet_init(runtime.delta[i], 32u * 128u, cfg.linear_conv_kernel)) {
+                error = "deltanet_state_init_failed";
+                return false;
+            }
+        } else {
+            if (!ornith35_attention_init(runtime.attention[i], max_attention_tokens)) {
+                error = "attention_state_init_failed";
+                return false;
+            }
+        }
+    }
+    runtime.work_a.resize(cfg.hidden_size);
+    runtime.work_b.resize(cfg.hidden_size);
+    runtime.work_c.resize(cfg.hidden_size);
+    runtime.initialized_layers = cfg.num_layers;
+    return true;
+}
+
+bool ornith35_executor_apply_mlp(const std::string &model_path,
+                                  const MlxSafetensorsInfo &info,
+                                  const Ornith35TextConfig &cfg,
+                                  uint32_t layer_index,
+                                  const float *hidden,
+                                  float *out,
+                                  Ornith35ExecutorStats &stats,
+                                  std::string &error) {
+    if (!hidden || !out || layer_index >= cfg.num_layers) { error = "mlp_args"; return false; }
+    const std::string base = "language_model.model.layers." + std::to_string(layer_index) + ".mlp.";
+    Ornith35MlpStats ms;
+    if (!ornith35_run_mlp(model_path, hidden, out, cfg.hidden_size, cfg.intermediate_size, base, info, ms)) {
+        error = ms.status.empty() ? "mlp_failed" : ms.status;
+        return false;
+    }
+    stats.npu_calls += ms.projection_calls;
+    return true;
+}
