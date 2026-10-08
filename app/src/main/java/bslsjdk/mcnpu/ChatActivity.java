@@ -163,7 +163,7 @@ public final class ChatActivity extends Activity {
         String raw = getSharedPreferences(PREFS, MODE_PRIVATE).getString(HISTORY, "[]");
         try {
             JSONArray history = new JSONArray(raw);
-            String context = AgentContext.buildContext(history, MAX_CONTEXT_MESSAGES, MAX_CONTEXT_CHARS);
+            String context = AgentContext.buildContext(history, current, MAX_CONTEXT_MESSAGES, MAX_CONTEXT_CHARS);
             if (context.isEmpty()) return current;
             // The current user turn is already persisted in HISTORY, so do not append it twice.
             return "Conversation context:\n" + context;
