@@ -153,3 +153,26 @@ bool mlx_read_tensor_range(const std::string & path, const MlxTensorInfo & tenso
     if(bytes && !f.read(reinterpret_cast<char*>(dst),(std::streamsize)bytes)){error="read_failed";return false;}
     return true;
 }
+
+bool mlx_decode_affine4_tile(const uint32_t * packed, size_t packed_words,
+                             const float * scales, const float * biases,
+                             size_t rows, size_t cols, size_t group_size,
+                             float * out, size_t out_capacity) {
+    if (!packed || !scales || !biases || !out || !rows || !cols ||
+        group_size != 64 || (cols & 7u) != 0u) return false;
+    const size_t count = rows * cols;
+    if (count > out_capacity || packed_words < count / 8u) return false;
+    const size_t groups_per_row = cols / group_size;
+    if (groups_per_row == 0) return false;
+    // MLX affine4 stores eight 4-bit values in each uint32 word. Keep this
+    // decoder tile-local so the 4-bit model never needs a full F32 expansion.
+    for (size_t r=0; r<rows; ++r) {
+        for (size_t k=0; k<cols; ++k) {
+            const uint32_t word = packed[r * (cols/8u) + (k/8u)];
+            const uint32_t q = (word >> ((k & 7u) * 4u)) & 0xFu;
+            const size_t g = r * groups_per_row + (k / group_size);
+            out[r * cols + k] = (float)q * scales[g] + biases[g];
+        }
+    }
+    return true;
+}
