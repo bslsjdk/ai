@@ -1,4 +1,5 @@
 #include "ornith15_executor.h"
+#include "ornith15_linear.h"
 #include "mlx_safetensors.h"
 #include <algorithm>
 #include <cmath>
