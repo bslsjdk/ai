@@ -39,3 +39,18 @@ bool mlx_decode_affine4_tile(const uint32_t * packed, size_t packed_words,
                              const float * scales, const float * biases,
                              size_t rows, size_t cols, size_t group_size,
                              float * out, size_t out_capacity);
+
+struct MlxNpuTileResult {
+    bool ok = false;
+    uint32_t m = 0, k = 0, n = 0;
+    float scale = 0.0f;
+    std::string status;
+};
+
+MlxNpuTileResult mlx_affine4_npu_matmul_tile(
+        const float * activation,
+        const uint32_t * packed_weight,
+        const float * scales,
+        const float * biases,
+        uint32_t m, uint32_t k, uint32_t n,
+        uint32_t group_size);
