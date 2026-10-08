@@ -1,6 +1,7 @@
 #include "ornith15_linear.h"
 #include "mlx_safetensors.h"
 #include "mcnpu_backend.h"
+#include "runtime_memory_budget.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -99,6 +100,16 @@ bool ornith15_run_projection_tile(
                 }
                 // MLX affine4 decodes each tile as [N,K]. MCNPU expects
                 // B in [K,N], so transpose at the quantization boundary.
+                const uint64_t tile_temp_bytes =
+                    (uint64_t)nn * k_tile * sizeof(float) +
+                    (uint64_t)k_tile * nn * sizeof(int8_t) +
+                    (uint64_t)mr * k_tile * sizeof(int8_t) +
+                    (uint64_t)mr * nn * sizeof(int8_t);
+                std::string mem_error;
+                if (!ornith15_memory_headroom(tile_temp_bytes, "projection_tile_temp", mem_error)) {
+                    stats.status = "ERR " + mem_error;
+                    return false;
+                }
                 qw.resize((size_t)k_tile*nn);
                 float wmx=0.0f;
                 for(size_t i=0;i<wf.size();++i) wmx=std::max(wmx,std::fabs(wf[i]));
