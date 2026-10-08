@@ -1666,6 +1666,146 @@ std::string runMatMulInt8Buf(const int8_t* Ain,const int8_t* Bin,int8_t* Cout,ui
     return "OK";
 }
 
+
+std::string runMatMulFp16Buf(const uint16_t* Ain,const uint16_t* Bin,uint16_t* Cout,
+                             uint32_t m,uint32_t k,uint32_t n){
+    const auto lockWait0 = std::chrono::steady_clock::now();
+    std::unique_lock<std::mutex> lock(gRuntimeMutex);
+    const long long lockWaitUs = std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now() - lockWait0).count();
+    if(!Ain || !Bin || !Cout || !m || !k || !n)
+        return "ERR FP16BUF_BAD_ARGS";
+    if(!g.ready || !g.api || !g.context){
+        if(!tryRecoverContextLocked())
+            return "ERR FP16BUF_NPU_NOT_READY "+g.err;
+    }
+
+    const auto& f=g.api->QNN_INTERFACE_VER_NAME;
+    const uint32_t Mb=bucketize(m), Kb=bucketize(k), Nb=bucketize(n);
+    if(Mb==0 || Kb==0 || Nb==0)
+        return "ERR FP16BUF_TOO_LARGE";
+    if(!mmShapeSafe(Mb,Kb,Nb,sizeof(uint16_t)))
+        return "ERR FP16BUF_BYTES_EXCEEDED bucket="+
+               std::to_string((unsigned)Mb)+"x"+
+               std::to_string((unsigned)Kb)+"x"+
+               std::to_string((unsigned)Nb);
+
+    const uint64_t key=((uint64_t)Mb<<42)|((uint64_t)Kb<<21)|(uint64_t)Nb;
+    Runtime::MatMulGraph* mg=nullptr;
+    bool graphCached=false;
+    auto found=g.matMulGraphs.find(key);
+    if(found!=g.matMulGraphs.end()){
+        mg=&found->second;
+        graphCached=true;
+    }
+
+    Qnn_ErrorHandle_t rc=QNN_SUCCESS;
+    if(!mg){
+        if(!ensureGraphBudget())
+            return "ERR FP16BUF_GRAPH_BUDGET_EXHAUSTED";
+        auto inserted=g.matMulGraphs.emplace(key,Runtime::MatMulGraph{});
+        mg=&inserted.first->second;
+        mg->m=Mb; mg->k=Kb; mg->n=Nb; mg->fp16=true;
+        mg->dimsA[0]=Kb; mg->dimsA[1]=Mb;
+        mg->dimsB[0]=Nb; mg->dimsB[1]=Kb;
+        mg->dimsC[0]=Nb; mg->dimsC[1]=Mb;
+
+        const std::string graphName="mcnpu_mm16b_"+std::to_string(Mb)+"x"+
+                                     std::to_string(Kb)+"x"+std::to_string(Nb);
+        rc=f.graphCreate(g.context,graphName.c_str(),nullptr,&mg->graph);
+        if(rc!=QNN_SUCCESS || !mg->graph){
+            g.matMulGraphs.erase(inserted.first);
+            return "ERR FP16BUF_GRAPH_CREATE rc="+std::to_string((int)rc)+" "+verbose(rc);
+        }
+
+        mg->a=makeTensorN("a16",QNN_TENSOR_TYPE_APP_WRITE,QNN_DATATYPE_FLOAT_16,mg->dimsA,2);
+        mg->b=makeTensorN("b16",QNN_TENSOR_TYPE_APP_WRITE,QNN_DATATYPE_FLOAT_16,mg->dimsB,2);
+        mg->c=makeTensorN("c16",QNN_TENSOR_TYPE_APP_READ,QNN_DATATYPE_FLOAT_16,mg->dimsC,2);
+        rc=f.tensorCreateGraphTensor(mg->graph,&mg->a);
+        if(rc==QNN_SUCCESS) rc=f.tensorCreateGraphTensor(mg->graph,&mg->b);
+        if(rc==QNN_SUCCESS) rc=f.tensorCreateGraphTensor(mg->graph,&mg->c);
+        if(rc!=QNN_SUCCESS){
+            g.matMulGraphs.erase(inserted.first);
+            return "ERR FP16BUF_TENSOR_CREATE rc="+std::to_string((int)rc)+" "+verbose(rc);
+        }
+
+        Qnn_Tensor_t ins[2]={mg->a,mg->b};
+        Qnn_OpConfig_t op=QNN_OPCONFIG_INIT;
+        op.v1.name="matmul";
+        op.v1.packageName="qti.aisw";
+        op.v1.typeName=QNN_OP_MAT_MUL;
+        op.v1.numOfParams=0;
+        op.v1.params=nullptr;
+        op.v1.numOfInputs=2;
+        op.v1.inputTensors=ins;
+        op.v1.numOfOutputs=1;
+        op.v1.outputTensors=&mg->c;
+        rc=f.graphAddNode(mg->graph,op);
+        if(rc!=QNN_SUCCESS){
+            g.matMulGraphs.erase(key);
+            return "ERR FP16BUF_GRAPH_NODE rc="+std::to_string((int)rc)+" "+verbose(rc);
+        }
+        rc=f.graphFinalize(mg->graph,nullptr,nullptr);
+        if(rc!=QNN_SUCCESS){
+            g.matMulGraphs.erase(key);
+            return "ERR FP16BUF_GRAPH_FINALIZE rc="+std::to_string((int)rc)+" "+verbose(rc);
+        }
+        g.graphCount++;
+        I("FP16BUF GRAPH READY bucket=%ux%ux%u",(unsigned)Mb,(unsigned)Kb,(unsigned)Nb);
+    }
+
+    std::vector<uint16_t> Ap,Bp,Cp;
+    const uint16_t* Ause=Ain;
+    const uint16_t* Buse=Bin;
+    if(Mb!=m || Kb!=k){
+        Ap.assign((size_t)Mb*Kb,0);
+        for(uint32_t row=0;row<m;row++)
+            std::memcpy(&Ap[(size_t)row*Kb],&Ain[(size_t)row*k],(size_t)k*sizeof(uint16_t));
+        Bp.assign((size_t)Kb*Nb,0);
+        for(uint32_t row=0;row<k;row++)
+            std::memcpy(&Bp[(size_t)row*Nb],&Bin[(size_t)row*n],(size_t)n*sizeof(uint16_t));
+        Ause=Ap.data();
+        Buse=Bp.data();
+    } else if(Nb!=n){
+        Bp.assign((size_t)Kb*Nb,0);
+        for(uint32_t row=0;row<k;row++)
+            std::memcpy(&Bp[(size_t)row*Nb],&Bin[(size_t)row*n],(size_t)n*sizeof(uint16_t));
+        Buse=Bp.data();
+    }
+
+    Cp.assign((size_t)Mb*Nb,0);
+    Qnn_Tensor_t ea=mg->a, eb=mg->b, ec=mg->c;
+    ea.v1.clientBuf.data=(void*)Ause;
+    ea.v1.clientBuf.dataSize=(uint32_t)((size_t)Mb*Kb*sizeof(uint16_t));
+    eb.v1.clientBuf.data=(void*)Buse;
+    eb.v1.clientBuf.dataSize=(uint32_t)((size_t)Kb*Nb*sizeof(uint16_t));
+    ec.v1.clientBuf.data=Cp.data();
+    ec.v1.clientBuf.dataSize=(uint32_t)((size_t)Mb*Nb*sizeof(uint16_t));
+    Qnn_Tensor_t execIn[2]={ea,eb};
+    Qnn_Tensor_t execOut[1]={ec};
+
+    const auto exec0=std::chrono::steady_clock::now();
+    rc=f.graphExecute(mg->graph,execIn,2,execOut,1,nullptr,nullptr);
+    const long long execUs=std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now()-exec0).count();
+    if(rc!=QNN_SUCCESS){
+        noteTransportFaultLocked((int)rc);
+        return "ERR FP16BUF_EXECUTE rc="+std::to_string((int)rc)+
+               " bucket="+std::to_string((unsigned)Mb)+"x"+
+               std::to_string((unsigned)Kb)+"x"+std::to_string((unsigned)Nb)+
+               " execute_us="+std::to_string(execUs)+" "+verbose(rc);
+    }
+
+    for(uint32_t row=0;row<m;row++)
+        std::memcpy(&Cout[(size_t)row*n],&Cp[(size_t)row*Nb],(size_t)n*sizeof(uint16_t));
+    noteTransportSuccessLocked();
+    I("FP16BUF OK cached=%s bucket=%ux%ux%u lock_wait_us=%lld execute_us=%lld",
+      graphCached?"true":"false",(unsigned)Mb,(unsigned)Kb,(unsigned)Nb,
+      lockWaitUs,execUs);
+    return "OK FP16BUF bucket="+std::to_string((unsigned)Mb)+"x"+
+           std::to_string((unsigned)Kb)+"x"+std::to_string((unsigned)Nb);
+}
+
 void shutdownRuntime(){
     std::lock_guard<std::mutex> lock(gRuntimeMutex);
     if(!g.api){
