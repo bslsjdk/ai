@@ -26,9 +26,9 @@ public final class ChatActivity extends Activity {
     private static final String MODEL_PATH = "model_path";
     private static final String MODEL_FILENAME = "ornith-1.5-9b-mlx-4bit.safetensors";
     private static final int PICK_MODEL = 4201;
-    private static final int MAX_CONTEXT_MESSAGES = 6;
-    // Working prompt stays comfortably below the 4 GiB runtime's bounded attention window.
-    // The complete history remains persisted locally; AgentContext supplies origin + ledger + recent turns.
+    private static final int MAX_CONTEXT_MESSAGES = 8;
+    // The full history remains persisted locally. AgentContext selects user-priority anchors,
+    // relevant earlier turns and recent dialogue for the bounded native runtime.
     private static final int MAX_CONTEXT_CHARS = 11000;
 
     private LinearLayout messages;
@@ -165,8 +165,8 @@ public final class ChatActivity extends Activity {
             JSONArray history = new JSONArray(raw);
             String context = AgentContext.buildContext(history, current, MAX_CONTEXT_MESSAGES, MAX_CONTEXT_CHARS);
             if (context.isEmpty()) return current;
-            // The current user turn is already persisted in HISTORY, so do not append it twice.
-            return "Conversation context:\n" + context;
+            // Keep the current USER turn explicit and last so prompt-budget trimming can never hide it.
+            return "Conversation context:\n" + context + "\nCurrent USER message:\n" + current;
         } catch (Throwable ignored) {
             return current;
         }
