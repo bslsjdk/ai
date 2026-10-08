@@ -476,13 +476,15 @@ Qnn_Tensor_t makeTensorN(const char* name,Qnn_TensorType_t type,Qnn_DataType_t d
 // when the budget is exhausted the whole context is rebuilt (which frees every
 // graph at once). Without this, ~10 distinct shapes poison the context and
 // every later call fails with rc=1007.
-// The 64K attention path uses 12 FP16 N buckets (32..65536). The Ornith
-// projection path needs three hot INT8 shapes (N=32,1024,4096), and the
-// affine4 load probe adds one more. A limit of 16 therefore lets one complete
-// model execution context retain every production shape instead of resetting
-// halfway through 64K prefill. QNN 2.27 still owns graphs from the context,
-// so this is a hard lifetime budget, not an LRU cache size.
-static const int MAX_CACHED_GRAPHS = 16;
+// Full Attention uses one QK graph and one AV graph for each N bucket.
+// With the current ladder (32..65536) that is 12 + 12 = 24 FP16 shapes.
+// The MLX projection path adds a small number of hot INT8 shapes, plus the
+// real-weight load probe. 32 leaves enough graph slots to complete a 64K
+// replay without context teardown. QNN 2.27 still owns graphs from the
+// context, so this is a lifetime budget, not an LRU cache size. Graph creation
+// remains guarded by the process RSS budget, so a graph that would push the
+// process over the safety line is rejected before its resources are retained.
+static const int MAX_CACHED_GRAPHS = 32;
 
 static bool resetContextLocked(){
     if(!g.api) return false;
