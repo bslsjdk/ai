@@ -336,32 +336,13 @@ std::string mlx_affine4_npu_probe(const std::string & path,
             continue;
         if(bi->dtype!=sc->dtype) continue;
 
-        const size_t weightRowBytes=(size_t)packedK*sizeof(uint32_t);
-        std::vector<uint32_t> packed((size_t)N*(K/8u));
         std::string err;
-        for(uint32_t r=0;r<N;r++) {
-            if(!mlx_read_tensor_range(path,w,(uint64_t)r*weightRowBytes,
-                                       packed.data()+(size_t)r*(K/8u),
-                                       K/8u*sizeof(uint32_t),err))
-                return "ERR MLX_NPU_PROBE weight_read="+err+" tensor="+w.name;
-        }
-
-        const size_t scalarBytes=sc->dtype=="F32"?4u:2u;
-        const size_t groupsPerRow=(size_t)sc->shape[1];
-        std::vector<unsigned char> rawS((size_t)N*groupsPerRow*scalarBytes);
-        std::vector<unsigned char> rawB(rawS.size());
-        if(!mlx_read_tensor_range(path,*sc,0,rawS.data(),rawS.size(),err))
-            return "ERR MLX_NPU_PROBE scale_read="+err+" tensor="+sc->name;
-        if(!mlx_read_tensor_range(path,*bi,0,rawB.data(),rawB.size(),err))
-            return "ERR MLX_NPU_PROBE bias_read="+err+" tensor="+bi->name;
-
-        std::vector<float> scales(N),biases(N);
-        for(uint32_t r=0;r<N;r++) {
-            scales[r]=decode_scalar(rawS+((size_t)r*groupsPerRow)*scalarBytes,sc->dtype);
-            biases[r]=decode_scalar(rawB+((size_t)r*groupsPerRow)*scalarBytes,bi->dtype);
-            if(!std::isfinite(scales[r]) || !std::isfinite(biases[r]))
-                return "ERR MLX_NPU_PROBE nonfinite_affine_params tensor="+w.name;
-        }
+        MlxAffine4Tile tile;
+        if(!mlx_read_affine4_tile(path,info,w.name,0,N,0,K,tile,err))
+            return "ERR MLX_NPU_PROBE tile_read="+err+" tensor="+w.name;
+        std::vector<uint32_t> packed=std::move(tile.packed_weight);
+        std::vector<float> scales=std::move(tile.scales);
+        std::vector<float> biases=std::move(tile.biases);
 
         std::vector<float> activation((size_t)M*K);
         for(size_t i=0;i<activation.size();++i)
