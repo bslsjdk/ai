@@ -359,6 +359,7 @@ public final class NeuronLabActivity extends Activity {
             }
             double finalRss = currentRssMiB();
             log.append("\n[4] MEMORY / SAFETY\n")
+                    .append("scheduler_final_state=\n").append(computeScheduler.snapshot().toReport()).append('\n')
                     .append("memory_after=").append(memoryStatus()).append('\n')
                     .append("rss_mib=").append(String.format(Locale.US, "%.1f", finalRss)).append('\n')
                     .append("runtime_ram_guard=").append(finalRss > 3800.0 ? "WARNING_OVER_3800_MIB" : "UNDER_3800_MIB_AT_SAMPLE").append('\n')
