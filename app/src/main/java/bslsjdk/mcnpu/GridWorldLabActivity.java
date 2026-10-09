@@ -260,7 +260,7 @@ public final class GridWorldLabActivity extends Activity {
         evalEpisodes = 0;
         evalSuccesses = 0;
         resetEpisode();
-        status.setText("网络已重建：8→" + requested + "→4。新网络权重随机初始化，旧网络文件保留到下次保存。请重新训练并比较独立测试成功率。");
+        status.setText("网络已重建：" + INPUT_SIZE + "→" + requested + "→4。新网络权重随机初始化，旧网络文件保留到下次保存。请重新训练并比较独立测试成功率。");
         log.setText("已调整隐藏层大小。更换网络规模会重置当前权重，不会把旧网络的权重错误套到新结构上。");
         refreshReadout();
     }
@@ -494,7 +494,8 @@ public final class GridWorldLabActivity extends Activity {
             report.put("format", "aimeng-android-random-gridworld-report/v2");
             report.put("mapSize", SIZE);
             report.put("inputSize", INPUT_SIZE);
-            report.put("inputFeatures", "8 legacy local features + 144 full wall-map cells + last 8 positions (x,y)");
+            report.put("inputFeatures", "8 local features + 144 wall-map cells + last 8 positions (x,y)");
+            report.put("executionBackend", "CPU Java forward/backprop; NPU/GPU not yet wired into this QNet");
             report.put("shortTermMemory", "last 8 positions per episode; repeated-visit penalty=-0.08 during training");
             report.put("longTermMemory", "trained Q-network weights saved in q_network.json");
             report.put("hiddenSize", net.hiddenSize);
@@ -614,7 +615,7 @@ public final class GridWorldLabActivity extends Activity {
         }
         Forward forward(double[] x) {
             double[] h=new double[hiddenSize], pre=new double[hiddenSize], q=new double[4];
-            for(int j=0;j<hiddenSize;j++){double v=b1[j];for(int i=0;i<inputSize;i++)v+=w1[j][i]*x[i];pre[j]=v;h[j]=Math.max(0,v);}
+            for(int j=0;j<hiddenSize;j++){double v=b1[j];for(int i=0;i<inputSize;i++)if(x[i]!=0.0)v+=w1[j][i]*x[i];pre[j]=v;h[j]=Math.max(0,v);}
             for(int a=0;a<4;a++){q[a]=b2[a];for(int j=0;j<hiddenSize;j++)q[a]+=w2[a][j]*h[j];}
             return new Forward(q,h,pre);
         }
@@ -622,7 +623,7 @@ public final class GridWorldLabActivity extends Activity {
         void update(double[] x,int action,double target){
             Forward f=forward(x);double grad=Math.max(-1,Math.min(1,f.q[action]-target));double[] old=w2[action].clone();
             for(int j=0;j<hiddenSize;j++)w2[action][j]-=0.003*grad*f.h[j];b2[action]-=0.003*grad;
-            for(int j=0;j<hiddenSize;j++)if(f.pre[j]>0){double back=grad*old[j];for(int i=0;i<inputSize;i++)w1[j][i]-=0.003*back*x[i];b1[j]-=0.003*back;}
+            for(int j=0;j<hiddenSize;j++)if(f.pre[j]>0){double back=grad*old[j];for(int i=0;i<inputSize;i++)if(x[i]!=0.0)w1[j][i]-=0.003*back*x[i];b1[j]-=0.003*back;}
         }
         JSONObject toJson() throws Exception {
             JSONObject o=new JSONObject();o.put("format","aimeng-android-random-gridworld-qnet/v4");o.put("inputSize",inputSize);o.put("hiddenSize",hiddenSize);o.put("outputSize",4);
