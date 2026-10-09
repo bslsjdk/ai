@@ -334,7 +334,50 @@ public final class NeuronLabActivity extends Activity {
             } catch (Throwable error) {
                 log.append("CPU_OR_WORKSPACE_TEST=FAIL: ").append(shortError(error)).append('\n');
             }
-            log.append("\n[3] QNN / HTP INDEPENDENT MATMUL PROBE\n");
+            log.append("\n[3] GLES 3.1 GPU COMPUTE MATMUL PROBE\n");
+            try {
+                Future<String> gpuProbe = computeScheduler.submit("gpu-gles-matmul-probe", 16L * 1024L * 1024L, () -> {
+                    String gpuStatus = GpuComputeRuntime.status();
+                    final int m = 128, k = 128, n = 128;
+                    float[] a = new float[m * k], b = new float[k * n];
+                    for (int i = 0; i < a.length; i++) a[i] = ((i * 17 % 101) - 50) / 100.0f;
+                    for (int i = 0; i < b.length; i++) b[i] = ((i * 29 % 97) - 48) / 100.0f;
+                    long coldStart = System.nanoTime();
+                    float[] warm = GpuComputeRuntime.matMul(a, b, m, k, n);
+                    double coldMs = (System.nanoTime() - coldStart) / 1_000_000.0;
+                    if (warm == null) throw new IllegalStateException(GpuComputeRuntime.getLastError() + " status=" + gpuStatus);
+                    long gpuStart = System.nanoTime();
+                    float[] got = GpuComputeRuntime.matMul(a, b, m, k, n);
+                    double gpuMs = (System.nanoTime() - gpuStart) / 1_000_000.0;
+                    if (got == null || got.length != m * n)
+                        throw new IllegalStateException("GPU output invalid: " + GpuComputeRuntime.getLastError());
+                    long cpuStart = System.nanoTime();
+                    double maxAbs = 0.0;
+                    for (int r = 0; r < m; r++) for (int col = 0; col < n; col++) {
+                        float sum = 0.0f;
+                        for (int q = 0; q < k; q++) sum += a[r * k + q] * b[q * n + col];
+                        double diff = Math.abs((double) sum - got[r * n + col]);
+                        if (diff > maxAbs) maxAbs = diff;
+                    }
+                    double cpuMs = (System.nanoTime() - cpuStart) / 1_000_000.0;
+                    boolean pass = maxAbs <= 0.02;
+                    return "gpu_probe=" + (pass ? "PASS" : "FAIL_NUMERIC_MISMATCH")
+                            + "\n" + gpuStatus
+                            + "\nshape=" + m + "x" + k + "x" + n
+                            + "\ngpu_cold_ms=" + String.format(Locale.US, "%.3f", coldMs)
+                            + "\ngpu_warm_ms=" + String.format(Locale.US, "%.3f", gpuMs)
+                            + "\ncpu_reference_ms=" + String.format(Locale.US, "%.3f", cpuMs)
+                            + "\nmax_abs_error=" + String.format(Locale.US, "%.7f", maxAbs)
+                            + "\nnumeric_tolerance=0.02"
+                            + "\nmeaning=real GLES compute kernel; standalone probe only, not yet wired into NeuronWorkspace\n";
+                });
+                log.append(awaitScheduledResult(gpuProbe, "GPU 矩阵诊断"));
+            } catch (Throwable error) {
+                log.append("gpu_probe=FAIL_OR_DEFERRED\nreason=").append(shortError(error)).append('\n')
+                        .append("gpu_status=").append(GpuComputeRuntime.status()).append('\n')
+                        .append("scheduler_state=\n").append(computeScheduler.snapshot().toReport()).append('\n');
+            }
+            log.append("\n[4] QNN / HTP INDEPENDENT MATMUL PROBE\n");
             try {
                 Future<String> npuProbe = computeScheduler.submit("npu-matmul-probe", 8L * 1024L * 1024L, () -> {
                     if (!NpuRuntime.isReady() && !NpuRuntime.init(getApplicationContext()))
@@ -358,7 +401,7 @@ public final class NeuronLabActivity extends Activity {
                         .append("note=high memory pressure keeps this job queued instead of launching it\n");
             }
             double finalRss = currentRssMiB();
-            log.append("\n[4] MEMORY / SAFETY\n")
+            log.append("\n[5] MEMORY / SAFETY\n")
                     .append("scheduler_final_state=\n").append(computeScheduler.snapshot().toReport()).append('\n')
                     .append("memory_after=").append(memoryStatus()).append('\n')
                     .append("rss_mib=").append(String.format(Locale.US, "%.1f", finalRss)).append('\n')
