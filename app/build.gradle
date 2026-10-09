@@ -21,7 +21,7 @@ android {
         versionCode ((System.getenv("GITHUB_RUN_NUMBER") ?: "3") as Integer)
         versionName "1.0.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
         def buildSha = (System.getenv("GITHUB_SHA") ?: "local").take(11)
-        buildConfigField "String", "AIMENG_BUILD_SHA", "\\"${buildSha}\\""
+        buildConfigField "String", "AIMENG_BUILD_SHA", "\"${buildSha}\""
         externalNativeBuild {
             cmake {
                 arguments "-DQNN_INC=${System.getenv("QNN_INC") ?: "${rootDir}/qnn_inc"}", "-DANDROID_PLATFORM=android-35"
