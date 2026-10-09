@@ -149,11 +149,10 @@ public final class GridWorldLabActivity extends Activity {
                 MapData map = generateMap(rng);
                 int pos = map.start;
                 int steps = 0;
-                int shortestSteps = shortestDistance(map);
                 boolean reachedGoal = false;
                 for (; steps < MAX_STEPS && !cancelTraining; steps++) {
                     double[] s = observe(pos, map.goal, map.walls);
-                    double epsilon = Math.max(0.05, 1.0 - 0.95 * (ep / (double) count));
+                    double epsilon = Math.max(0.05, 1.0 - 0.95 * (ep / (double) Math.min(count, 10000)));
                     int action = net.choose(s, epsilon, rng);
                     Transition tr = transition(pos, action, map);
                     double[] next = observe(tr.next, map.goal, map.walls);
@@ -165,8 +164,13 @@ public final class GridWorldLabActivity extends Activity {
                 int episodeSteps = Math.min(steps + 1, MAX_STEPS);
                 totalSteps += episodeSteps;
                 lastCompletedEpisode = ep;
-                lastEpisodeSteps = reachedGoal ? episodeSteps : -1;
-                boolean fastWin = reachedGoal && episodeSteps <= shortestSteps * FAST_STEP_FACTOR + FAST_STEP_ALLOWANCE;
+                // Test the current greedy policy on a separate, newly generated map after every episode.
+                MapData masteryMap = generateMap(rng);
+                int masterySteps = greedyTestSteps(masteryMap);
+                int shortestSteps = shortestDistance(masteryMap);
+                lastEpisodeSteps = masterySteps;
+                boolean fastWin = masterySteps > 0
+                        && masterySteps <= shortestSteps * FAST_STEP_FACTOR + FAST_STEP_ALLOWANCE;
                 fastWinStreak = fastWin ? fastWinStreak + 1 : 0;
                 if (fastWinStreak >= FAST_STREAK_REQUIRED) {
                     stoppedByMastery = true;
@@ -306,6 +310,42 @@ public final class GridWorldLabActivity extends Activity {
         MapData result = new MapData(s, g, mapWalls, safeRoute);
         if (!reachable(result)) return generateMap(random);
         return result;
+    }
+
+    /** Returns steps to goal for greedy policy, or -1 if it fails/loops. */
+    private int greedyTestSteps(MapData map) {
+        int p = map.start;
+        Set<Integer> seen = new HashSet<>();
+        for (int step = 1; step <= MAX_STEPS; step++) {
+            int action = argmax(net.forward(observe(p, map.goal, map.walls)).q);
+            Transition tr = transition(p, action, map);
+            p = tr.next;
+            if (tr.done) return step;
+            if (!seen.add(p * 4 + action)) return -1;
+        }
+        return -1;
+    }
+
+    private int shortestDistance(MapData map) {
+        int[] distance = new int[CELLS];
+        java.util.Arrays.fill(distance, -1);
+        ArrayDeque<Integer> queue = new ArrayDeque<>();
+        queue.add(map.start);
+        distance[map.start] = 0;
+        while (!queue.isEmpty()) {
+            int p = queue.removeFirst();
+            if (p == map.goal) return distance[p];
+            for (int a = 0; a < 4; a++) {
+                int x = p % SIZE + DX[a], y = p / SIZE + DY[a];
+                if (x < 0 || x >= SIZE || y < 0 || y >= SIZE) continue;
+                int n = y * SIZE + x;
+                if (!map.walls.contains(n) && distance[n] < 0) {
+                    distance[n] = distance[p] + 1;
+                    queue.addLast(n);
+                }
+            }
+        }
+        return MAX_STEPS;
     }
 
     private boolean reachable(MapData map) {
