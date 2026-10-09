@@ -297,23 +297,29 @@ public final class NeuronLabActivity extends Activity {
                     .append("runtime_ram_limit_mib=4096\n")
                     .append("memory_before=").append(memoryStatus()).append('\n');
             try {
-                log.append("\n[1] CPU ROUTING BENCHMARK\n");
+                log.append("\n[1] ADAPTIVE CPU/GPU ROUTING BENCHMARK\n");
                 int[] sizes = new int[]{64, 256, 1024, 4096, 10000};
                 float[] input = new float[]{0.2f, 0.5f, -0.1f, 0.8f};
                 log.append("scheduler_policy=FIFO; hard_limit_mib=4096; reserve_mib=512; jobs_defer_until_memory_fits\n");
                 for (int size : sizes) {
                     if (isFinishing() || isDestroyed()) { log.append("CANCELLED=activity_closing\n"); break; }
                     final int poolSize = size;
-                    long estimate = HeterogeneousNeuronRuntime.estimateBytes(poolSize) + 1024L * 1024L;
+                    long estimate = HeterogeneousNeuronRuntime.estimateBytes(poolSize) + 16L * 1024L * 1024L;
                     Future<String> benchmark = computeScheduler.submit("cpu-route-" + poolSize, estimate, () -> {
                         HeterogeneousNeuronRuntime runtime = new HeterogeneousNeuronRuntime(
                                 poolSize, HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES, 20261009L + poolSize);
                         int active = Math.min(32, poolSize);
-                        for (int warmup = 0; warmup < 2; warmup++) runtime.route(input, active);
+                        HeterogeneousNeuronRuntime.RouteResult last = null;
+                        for (int warmup = 0; warmup < 2; warmup++) last = runtime.route(input, active);
                         long[] times = new long[5];
-                        for (int i = 0; i < times.length; i++) times[i] = runtime.route(input, active).elapsedNanos;
+                        for (int i = 0; i < times.length; i++) {
+                            last = runtime.route(input, active);
+                            times[i] = last.elapsedNanos;
+                        }
                         java.util.Arrays.sort(times);
                         return "pool=" + poolSize + " active=" + active
+                                + " backend=" + last.backend
+                                + " backend_decision=" + last.backendDecision
                                 + " median_ms=" + String.format(Locale.US, "%.3f", times[2] / 1_000_000.0)
                                 + " best_ms=" + String.format(Locale.US, "%.3f", times[0] / 1_000_000.0)
                                 + " estimated_pool_mib=" + String.format(Locale.US, "%.3f", runtime.estimatedBytes() / (1024.0 * 1024.0));
