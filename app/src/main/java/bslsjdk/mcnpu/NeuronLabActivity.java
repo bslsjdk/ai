@@ -972,7 +972,16 @@ public final class NeuronLabActivity extends Activity {
                             importTrainingBundle(content, fileName, true);
                         else workspace.importNeuronContent(content, true);
                         persistWorkspaceNow();
-                        runOnUiThread(() -> { showPage("data"); toast("已重建并导入；旧工作区有本地备份。"); });
+                        runOnUiThread(() -> {
+                            if (importType.equals("bundle")) {
+                                showPage("train");
+                                toast("已重建并载入自测包；旧工作区已备份，正在自动训练。");
+                                startTraining();
+                            } else {
+                                showPage("data");
+                                toast("已重建并导入；旧工作区有本地备份。");
+                            }
+                        });
                     } catch (Throwable e) { runOnUiThread(() -> dialog("维度重建/导入失败", shortError(e))); }
                 })).show();
     }
