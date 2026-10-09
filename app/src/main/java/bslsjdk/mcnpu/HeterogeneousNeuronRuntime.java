@@ -162,8 +162,11 @@ public final class HeterogeneousNeuronRuntime {
             computeCpuScores(input, dims);
             long cpuNanos = System.nanoTime() - cpuStart;
             float[] cpuSnapshot = score.clone();
+            // Warm the EGL context/shader before timing steady-state execution;
+            // cold shader compilation must not decide the permanent backend.
+            boolean gpuWarmOk = computeGpuScores(input, dims);
             long gpuStart = System.nanoTime();
-            boolean gpuOk = computeGpuScores(input, dims);
+            boolean gpuOk = gpuWarmOk && computeGpuScores(input, dims);
             long gpuNanos = System.nanoTime() - gpuStart;
             double maxDiff = 0.0;
             if (gpuOk) {
