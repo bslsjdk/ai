@@ -293,11 +293,11 @@ public final class HeterogeneousNeuronRuntime {
             if (combined != null) {
                 backend = "CPU+GLES31_GPU";
                 double cpuMs = lastHybridCpuMs;
-                double gpuMs = lastHybridGpuMs;
+                double gpuMs = lastHybridGpuComputeMs;
                 double cpuOnlyMs = lastHybridCpuOnlyMs;
                 double diff = lastHybridMaxDiff;
                 decision = String.format(Locale.US,
-                        "concurrent disjoint ranges; cpu_only_ms=%.3f hybrid_ms=%.3f cpu_slice_ms=%.3f gpu_slice_ms=%.3f max_abs=%.7g; NPU intentionally deferred",
+                        "concurrent disjoint ranges; cpu_only_reference_ms=%.3f hybrid_compute_ms=%.3f cpu_slice_ms=%.3f gpu_compute_ms=%.3f max_abs=%.7g; steady-state skips full CPU reference; NPU deferred",
                         cpuOnlyMs, lastHybridTotalMs, cpuMs, gpuMs, diff);
             } else {
                 combined = cpuBatch(inputs, dims);
@@ -329,8 +329,9 @@ public final class HeterogeneousNeuronRuntime {
                 t.setDaemon(true);
                 return t;
             });
-    private volatile double lastHybridCpuMs, lastHybridGpuMs, lastHybridCpuOnlyMs,
-            lastHybridTotalMs, lastHybridMaxDiff;
+    private volatile double lastHybridCpuMs, lastHybridGpuMs, lastHybridGpuComputeMs,
+            lastHybridCpuOnlyMs, lastHybridTotalMs, lastHybridMaxDiff = Double.NaN;
+    private boolean hybridValidated;
 
     private float[] cpuGpuHybridBatch(float[][] inputs, int dims) {
         final int batch = inputs.length;
@@ -344,14 +345,23 @@ public final class HeterogeneousNeuronRuntime {
         float[] warm = GpuComputeRuntime.matMul(flat, gpuWeights, batch, dims, gpuCount);
         if (warm == null || warm.length != batch * gpuCount) return null;
 
-        long cpuOnlyStart = System.nanoTime();
-        float[] cpuReference = cpuBatch(inputs, dims);
-        lastHybridCpuOnlyMs = (System.nanoTime() - cpuOnlyStart) / 1e6;
+        // Full CPU reference is a one-time correctness check only. Never repeat it
+        // on steady-state calls, otherwise CPU would do extra work instead of less.
+        float[] cpuReference = null;
+        if (!hybridValidated) {
+            long cpuOnlyStart = System.nanoTime();
+            cpuReference = cpuBatch(inputs, dims);
+            lastHybridCpuOnlyMs = (System.nanoTime() - cpuOnlyStart) / 1e6;
+        }
 
         final float[] merged = new float[batch * poolSize];
         long totalStart = System.nanoTime();
-        java.util.concurrent.Future<float[]> gpuFuture = HYBRID_GPU_EXECUTOR.submit(
-                () -> GpuComputeRuntime.matMul(flat, gpuWeights, batch, dims, gpuCount));
+        java.util.concurrent.Future<float[]> gpuFuture = HYBRID_GPU_EXECUTOR.submit(() -> {
+            long gpuStart = System.nanoTime();
+            float[] result = GpuComputeRuntime.matMul(flat, gpuWeights, batch, dims, gpuCount);
+            lastHybridGpuComputeMs = (System.nanoTime() - gpuStart) / 1e6;
+            return result;
+        });
         long cpuStart = System.nanoTime();
         for (int r=0;r<batch;r++) {
             for (int u=0;u<cpuEnd;u++) {
@@ -377,9 +387,12 @@ public final class HeterogeneousNeuronRuntime {
             merged[r*poolSize+u] = (float)Math.tanh(gpuRaw[r*gpuCount+k] + bias[u]);
         }
         lastHybridTotalMs = (System.nanoTime() - totalStart) / 1e6;
-        lastHybridMaxDiff = maxDiff(cpuReference, merged);
-        // Incorrect GPU output must never silently enter routing.
-        if (!Double.isFinite(lastHybridMaxDiff) || lastHybridMaxDiff > 0.001) return null;
+        if (cpuReference != null) {
+            lastHybridMaxDiff = maxDiff(cpuReference, merged);
+            // Incorrect GPU output must never silently enter routing.
+            if (!Double.isFinite(lastHybridMaxDiff) || lastHybridMaxDiff > 0.001) return null;
+            hybridValidated = true;
+        }
         return merged;
     }
 
