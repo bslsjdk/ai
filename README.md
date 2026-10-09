@@ -9,7 +9,9 @@ Android app for the current AIMENG direction: start with a few trainable computa
 - Each unit learns a tiny synthetic regression target, `y = 2*x + 1`, using a CPU batch-gradient update.
 - The score controller compares held-out error with a unit removed or a sleeping candidate admitted, subtracts a small compute cost, uses separate enter/exit thresholds, and keeps at least one unit active.
 - A JSONL trace is saved under the app-private files directory as `neuron-lab-trace.jsonl`.
-- The NPU forward test calls the existing JNI `NpuRuntime.matMulInt8Buf` path, which submits actual int8 tensors to QNN / HTP. It compares NPU-produced held-out predictions with the CPU reference and reports the absolute MSE delta. If NPU initialization or execution fails, the experiment reports the error and CPU learning remains usable.
+- **Heterogeneous routing:** CPU is the default for tiny or irregular work. The automatic router sends a whole subgraph to QNN/HTP only when the batch is large enough to plausibly amortize dispatch and 32x32x32 padding; any NPU error or invalid output falls back to CPU. Initial thresholds (at least 16 samples and 8 active units) are conservative heuristics, not yet a measured break-even point.
+- The explicit NPU diagnostic button bypasses that heuristic and calls the existing JNI `NpuRuntime.matMulInt8Buf` path, which submits actual INT8 tensors to QNN / HTP. It compares NPU-produced held-out predictions with the CPU reference and reports the absolute MSE delta.
+- CPU owns scheduling, score/entry/exit logic, parameter updates, and trace writing. NPU receives batched numeric subgraphs, not individual neurons one at a time. GPU is a future optional backend only after a supported Android GPU API and real-device benchmark are implemented; it is not currently wired in.
 
 ## Build
 
@@ -39,6 +41,7 @@ The runtime must not send each tiny neuron operation back and forth between CPU 
 
 - `app/src/main/java/bslsjdk/mcnpu/NeuronLabActivity.java` — mobile UI and background execution.
 - `app/src/main/java/bslsjdk/mcnpu/NeuronLabEngine.java` — parameter updates, contribution scores, hysteresis, safety floor and trace.
-- `app/src/main/java/bslsjdk/mcnpu/NpuNeuronForward.java` — QNN HTP int8 forward path.
+- `app/src/main/java/bslsjdk/mcnpu/NpuNeuronForward.java` — explicit QNN HTP INT8 forward path.
+- `app/src/main/java/bslsjdk/mcnpu/AdaptiveForwardBackend.java` — conservative CPU/NPU workload router with CPU fallback.
 - `app/src/main/java/bslsjdk/mcnpu/NpuRuntime.java` and `app/src/main/cpp/mcnpu.cpp` — existing native QNN runtime and matrix-multiply backend.
 - `docs/PROJECT_MEMORY.md` — current direction and verification limits.
