@@ -637,6 +637,9 @@ public final class GridWorldLabActivity extends Activity {
                 JSONArray row=savedW1.getJSONArray(j);
                 if(row.length()!=savedInputs)throw new Exception("输入维度不匹配");
                 for(int i=0;i<savedInputs;i++)w1[j][i]=row.getDouble(i);
+                // Preserve the old policy at migration time; new map/history features
+                // start with zero weights and are learned through subsequent updates.
+                for(int i=savedInputs;i<inputSize;i++)w1[j][i]=0.0;
             }
             readMatrix(o.getJSONArray("w2"),w2);readArray(o.getJSONArray("b1"),b1);readArray(o.getJSONArray("b2"),b2);
         }
