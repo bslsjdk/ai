@@ -129,9 +129,11 @@ public final class NeuronLabEngine {
             try {
                 double npuMse = evaluate(validation, backend);
                 npuUsed = true;
+                double delta = Math.abs(npuMse - finalCpu);
                 backendReport = "forward_backend=" + backend.name()
                         + " validation_mse=" + format(npuMse)
-                        + " cpu_npu_abs_delta=" + format(Math.abs(npuMse - finalCpu));
+                        + " cpu_npu_abs_delta=" + format(delta)
+                        + " npu_match_within_0.25=" + (delta <= 0.25);
                 trace("backend_validation", new JSONObject().put("backend", backend.name())
                         .put("cpu_mse", finalCpu).put("backend_mse", npuMse)
                         .put("abs_delta", Math.abs(npuMse - finalCpu)));
@@ -231,9 +233,11 @@ public final class NeuronLabEngine {
         ArrayList<Unit> active = new ArrayList<>();
         for (Unit u : units) if (u.enabled) active.add(u);
         if (active.isEmpty()) {
-            // A controller safety floor normally prevents this. This fallback keeps
-            // evaluation deterministic even if a future policy change violates it.
-            active.add(units.get(0));
+            // A real all-disabled counterfactual predicts zero. Do not silently
+            // run a disabled unit just to avoid an empty ensemble.
+            double zeroLoss = 0.0;
+            for (Sample sample : data) zeroLoss += sample.target * sample.target;
+            return zeroLoss / data.size();
         }
         double[][] predictions;
         try {
