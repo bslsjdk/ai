@@ -477,19 +477,11 @@ Qnn_Tensor_t makeTensorN(const char* name,Qnn_TensorType_t type,Qnn_DataType_t d
 }
 
 // QNN 2.27 has no graphFree: a graph lives until its context dies, and a
-// failed graph cannot be reclaimed either. So the cache must be bounded, and
-// when the budget is exhausted the whole context is rebuilt (which frees every
-// graph at once). Without this, ~10 distinct shapes poison the context and
-// every later call fails with rc=1007.
-// Full Attention uses one QK graph and one AV graph for each N bucket.
-// With the current ladder (32..65536) that is 12 + 12 = 24 FP16 shapes.
-// The MLX projection path adds a small number of hot INT8 shapes, plus the
-// real-weight load probe. 32 leaves enough graph slots to complete a 64K
-// replay without context teardown. QNN 2.27 still owns graphs from the
-// context, so this is a lifetime budget, not an LRU cache size. Graph creation
-// remains guarded by the process RSS budget, so a graph that would push the
-// process over the safety line is rejected before its resources are retained.
-static const int MAX_CACHED_GRAPHS = 32;
+// failed graph cannot be reclaimed either. Match the validated MCNPU baseline:
+// keep at most eight finalized graphs per context, then rebuild the context to
+// release all graph resources. RSS guards remain mandatory; this count is an
+// additional lifetime bound, not a substitute for the 3584 MiB process limit.
+static const int MAX_CACHED_GRAPHS = 8;
 
 static bool resetContextLocked(const char* reason = "graph_budget"){
     if(!g.api) return false;
