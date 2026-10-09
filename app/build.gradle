@@ -5,9 +5,9 @@ android {
     compileSdk 35
     ndkVersion "27.0.12077973"
     defaultConfig {
-        // Preserve MCNPU's original install identity so an upgraded Ornith build
-        // replaces the existing app instead of creating a second app or requiring
-        // uninstall. Namespace is intentionally independent from applicationId.
+        // Preserve the installed Android package identity and signing continuity while
+        // changing the launcher from the retired 9B chat flow to the AIMENG neuron lab.
+        // Namespace is intentionally independent from applicationId.
         applicationId "bslsjdk.ornithnpu"
         minSdk 30
         targetSdk 35
