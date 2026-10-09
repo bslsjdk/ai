@@ -386,14 +386,22 @@ public final class NeuronLabActivity extends Activity {
     private <T> T awaitScheduledResult(Future<T> future, String jobName) throws Exception {
         while (!future.isDone()) {
             if (isFinishing() || isDestroyed()) {
-                future.cancel(false);
+                if (!computeScheduler.cancelQueued(future)) future.cancel(false);
                 throw new InterruptedException("activity closing while waiting for " + jobName);
             }
             MemoryAwareComputeScheduler.Snapshot snapshot = computeScheduler.snapshot();
+            if (jobName.startsWith("train-") && cancelTraining && !jobName.equals(snapshot.activeJob)) {
+                computeScheduler.cancelQueued(future);
+                throw new InterruptedException("training cancelled while waiting in memory queue");
+            }
             String status = "正在等待计算任务完成：" + jobName + "\n\n" + snapshot.toReport()
                     + "\n\n如果内存预算暂时不够，任务会留在队列中，等待内存下降后再运行。";
             runOnUiThread(() -> {
                 if (automaticTestRunning && automaticTestReport != null) automaticTestReport.setText(status);
+                else if (training && activeTrainLabel != null) {
+                    trainingStatus = status;
+                    activeTrainLabel.setText(status);
+                }
             });
             Thread.sleep(500L);
         }
