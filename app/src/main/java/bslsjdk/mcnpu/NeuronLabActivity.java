@@ -254,6 +254,10 @@ public final class NeuronLabActivity extends Activity {
         gridWorld.setOnClickListener(v -> startActivity(
                 new Intent(NeuronLabActivity.this, GridWorldLabActivity.class)));
         quick.addView(gridWorld, params(-1, 50, 0, 8, 0, 0));
+        Button terminal = primaryButton("打开通用命令终端 · Shell / Java / Python 环境");
+        terminal.setOnClickListener(v -> startActivity(
+                new Intent(NeuronLabActivity.this, CommandTerminalActivity.class)));
+        quick.addView(terminal, params(-1, 50, 0, 8, 0, 0));
         Button evolve = primaryButton("资源竞争 · 安全进化一代");
         evolve.setOnClickListener(v -> runEvolution());
         quick.addView(evolve, params(-1, 48, 0, 8, 0, 0));
