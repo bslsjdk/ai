@@ -260,7 +260,11 @@ public final class HeterogeneousNeuronRuntime {
                 absSum / poolSize, estimatedBytes, routeBackend, routeBackendDecision);
     }
 
-    /** Batched route amortizes accelerator overhead across independent states. */
+    /**
+     * Hybrid batch route: CPU and GLES GPU process disjoint neuron ranges at the
+     * same time. This is deliberately not a CPU-vs-GPU winner-takes-all selector.
+     * NPU is not in this execution path yet.
+     */
     public synchronized BatchRouteResult routeBatch(float[][] inputs, int requestedActive) {
         if (inputs == null || inputs.length < 2 || inputs.length > 32)
             throw new IllegalArgumentException("batch must contain 2..32 rows");
@@ -273,107 +277,118 @@ public final class HeterogeneousNeuronRuntime {
             for (float v : row) if (!Float.isFinite(v)) throw new IllegalArgumentException("non-finite input");
         }
         int batch = inputs.length;
-        // Conservative transient estimate includes the CPU reference, transposed
-        // weights, Java/native copies and GPU staging buffers, not just tensor payloads.
         long workBytes = ((long)dims*poolSize + (long)batch*poolSize*4L + (long)batch*dims)*4L;
         if (workBytes > 48L*1024L*1024L)
             throw new IllegalArgumentException("estimated batch working set exceeds 48 MiB; reduce batch or pool");
-        long t0 = System.nanoTime();
-        float[] chosen;
-        if (!batchBackendDecisionMade) {
-            float[] cpu = cpuBatch(inputs, dims);
-            long cpuNs = System.nanoTime()-t0;
-            chosen = cpu;
-            String backend = "CPU";
-            String decision = "CPU_REFERENCE cpu_ms=" + cpuNs/1e6;
-            float[] wt = transposeForDims(dims);
-            float[] flat = new float[batch*dims];
-            for (int r=0;r<batch;r++) System.arraycopy(inputs[r],0,flat,r*dims,dims);
-            // Compile/warm the shader before comparing steady-state latency.
-            GpuComputeRuntime.matMul(flat,wt,batch,dims,poolSize);
-            long g0=System.nanoTime();
-            float[] raw=GpuComputeRuntime.matMul(flat,wt,batch,dims,poolSize);
-            long gpuNs=System.nanoTime()-g0;
-            float[] gpu=null;
-            double gpuDiff=Double.POSITIVE_INFINITY;
-            if(raw!=null && raw.length==batch*poolSize) {
-                gpu=activate(raw);
-                gpuDiff=maxDiff(cpu,gpu);
-            }
-            boolean gpuGood=gpu!=null && gpuDiff<=0.001 && gpuNs*10L<cpuNs*9L;
 
-            float[] npu=null;
-            long npuNs=Long.MAX_VALUE;
-            double npuDiff=Double.POSITIVE_INFINITY;
-            String npuInfo="NPU skipped: not ready or batch/pool too small";
-            if(NpuRuntime.isReady() && batch>=8 && poolSize>=4096
-                    && maxAbs(inputs)<=1.20 && maxAbs(weights)<=1.20) {
-                try {
-                    NpuRuntime.prewarmMatMulInt8(batch,dims,poolSize);
-                    byte[] a=new byte[batch*dims], b=new byte[dims*poolSize];
-                    for(int r=0;r<batch;r++) for(int j=0;j<dims;j++)
-                        a[r*dims+j]=q8(inputs[r][j]*0.1f);
-                    for(int j=0;j<dims;j++) for(int u=0;u<poolSize;u++)
-                        b[j*poolSize+u]=q8(weights[u*MAX_INPUTS+j]*0.1f);
-                    long n0=System.nanoTime();
-                    byte[] packed=NpuRuntime.matMulInt8Buf(a,b,batch,dims,poolSize);
-                    npuNs=System.nanoTime()-n0;
-                    if(packed!=null && packed.length>=4+batch*poolSize) {
-                        float scaleC=java.nio.ByteBuffer.wrap(packed,0,4)
-                            .order(java.nio.ByteOrder.LITTLE_ENDIAN).getFloat();
-                        if(Float.isFinite(scaleC)&&scaleC>0) {
-                            npu=new float[batch*poolSize];
-                            for(int r=0;r<batch;r++) for(int u=0;u<poolSize;u++)
-                                npu[r*poolSize+u]=(float)Math.tanh(
-                                    packed[4+r*poolSize+u]*scaleC/0.01f+bias[u]);
-                            npuDiff=maxDiff(cpu,npu);
-                            npuInfo="NPU candidate ms="+npuNs/1e6+" max_abs="+npuDiff;
-                        } else npuInfo="NPU invalid output scale";
-                    } else npuInfo="NPU failed: "+NpuRuntime.getLastNativeError();
-                } catch(Throwable e) { npuInfo="NPU exception: "+e.getClass().getSimpleName()+":"+e.getMessage(); }
-            }
-            boolean npuGood=npu!=null && npuDiff<=0.02 && npuNs*10L<cpuNs*9L;
-            if(npuGood && (!gpuGood || npuNs<gpuNs)) {
-                chosen=npu; backend="QNN_HTP_V73_INT8";
-                decision="measured NPU faster; cpu_ms="+cpuNs/1e6+" npu_ms="+npuNs/1e6+" max_abs="+npuDiff;
-            } else if(gpuGood) {
-                chosen=gpu; backend="GLES31_GPU";
-                decision="measured GPU faster; cpu_ms="+cpuNs/1e6+" gpu_ms="+gpuNs/1e6+" max_abs="+gpuDiff+"; "+npuInfo;
+        long t0 = System.nanoTime();
+        String backend;
+        String decision;
+        float[] combined;
+        // Small jobs stay CPU-only because GPU dispatch/copy overhead can dominate.
+        // For a sufficiently large pool, split neurons into disjoint CPU/GPU ranges.
+        boolean tryHybrid = poolSize >= 4096 && dims >= 4 && batch >= 2;
+        if (tryHybrid) {
+            combined = cpuGpuHybridBatch(inputs, dims);
+            if (combined != null) {
+                backend = "CPU+GLES31_GPU";
+                double cpuMs = lastHybridCpuMs;
+                double gpuMs = lastHybridGpuMs;
+                double cpuOnlyMs = lastHybridCpuOnlyMs;
+                double diff = lastHybridMaxDiff;
+                decision = String.format(Locale.US,
+                        "concurrent disjoint ranges; cpu_only_ms=%.3f hybrid_ms=%.3f cpu_slice_ms=%.3f gpu_slice_ms=%.3f max_abs=%.7g; NPU intentionally deferred",
+                        cpuOnlyMs, lastHybridTotalMs, cpuMs, gpuMs, diff);
             } else {
-                decision="CPU kept; cpu_ms="+cpuNs/1e6+" gpu_ms="+gpuNs/1e6+" gpu_max_abs="+gpuDiff+"; "+npuInfo;
+                combined = cpuBatch(inputs, dims);
+                backend = "CPU";
+                decision = "hybrid GPU unavailable/invalid; safe CPU fallback: " + GpuComputeRuntime.getLastError();
             }
-            batchBackendDecisionMade=true;
-            batchBackend=backend;
-            batchBackendDecision=decision;
-        } else if("GLES31_GPU".equals(batchBackend)) {
-            float[] flat=new float[batch*dims];
-            for(int r=0;r<batch;r++) System.arraycopy(inputs[r],0,flat,r*dims,dims);
-            float[] raw=GpuComputeRuntime.matMul(flat,transposeForDims(dims),batch,dims,poolSize);
-            if(raw!=null && raw.length==batch*poolSize) chosen=activate(raw);
-            else { chosen=cpuBatch(inputs,dims); batchBackend="CPU"; batchBackendDecision="GPU runtime failure fallback: "+GpuComputeRuntime.getLastError(); }
-        } else if("QNN_HTP_V73_INT8".equals(batchBackend)) {
-            try {
-                byte[] a=new byte[batch*dims],b=new byte[dims*poolSize];
-                for(int r=0;r<batch;r++) for(int j=0;j<dims;j++) a[r*dims+j]=q8(inputs[r][j]*0.1f);
-                for(int j=0;j<dims;j++) for(int u=0;u<poolSize;u++) b[j*poolSize+u]=q8(weights[u*MAX_INPUTS+j]*0.1f);
-                byte[] packed=NpuRuntime.matMulInt8Buf(a,b,batch,dims,poolSize);
-                if(packed==null||packed.length<4+batch*poolSize) throw new IllegalStateException(NpuRuntime.getLastNativeError());
-                float scaleC=java.nio.ByteBuffer.wrap(packed,0,4).order(java.nio.ByteOrder.LITTLE_ENDIAN).getFloat();
-                chosen=new float[batch*poolSize];
-                for(int r=0;r<batch;r++) for(int u=0;u<poolSize;u++)
-                    chosen[r*poolSize+u]=(float)Math.tanh(packed[4+r*poolSize+u]*scaleC/0.01f+bias[u]);
-            } catch(Throwable e) { chosen=cpuBatch(inputs,dims); batchBackend="CPU"; batchBackendDecision="NPU runtime failure fallback: "+e.getMessage(); }
         } else {
-            chosen=cpuBatch(inputs,dims);
+            combined = cpuBatch(inputs, dims);
+            backend = "CPU";
+            decision = "CPU-only for small workload; hybrid threshold pool>=4096, dims>=4, batch>=2";
         }
-        int[][] selected=new int[batch][requestedActive];
-        for(int r=0;r<batch;r++) {
-            float[] row=new float[poolSize];
-            System.arraycopy(chosen,r*poolSize,row,0,poolSize);
-            selected[r]=topKIndices(row,requestedActive);
+        batchBackend = backend;
+        batchBackendDecision = decision;
+        batchBackendDecisionMade = true;
+
+        int[][] selected = new int[batch][requestedActive];
+        for (int r=0;r<batch;r++) {
+            float[] row = new float[poolSize];
+            System.arraycopy(combined, r*poolSize, row, 0, poolSize);
+            selected[r] = topKIndices(row, requestedActive);
         }
-        return new BatchRouteResult(poolSize,batch,requestedActive,selected,
-                (System.nanoTime()-t0)/1e6,batchBackend,batchBackendDecision);
+        return new BatchRouteResult(poolSize, batch, requestedActive, selected,
+                (System.nanoTime()-t0)/1e6, backend, decision);
+    }
+
+    private static final java.util.concurrent.ExecutorService HYBRID_GPU_EXECUTOR =
+            java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "aimeng-hybrid-gpu");
+                t.setDaemon(true);
+                return t;
+            });
+    private volatile double lastHybridCpuMs, lastHybridGpuMs, lastHybridCpuOnlyMs,
+            lastHybridTotalMs, lastHybridMaxDiff;
+
+    private float[] cpuGpuHybridBatch(float[][] inputs, int dims) {
+        final int batch = inputs.length;
+        final int cpuEnd = Math.max(1, Math.min(poolSize - 1, poolSize / 2));
+        final int gpuCount = poolSize - cpuEnd;
+        final float[] flat = new float[batch * dims];
+        for (int r=0;r<batch;r++) System.arraycopy(inputs[r], 0, flat, r*dims, dims);
+        final float[] gpuWeights = transposeRange(dims, cpuEnd, poolSize);
+
+        // Warm up shader compilation outside the measured concurrent run.
+        float[] warm = GpuComputeRuntime.matMul(flat, gpuWeights, batch, dims, gpuCount);
+        if (warm == null || warm.length != batch * gpuCount) return null;
+
+        long cpuOnlyStart = System.nanoTime();
+        float[] cpuReference = cpuBatch(inputs, dims);
+        lastHybridCpuOnlyMs = (System.nanoTime() - cpuOnlyStart) / 1e6;
+
+        final float[] merged = new float[batch * poolSize];
+        long totalStart = System.nanoTime();
+        java.util.concurrent.Future<float[]> gpuFuture = HYBRID_GPU_EXECUTOR.submit(
+                () -> GpuComputeRuntime.matMul(flat, gpuWeights, batch, dims, gpuCount));
+        long cpuStart = System.nanoTime();
+        for (int r=0;r<batch;r++) {
+            for (int u=0;u<cpuEnd;u++) {
+                int off = u * MAX_INPUTS;
+                double sum = bias[u];
+                for (int j=0;j<dims;j++) sum += weights[off+j] * inputs[r][j];
+                merged[r*poolSize+u] = (float)Math.tanh(sum);
+            }
+        }
+        lastHybridCpuMs = (System.nanoTime() - cpuStart) / 1e6;
+        float[] gpuRaw;
+        long gpuWaitStart = System.nanoTime();
+        try {
+            gpuRaw = gpuFuture.get();
+        } catch (Exception e) {
+            gpuFuture.cancel(true);
+            return null;
+        }
+        lastHybridGpuMs = (System.nanoTime() - gpuWaitStart) / 1e6;
+        if (gpuRaw == null || gpuRaw.length != batch * gpuCount) return null;
+        for (int r=0;r<batch;r++) for (int k=0;k<gpuCount;k++) {
+            int u = cpuEnd + k;
+            merged[r*poolSize+u] = (float)Math.tanh(gpuRaw[r*gpuCount+k] + bias[u]);
+        }
+        lastHybridTotalMs = (System.nanoTime() - totalStart) / 1e6;
+        lastHybridMaxDiff = maxDiff(cpuReference, merged);
+        // Incorrect GPU output must never silently enter routing.
+        if (!Double.isFinite(lastHybridMaxDiff) || lastHybridMaxDiff > 0.001) return null;
+        return merged;
+    }
+
+    private float[] transposeRange(int dims, int startUnit, int endUnit) {
+        float[] transposed = new float[dims * (endUnit - startUnit)];
+        int count = endUnit - startUnit;
+        for (int u=startUnit;u<endUnit;u++) for (int j=0;j<dims;j++)
+            transposed[j*count + (u-startUnit)] = weights[u*MAX_INPUTS+j];
+        return transposed;
     }
 
     private float[] cpuBatch(float[][] inputs,int dims) {
