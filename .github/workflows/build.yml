@@ -189,39 +189,34 @@ jobs:
           unzip -l "$APK" | grep -E 'lib/arm64-v8a/libornithnpu.so|assets/qnnlibs/libQnnHtp.so|assets/qnnlibs/libQnnHtpV73Skel.so|assets/qnnlibs/libQnnHtpV73Stub.so'
           ls -lh "$APK"
 
-      - name: Prepare signing identity
+      # The applicationId is bslsjdk.mcnpu.dev. Use the original MCNPU key so
+      # Android can update the existing app in place. Never substitute a cache key.
+      - name: Sign APK with the original MCNPU release key
+        shell: bash
         env:
-          ORNITHNPU_KEYSTORE_B64: ${{ secrets.ORNITHNPU_KEYSTORE_B64 }}
-          ORNITHNPU_KEYSTORE_PASSWORD: ${{ secrets.ORNITHNPU_KEYSTORE_PASSWORD }}
           MCNPU_KEYSTORE_B64: ${{ secrets.MCNPU_KEYSTORE_B64 }}
           MCNPU_KEYSTORE_PASSWORD: ${{ secrets.MCNPU_KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
           mkdir -p build/signing
-          # Prefer the original MCNPU release key so upgrades retain the same signer.
-          # The Ornith-specific key is only a fallback for repositories that explicitly
-          # configured it; never generate a random key on a hosted runner.
-          KEYSTORE=build/signing/mcnpu-release.jks
-          if [ -n "${MCNPU_KEYSTORE_B64:-}" ]; then
-            printf '%s' "$MCNPU_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
-            KEY_PASS="${MCNPU_KEYSTORE_PASSWORD:-changeit}"
-            KEY_ALIAS=mcnpu
-            echo "keystore: original MCNPU release key"
-          elif [ -n "${ORNITHNPU_KEYSTORE_B64:-}" ]; then
-            printf '%s' "$ORNITHNPU_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
-            KEY_PASS="${ORNITHNPU_KEYSTORE_PASSWORD:-changeit}"
-            KEY_ALIAS=ornithnpu
-            echo "::warning::Using Ornith-specific signing key; if it differs from the installed MCNPU signer, Android will reject an in-place upgrade."
-          else
-            echo "::error::No stable release keystore configured. Set MCNPU_KEYSTORE_B64 and MCNPU_KEYSTORE_PASSWORD to preserve the existing app signature."
+          BUILD_TOOLS="$ANDROID_SDK_ROOT/build-tools/35.0.0"
+          ZIPALIGN="$BUILD_TOOLS/zipalign"
+          APKSIGNER="$BUILD_TOOLS/apksigner"
+          test -x "$ZIPALIGN"
+          test -x "$APKSIGNER"
+          if [ -z "${MCNPU_KEYSTORE_B64:-}" ] || [ -z "${MCNPU_KEYSTORE_PASSWORD:-}" ]; then
+            echo "::error::Original MCNPU signing secrets are missing. Refusing to publish an APK that would force an uninstall."
             exit 1
           fi
-          keytool -list -keystore "$KEYSTORE" -alias "$KEY_ALIAS" -storepass "$KEY_PASS" >/dev/null
+          KEYSTORE=build/signing/mcnpu-release.jks
+          printf '%s' "$MCNPU_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
+          KEY_PASS="$MCNPU_KEYSTORE_PASSWORD"
+          keytool -list -keystore "$KEYSTORE" -alias mcnpu -storepass "$KEY_PASS" >/dev/null
           "$ZIPALIGN" -f 4 app/build/outputs/apk/release/app-release-unsigned.apk build/signing/mcnpu-aligned.apk
-          "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias "$KEY_ALIAS" --ks-pass pass:"$KEY_PASS" --key-pass pass:"$KEY_PASS" --out app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk build/signing/mcnpu-aligned.apk
+          "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias mcnpu --ks-pass pass:"$KEY_PASS" --key-pass pass:"$KEY_PASS" --out app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk build/signing/mcnpu-aligned.apk
           "$APKSIGNER" verify --verbose app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk
           sha256sum app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk
-          keytool -list -v -keystore "$KEYSTORE" -alias "$KEY_ALIAS" -storepass "$KEY_PASS" 2>/dev/null | grep -i 'SHA256:' || echo "(signer digest unavailable)"
+          keytool -list -v -keystore "$KEYSTORE" -alias mcnpu -storepass "$KEY_PASS" 2>/dev/null | grep -i 'SHA256:' || echo "(signer digest unavailable)"
 
       - name: Publish APK as a prerelease (no Actions storage)
         env:
@@ -242,10 +237,10 @@ jobs:
             echo "- version: 1.0.${GITHUB_RUN_NUMBER} (versionCode ${GITHUB_RUN_NUMBER})"
             echo "- size: ${SIZE} bytes"
             echo "- sha256: ${SUM}"
-            echo "- signing: configured stable release keystore; original MCNPU key preferred"
+            echo "- signing: original MCNPU release key; matches the existing app signer"
             echo ""
             echo "Engineering build for on-device testing."
-            echo "Signed with the configured stable release key. In-place upgrade requires the same key as the installed MCNPU APK."
+            echo "Signed with the original MCNPU release key. The build fails closed if that key is unavailable."
           } > build/release-notes.md
           # Recreate instead of upload --clobber: GitHub keeps the ORIGINAL created_at on
           # upload, so the page would keep saying "7 hours ago" while the APK inside is
