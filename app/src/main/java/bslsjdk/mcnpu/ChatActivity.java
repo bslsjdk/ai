@@ -287,6 +287,21 @@ public final class ChatActivity extends Activity {
         } catch (Throwable t) {
             appendReportField(out, "npu_status_exception", t.toString(), 1024);
         }
+        try {
+            String nativeLogs = NpuRuntime.drainDiag();
+            if (nativeLogs != null && !nativeLogs.isEmpty()) {
+                final int maxNativeLogChars = 65536;
+                if (nativeLogs.length() > maxNativeLogChars) {
+                    nativeLogs = "[older native diagnostic lines omitted; keeping last 65536 characters]\n"
+                            + nativeLogs.substring(nativeLogs.length() - maxNativeLogChars);
+                }
+                out.append("\n========== NATIVE DIAGNOSTIC LOG RING ==========\n");
+                out.append(nativeLogs).append("\n");
+                out.append("========== END NATIVE DIAGNOSTIC LOG RING ==========\n");
+            }
+        } catch (Throwable t) {
+            appendReportField(out, "native_log_ring_exception", t.toString(), 1024);
+        }
         out.append("model_loaded: ").append(Ornith15Runtime.isLoaded()).append("\n");
         try {
             appendReportField(out, "ornith_runtime_info", Ornith15Runtime.info(), 8192);

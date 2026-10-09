@@ -40,6 +40,10 @@
 #define TAG "MCNPU"
 #define HTP_ID 6
 
+#ifndef MCNPU_BUILD_ID
+#define MCNPU_BUILD_ID "unknown"
+#endif
+
 // ---- native diagnostic ring ----------------------------------------------
 // I() used to go to logcat and nowhere else. The diagnostic the app collects is
 // built from the service's own Java log, so every status line the native side
@@ -365,7 +369,8 @@ bool initRuntime(const std::string& qnnDir, const std::string& workDir){
             I("AFFINITY failed errno=%d",errno);
     }
 
-    g.info="QNN HTP ready backendId=6 providers="+std::to_string(count);
+    g.info="QNN HTP ready backendId=6 providers="+std::to_string(count)
+           +" build="+MCNPU_BUILD_ID;
     g.ready=true;
     I("MCNPU HTP READY");
     return true;
@@ -755,10 +760,11 @@ static std::string deviceCapKeyLocked(){
     char plat[PROP_VALUE_MAX]={0}, soc[PROP_VALUE_MAX]={0};
     __system_property_get("ro.board.platform", plat);
     __system_property_get("ro.soc.model", soc);
-    return std::string("v1|plat=")+plat
+    return std::string("v2|plat=")+plat
          + "|soc="  + soc
          + "|lib="  + g.libDir
-         + "|be="   + std::to_string(g.selectedBackend);
+         + "|be="   + std::to_string(g.selectedBackend)
+         + "|build=" + MCNPU_BUILD_ID;
 }
 
 static bool ladderCacheReadLocked(uint32_t& out){
@@ -3837,10 +3843,12 @@ std::string runPerlinBench(uint32_t n){
     if(n == 0 || n > 16384) n = 4096;
     // Adopt last boot's measured ceiling before touching the device, so the
     // first thing we build is a size we already know finalizes.
+    bool adoptedN = false;
     if(g_perlinMaxN == 0){
         uint32_t cachedN = 0;
         if(perlinNCacheReadLocked(cachedN)){
             g_perlinMaxN = cachedN;
+            adoptedN = true;
             I("PERLIN CACHE HIT maxN=%u (4096/2048 builds skipped)",(unsigned)cachedN);
         }
     }
@@ -3910,7 +3918,12 @@ std::string runPerlinBench(uint32_t n){
                 G = &ins.first->second;
                 G->aFail = aFail;
             }
-            if(G){ g_perlinMaxN = s; n = s; perlinNCacheWriteLocked(s); }
+            if(G){
+                g_perlinMaxN = s;
+                n = s;
+                if(adoptedN) I("PERLIN N CACHE SKIP reason=hit n=%u",s);
+                else perlinNCacheWriteLocked(s);
+            }
         }
         if(!G){
             // Nothing built at any size. Run the diagnostic rather than report
