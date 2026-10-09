@@ -320,8 +320,8 @@ public final class NeuronLabActivity extends Activity {
                 log.append("\n[2] CONCEPT LABEL / WORKSPACE ROUNDTRIP\n");
                 NeuronWorkspace snapshot = NeuronWorkspace.fromJson(new JSONObject(workspace.toJson().toString()));
                 log.append("workspace_roundtrip=PASS\n")
-                        .append("input_concepts=").append(snapshot.inputConceptNames()).append('\n')
-                        .append("output_concepts=").append(snapshot.outputConceptNames()).append('\n')
+                        .append("input_concepts=").append(java.util.Arrays.toString(snapshot.inputConceptNames())).append('\n')
+                        .append("output_concepts=").append(java.util.Arrays.toString(snapshot.outputConceptNames())).append('\n')
                         .append("note=labels_are_numeric_dimension_names_not_a_natural_language_encoder\n");
             } catch (Throwable error) {
                 log.append("CPU_OR_WORKSPACE_TEST=FAIL: ").append(shortError(error)).append('\n');
