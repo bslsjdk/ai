@@ -439,7 +439,8 @@ public final class NeuronLabActivity extends Activity {
                     .append("rss_mib=").append(String.format(Locale.US, "%.1f", finalRss)).append('\n')
                     .append("runtime_ram_guard=").append(finalRss > 3800.0 ? "WARNING_OVER_3800_MIB" : "UNDER_3800_MIB_AT_SAMPLE").append('\n')
                     .append("gpu_backend=GLES31_ADAPTIVE_HETEROGENEOUS_POOL_ROUTE; selected_only_after_on_device_benchmark\n")
-                    .append("training_backend=CPU\n")
+                    .append("batch_pool_backend=GLES31_GPU_OR_QNN_HTP; measured_in_section_1B_with_CPU_reference_and_accuracy_gate\n")
+                    .append("training_backend=CPU; NeuronWorkspace optimizer/backprop not yet accelerated\n")
                     .append("result=diagnostic_plus_adaptive_pool_route_benchmark; device timings required to validate performance\n")
                     .append("duration_ms=").append(System.currentTimeMillis() - started).append('\n');
             String result = log.toString();
