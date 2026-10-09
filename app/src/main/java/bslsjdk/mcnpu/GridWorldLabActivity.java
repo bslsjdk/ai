@@ -209,7 +209,8 @@ public final class GridWorldLabActivity extends Activity {
                         reward += DISTANCE_REWARD_PER_STEP * (oldDistance - nextDistance);
                     }
                     double[] next = observe(tr.next, map.goal, map.walls, nextHistory);
-                    double target = tr.done ? reward : reward + 0.92 * max(net.forward(next).q);
+                    // TD target needs only max(Q), not a retained Forward/BPTT cache.
+                    double target = tr.done ? reward : reward + 0.92 * net.maxQ(next);
                     net.update(s, currentForward, action, target);
                     pos = tr.next;
                     history = nextHistory;
@@ -777,6 +778,8 @@ public final class GridWorldLabActivity extends Activity {
         final int inputSize = INPUT_SIZE;
         final double[][] w1, w2, recurrent;
         final double[] b1, b2;
+        // Reused scratch for allocation-free TD-target inference on the training worker.
+        private final double[] maxQProjection, maxQFirst, maxQLast;
 
         QNet(long seed, int hiddenSize) {
             this.hiddenSize = hiddenSize;
@@ -785,6 +788,9 @@ public final class GridWorldLabActivity extends Activity {
             recurrent = new double[hiddenSize][hiddenSize];
             b1 = new double[hiddenSize];
             b2 = new double[4];
+            maxQProjection = new double[hiddenSize];
+            maxQFirst = new double[hiddenSize];
+            maxQLast = new double[hiddenSize];
             Random r = new Random(seed);
             double inputScale = 0.5 / Math.sqrt(Math.max(1, INPUT_SIZE));
             double recurrentScale = 0.10 / Math.sqrt(Math.max(1, hiddenSize));
@@ -800,19 +806,18 @@ public final class GridWorldLabActivity extends Activity {
         Forward forward(double[] x) {
             double[][] h = new double[THOUGHT_CYCLES][hiddenSize];
             double[][] pre = new double[THOUGHT_CYCLES][hiddenSize];
-            double[] inputProjection = new double[hiddenSize];
             double[] q = new double[4];
+            // Store the shared input projection in pre[0], avoiding another vector allocation.
             for (int j = 0; j < hiddenSize; j++) {
                 double v = b1[j];
                 for (int i = 0; i < inputSize; i++) if (x[i] != 0.0) v += w1[j][i] * x[i];
-                inputProjection[j] = v;
+                pre[0][j] = v;
+                h[0][j] = Math.max(0.0, v);
             }
-            for (int t = 0; t < THOUGHT_CYCLES; t++) {
+            for (int t = 1; t < THOUGHT_CYCLES; t++) {
                 for (int j = 0; j < hiddenSize; j++) {
-                    double v = inputProjection[j];
-                    if (t > 0) {
-                        for (int k = 0; k < hiddenSize; k++) v += recurrent[j][k] * h[t - 1][k];
-                    }
+                    double v = pre[0][j];
+                    for (int k = 0; k < hiddenSize; k++) v += recurrent[j][k] * h[t - 1][k];
                     pre[t][j] = v;
                     h[t][j] = Math.max(0.0, v);
                 }
@@ -824,6 +829,28 @@ public final class GridWorldLabActivity extends Activity {
                 q[a] = v;
             }
             return new Forward(q, h[THOUGHT_CYCLES - 1], pre[THOUGHT_CYCLES - 1], h, pre);
+        }
+
+        /** Allocation-free inference for next-state TD targets; no gradient cache is needed. */
+        double maxQ(double[] x) {
+            for (int j = 0; j < hiddenSize; j++) {
+                double v = b1[j];
+                for (int i = 0; i < inputSize; i++) if (x[i] != 0.0) v += w1[j][i] * x[i];
+                maxQProjection[j] = v;
+                maxQFirst[j] = Math.max(0.0, v);
+            }
+            for (int j = 0; j < hiddenSize; j++) {
+                double v = maxQProjection[j];
+                for (int k = 0; k < hiddenSize; k++) v += recurrent[j][k] * maxQFirst[k];
+                maxQLast[j] = Math.max(0.0, v);
+            }
+            double best = Double.NEGATIVE_INFINITY;
+            for (int a = 0; a < 4; a++) {
+                double v = b2[a];
+                for (int j = 0; j < hiddenSize; j++) v += w2[a][j] * maxQLast[j];
+                if (v > best) best = v;
+            }
+            return best;
         }
 
         int choose(double[] s, double eps, Random r) {
