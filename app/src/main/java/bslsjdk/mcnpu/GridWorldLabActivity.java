@@ -285,6 +285,8 @@ public final class GridWorldLabActivity extends Activity {
             lastTrainingEnvironmentSteps = totalSteps;
             lastTrainingEpisodesPerSecond = lastCompletedEpisode * 1000.0 / elapsedMs;
             lastTrainingStepsPerSecond = totalSteps * 1000.0 / elapsedMs;
+            lastReplayUpdates = replayUpdates;
+            lastReplaySize = replay.size;
             training = false;
             // Count completed episodes, including a partial run stopped by the user.
             episodesDone += lastCompletedEpisode;
@@ -313,6 +315,8 @@ public final class GridWorldLabActivity extends Activity {
     private volatile long lastTrainingEnvironmentSteps;
     private volatile double lastTrainingEpisodesPerSecond;
     private volatile double lastTrainingStepsPerSecond;
+    private volatile long lastReplayUpdates;
+    private volatile int lastReplaySize;
 
 
     private void applyHiddenSize() {
@@ -641,8 +645,8 @@ public final class GridWorldLabActivity extends Activity {
             report.put("experienceReplay", "bounded random replay buffer; sampled one transition per four environment steps after warmup");
             report.put("experienceReplayCapacity", REPLAY_CAPACITY);
             report.put("experienceReplayWarmup", REPLAY_WARMUP);
-            report.put("experienceReplayUpdates", replayUpdates);
-            report.put("experienceReplayFinalSize", replay.size);
+            report.put("experienceReplayUpdates", lastReplayUpdates);
+            report.put("experienceReplayFinalSize", lastReplaySize);
             report.put("memoryModel", "last 8 positions are episode-local short-term memory; replay is training-session episodic memory; q_network.json stores persistent learned weights");
             report.put("recurrentTraining", "truncated BPTT across internal thought cycles");
             report.put("executionBackend", "CPU Java recurrent forward/backprop; NPU/GPU not yet wired into this QNet");
