@@ -1,47 +1,48 @@
-# AIMENG Mobile Neuron Lab
+# AIMENG Mobile Neuron Workbench
 
-Android app for the current AIMENG direction: start with a few trainable computational units, measure their held-out contribution, score them for entry/exit, and verify that a real Qualcomm QNN / HTP V73 matrix multiply can execute the forward pass.
+An Android workbench for small, trainable, inspectable numeric networks. The previous Ornith 1.5 9B chat path is not the current launcher or a build dependency on the neuron-lab branch.
 
-## Current app behavior
+## What is available in the workbench
 
-- Launcher: **AIMENG · 神经元实验**, not the retired Ornith 9B chat flow.
-- Starts with 4 affine toy units; the on-device UI permits 2–16 units and 1–500 training epochs.
-- Each unit learns a tiny synthetic regression target, `y = 2*x + 1`, using a CPU batch-gradient update.
-- The score controller compares held-out error with a unit removed or a sleeping candidate admitted, subtracts a small compute cost, uses separate enter/exit thresholds, and keeps at least one unit active.
-- A JSONL trace is saved under the app-private files directory as `neuron-lab-trace.jsonl`.
-- **Heterogeneous routing:** CPU is the default for tiny or irregular work. The automatic router sends a whole subgraph to QNN/HTP only when the batch is large enough to plausibly amortize dispatch and 32x32x32 padding; any NPU error or invalid output falls back to CPU. Initial thresholds (at least 16 samples and 8 active units) are conservative heuristics, not yet a measured break-even point.
-- The explicit NPU diagnostic button bypasses that heuristic and calls the existing JNI `NpuRuntime.matMulInt8Buf` path, which submits actual INT8 tensors to QNN / HTP. It compares NPU-produced held-out predictions with the CPU reference and reports the absolute MSE delta.
-- CPU owns scheduling, score/entry/exit logic, parameter updates, and trace writing. NPU receives batched numeric subgraphs, not individual neurons one at a time. GPU is a future optional backend only after a supported Android GPU API and real-device benchmark are implemented; it is not currently wired in.
+- **Overview:** network/data/task status, current estimated workspace use, process RSS/PSS/HWM and the 4 GiB hard guard.
+- **Neuron manager:** filter by neuron ID, select visible neurons, save one or a selected batch to a persistent local neuron library, export one neuron or a neuron pack, enable/disable units, inspect contribution and resource-adjusted scores, and delete a unit only after a confirmation.
+- **Network page:** configure multiple numeric inputs, up to 128 hidden neurons, and multiple outputs; view a native input → hidden → output graph. Rebuilding explicitly warns that active network weights reset; library copies remain.
+- **Training tasks:** CPU Adam training, train/validation split, best-validation checkpoint restore, early stopping, progress, cancellation, and persistent task history.
+- **Run page:** enter a numeric vector and inspect output values, hidden activations, and each hidden unit's contribution to each output.
+- **Data and files:** import/export the complete workspace, dataset JSON/CSV, a training task JSON, training result CSV, recent event JSONL, single neuron JSON, or a neuron-pack JSON using Android's system file picker.
+- **Automatic local persistence:** model weights, output bias, samples, neuron library, task history and recent events are stored in the private app file neuron-workspace.json.
 
-## Build
+## Resource competition and safe evolution
 
-The Android CI builds arm64-v8a, fetches the pinned QNN HTP V73 runtime stack, compiles Java and native C++, packages an APK, and signs it with the existing app signing identity so the installed app can be upgraded in place.
+The workbench borrows the useful part of the proposed selection idea: quality is measured on held-out numeric samples, memory and estimated compute cost contribute a small penalty, and a single generation may attempt one redundant-unit prune followed by one slightly mutated copy of an elite active unit. The parent's output contribution is split before mutation. Pruning and child acceptance are checked against the validation set with a 0.5% tolerance; rejected mutations are rolled back. The best active unit is protected, and at least one active unit is required.
 
-The retired 9B model is no longer downloaded as part of the build and is not needed to open or run the neuron lab. Legacy inference source files remain in the repository temporarily to reduce the risk of an unrelated native cleanup breaking the NPU service; they are not the launcher path and the lab does not load model weights.
+The current local workspace has a conservative **64 MiB estimated data/model budget**, at most 128 hidden units, at most 16 numeric inputs/outputs and at most 5,000 samples. These are intentional early-stage caps, not claims that the system can currently run thousands or millions of neurons. Before scaling into thousands, connections need a genuinely sparse representation and per-subnet allocations, not merely a bigger limit. Estimated Java object costs are only estimates; real process RSS/PSS and native allocations remain authoritative.
 
-## Heterogeneous compute policy
+**4 GiB is a hard ceiling for the whole Android app process, not a target allocation for the neuron pool.** The workbench uses a conservative 3,500 MiB process-RSS start guard for training/evolution to leave headroom for the existing native runtime, QNN staging, UI and system overhead. The process memory guard cannot guarantee a device will never be killed, so monitor real-device peak RSS/PSS before increasing limits.
 
-The runtime must not send each tiny neuron operation back and forth between CPU and NPU. Device transitions, tensor packing, quantization, synchronization, and padding can cost more than the computation itself.
+## Hardware policy
 
-- **CPU first:** parameter updates, score calculations, unit admission/retirement, trace writing, and control flow stay on CPU.
-- **NPU when it fits:** use QNN/HTP for sufficiently large, batched matrix operations with supported shape buckets and quantization. The current 32x32x32 padded call is a correctness/availability probe for a tiny workload, not evidence of a speedup.
-- **GPU is optional, not assumed:** only add a GPU backend after identifying a supported Android GPU compute API and benchmarking end-to-end latency, power, and memory. Do not duplicate every operation across CPU/GPU/NPU.
-- **Dispatch by measured cost:** compare CPU time against NPU time including packing, padding, synchronization, and result conversion. Small workloads stay on CPU; NPU receives a batch only when measured total cost is lower.
-- **No parallelism by slogan:** avoid concurrent CPU/NPU execution unless independent batches exist and measurement shows a benefit. Correctness and the 4 GiB whole-process budget take priority.
+- CPU owns training, score calculation, selection, task scheduling and irregular small operations.
+- The existing QNN/HTP V73 INT8 path is available as an independent matrix diagnostic. It is not the generic neural network's training backend and its padded 32³ probe is not proof of a speedup.
+- Small workloads stay on CPU. NPU routing needs end-to-end benchmarks including packing, padding, driver submission, synchronization, conversion and fallback.
+- No GPU compute backend is claimed as implemented.
 
-## Important limits
+## Task/data format
 
-- This is a deterministic toy regression experiment, **not a language model** and not a biological brain simulation.
-- Parameter learning and scoring currently run on CPU. The NPU is used for the measured forward matrix multiplication only; this is not NPU training.
-- A successful native call must still be verified on the target phone. GitHub compilation cannot prove the device's HTP backend is available or that the NPU result matches CPU within tolerance.
-- The whole Android app runtime must remain below 4096 MiB, with a target release gate below 3800 MiB. Increase the unit count gradually and measure actual device peak RSS/PSS before raising the default.
-- The NPU backend's INT8 quantization and output scale are approximate; the UI reports the CPU/NPU error delta rather than silently treating any non-null result as correct.
+A dataset JSON is aimeng-dataset/v1, with inputs, outputs, and samples, each sample containing numeric input and output arrays. Numeric CSV rows are input columns first and output columns last; a single optional nonnumeric header line is accepted. The output dimension is inferred from the currently configured network. A task JSON is a small reusable parameter preset; import the dataset separately.
+
+Current training is supervised numeric mapping. It does **not** yet tokenize text, understand arbitrary Chinese prompts, process images, or behave as a language model.
+
+## Build and installation identity
+
+The app keeps applicationId = bslsjdk.ornithnpu and the existing persistent signing-key alias/cache to preserve upgrade identity. Never generate a new signing key for a release build. The feature branch must be verified with its own current Actions run and APK; a successful build on main does not prove the neuron-workbench branch compiled, and a GitHub build does not prove QNN works on a physical phone.
 
 ## Relevant files
 
-- `app/src/main/java/bslsjdk/mcnpu/NeuronLabActivity.java` — mobile UI and background execution.
-- `app/src/main/java/bslsjdk/mcnpu/NeuronLabEngine.java` — parameter updates, contribution scores, hysteresis, safety floor and trace.
-- `app/src/main/java/bslsjdk/mcnpu/NpuNeuronForward.java` — explicit QNN HTP INT8 forward path.
-- `app/src/main/java/bslsjdk/mcnpu/AdaptiveForwardBackend.java` — conservative CPU/NPU workload router with CPU fallback.
-- `app/src/main/java/bslsjdk/mcnpu/NpuRuntime.java` and `app/src/main/cpp/mcnpu.cpp` — existing native QNN runtime and matrix-multiply backend.
-- `docs/PROJECT_MEMORY.md` — current direction and verification limits.
+- app/src/main/java/bslsjdk/mcnpu/NeuronLabActivity.java — workbench pages and SAF file import/export.
+- app/src/main/java/bslsjdk/mcnpu/NeuronWorkspace.java — trainable multi-input/multi-output network, resource-adjusted scoring, guarded evolution, data/model/task formats and persistence.
+- app/src/main/java/bslsjdk/mcnpu/NetworkDiagramView.java — lightweight input/hidden/output connection diagram.
+- app/src/main/java/bslsjdk/mcnpu/AdaptiveForwardBackend.java — conservative CPU/NPU workload router used only by the separate original lab/diagnostic path.
+- app/src/main/java/bslsjdk/mcnpu/NpuNeuronForward.java — QNN HTP V73 INT8 matrix forward diagnostic.
+- docs/NEURON_WORKBENCH_DESIGN.md — resource competition, training and scaling safety plan.
+- docs/PROJECT_MEMORY.md — project direction and verification record.
