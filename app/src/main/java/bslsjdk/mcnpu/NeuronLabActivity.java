@@ -23,7 +23,7 @@ public final class NeuronLabActivity extends Activity {
     });
     private TextView npuState, report, unitsView;
     private EditText unitCount, epochCount;
-    private Button runButton, npuButton;
+    private Button runButton, npuButton, autoButton;
     private volatile boolean busy;
     private NeuronLabEngine engine;
 
@@ -42,6 +42,7 @@ public final class NeuronLabActivity extends Activity {
             runOnUiThread(() -> {
                 setNpuState(ok ? "NPU 已初始化：真实 QNN/HTP 路径可用，尚待前向实测" : detail);
                 npuButton.setEnabled(ok);
+                if (autoButton != null) autoButton.setEnabled(true);
                 appendReport(ok
                         ? "运行时已初始化。当前采用异构分工：CPU 负责参数更新、评分与进退场；NPU 只执行成批 INT8 矩阵前向验证，不让每个小单元频繁跨设备。当前小规模测试主要验证正确性，不代表 NPU 比 CPU 更快。"
                         : "NPU 初始化失败，仍可运行 CPU 学习实验。详情：" + detail);
@@ -101,7 +102,15 @@ public final class NeuronLabActivity extends Activity {
         LinearLayout.LayoutParams npuLp = params(-1, dp(52));
         npuLp.topMargin = dp(8);
         root.addView(npuButton, npuLp);
+        npuButton.setText("强制执行 NPU 前向诊断");
         npuButton.setOnClickListener(v -> startExperiment(true));
+
+        autoButton = button("自动选择 CPU / NPU 后端");
+        autoButton.setEnabled(false);
+        LinearLayout.LayoutParams autoLp = params(-1, dp(52));
+        autoLp.topMargin = dp(8);
+        root.addView(autoButton, autoLp);
+        autoButton.setOnClickListener(v -> startExperimentAuto());
 
         Button refresh = button("查看单元状态与评分");
         LinearLayout.LayoutParams refreshLp = params(-1, dp(48));
@@ -133,6 +142,22 @@ public final class NeuronLabActivity extends Activity {
         root.addView(report, reportLp);
     }
 
+    private void startExperimentAuto() {
+        if (busy) return;
+        final int count, epochs;
+        try {
+            count = Integer.parseInt(unitCount.getText().toString().trim());
+            epochs = Integer.parseInt(epochCount.getText().toString().trim());
+            if (count < 2 || count > 16) throw new IllegalArgumentException("神经元数量必须在 2 到 16 之间");
+            if (epochs < 1 || epochs > 500) throw new IllegalArgumentException("训练轮数必须在 1 到 500 之间");
+        } catch (Throwable t) {
+            new AlertDialog.Builder(this).setTitle("参数不合法").setMessage(t.getMessage())
+                    .setPositiveButton("知道了", null).show();
+            return;
+        }
+        runExperiment(count, epochs, new AdaptiveForwardBackend(new NpuNeuronForward()), "auto");
+    }
+
     private void startExperiment(boolean useNpu) {
         if (busy) return;
         final int count, epochs;
@@ -146,9 +171,14 @@ public final class NeuronLabActivity extends Activity {
                     .setPositiveButton("知道了", null).show();
             return;
         }
+        runExperiment(count, epochs, useNpu ? new NpuNeuronForward() : null, useNpu ? "npu-diagnostic" : "cpu");
+    }
+
+    private void runExperiment(int count, int epochs, NeuronLabEngine.ForwardBackend backend, String mode) {
         busy = true;
         runButton.setEnabled(false);
         npuButton.setEnabled(false);
+        if (autoButton != null) autoButton.setEnabled(false);
         report.setText("正在运行实验…");
         worker.execute(() -> {
             try {
@@ -156,12 +186,11 @@ public final class NeuronLabActivity extends Activity {
                     engine = new NeuronLabEngine(count);
                     runOnUiThread(this::refreshUnits);
                 }
-                NeuronLabEngine.ForwardBackend backend = useNpu ? new NpuNeuronForward() : null;
                 File trace = new File(getFilesDir(), "neuron-lab-trace.jsonl");
                 NeuronLabEngine.Result result = engine.trainAndScore(epochs, backend, trace);
                 String summary = engine.summary();
                 runOnUiThread(() -> {
-                    appendReport(result.report + "\n" + memoryStatus() + "\n\n" + summary);
+                    appendReport("routing_mode=" + mode + "\n" + result.report + "\n" + memoryStatus() + "\n\n" + summary);
                     refreshUnits();
                     getPreferences(MODE_PRIVATE).edit().putInt("unit_count", count).apply();
                 });
@@ -172,6 +201,7 @@ public final class NeuronLabActivity extends Activity {
                     busy = false;
                     runButton.setEnabled(true);
                     npuButton.setEnabled(NpuRuntime.isReady());
+                    if (autoButton != null) autoButton.setEnabled(true);
                 });
             }
         });
