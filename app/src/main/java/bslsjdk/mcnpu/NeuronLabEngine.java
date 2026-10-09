@@ -104,7 +104,7 @@ public final class NeuronLabEngine {
         trace("experiment_start", new JSONObject().put("units", unitCount).put("target", "y=2*x+1"));
     }
 
-    public synchronized Result trainAndScore(int epochs, ForwardBackend backend, File traceFile) {
+    public synchronized Result trainAndScore(int epochs, ForwardBackend backend, File traceFile) throws org.json.JSONException {
         if (epochs < 1 || epochs > 500) throw new IllegalArgumentException("epochs must be 1..500");
         double initial = evaluate(validation, null);
         int startEpoch = epoch;
@@ -170,7 +170,7 @@ public final class NeuronLabEngine {
         return out.toString();
     }
 
-    private List<JSONObject> scoreUnits(double cost) {
+    private List<JSONObject> scoreUnits(double cost) throws org.json.JSONException {
         double baseline = evaluate(validation, null);
         ArrayList<JSONObject> records = new ArrayList<>();
         for (Unit u : units) {
@@ -201,7 +201,7 @@ public final class NeuronLabEngine {
         return records;
     }
 
-    private List<JSONObject> applyScores(List<JSONObject> scores) {
+    private List<JSONObject> applyScores(List<JSONObject> scores) throws org.json.JSONException {
         ArrayList<JSONObject> changes = new ArrayList<>();
         for (int i = 0; i < units.size(); i++) {
             Unit u = units.get(i);
@@ -263,7 +263,7 @@ public final class NeuronLabEngine {
         return sum / data.size();
     }
 
-    private JSONArray activeIds() {
+    private JSONArray activeIds() throws org.json.JSONException {
         JSONArray ids = new JSONArray();
         for (Unit u : units) if (u.enabled) ids.put(u.id);
         return ids;
