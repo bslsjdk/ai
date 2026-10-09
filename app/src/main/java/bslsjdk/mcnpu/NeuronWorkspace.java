@@ -525,17 +525,36 @@ public final class NeuronWorkspace {
 
     private double mse(List<Sample> data, int skippedNeuron) {
         if (data.isEmpty()) return Double.NaN;
+        // Reuse the calibrated hybrid hidden-layer path for full-network train/validation
+        // evaluation, but never initiate GPU calibration from a metric call. Calibration
+        // belongs to the training epoch so tiny validation subsets cannot select a backend.
+        double[][] hiddenBatch = skippedNeuron < 0 && trainingHybridDecisionMade && useHybridTraining
+                && data.size() >= 64 ? buildEpochHiddenActivations(data) : null;
         double sum = 0;
         long count = 0;
-        for (Sample s : data) {
-            double[] out = predictOutputOnly(s.input, skippedNeuron);
+        for (int i = 0; i < data.size(); i++) {
+            Sample sample = data.get(i);
+            double[] out = hiddenBatch == null
+                    ? predictOutputOnly(sample.input, skippedNeuron)
+                    : predictOutputOnlyFromHidden(hiddenBatch[i]);
             for (int o = 0; o < outputCount; o++) {
-                double d = out[o] - s.output[o];
+                double d = out[o] - sample.output[o];
                 sum += d * d;
                 count++;
             }
         }
         return count == 0 ? Double.NaN : sum / count;
+    }
+
+    private double[] predictOutputOnlyFromHidden(double[] hidden) {
+        double[] output = outputBias.clone();
+        for (int i = 0; i < neurons.size(); i++) {
+            double activation = hidden[i];
+            if (activation == 0.0) continue;
+            double[] weights = neurons.get(i).outputWeights;
+            for (int o = 0; o < outputCount; o++) output[o] += activation * weights[o];
+        }
+        return output;
     }
 
     /** Minimal-allocation inference path for loss/evaluation loops. */
