@@ -21,6 +21,11 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -109,6 +114,7 @@ public final class GridWorldLabActivity extends Activity {
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         loadCheckpoint();
+        loadReplayMemory();
         buildUi();
         resetEpisode();
         status.setText("随机地图实验已就绪。每张地图都经 BFS 验证；训练奖励 v2 已加入真实最短路距离反馈。");
@@ -181,7 +187,7 @@ public final class GridWorldLabActivity extends Activity {
         worker.execute(() -> {
             long wins = 0, totalSteps = 0, replayUpdates = 0;
             long globalEnvironmentSteps = 0;
-            ReplayMemory replay = new ReplayMemory();
+            ReplayMemory replay = replayMemory;
             int reportEvery = count >= 100000 ? 5000 : 500;
             long started = System.currentTimeMillis();
             for (int ep = 1; ep <= count && !cancelTraining; ep++) {
@@ -317,6 +323,8 @@ public final class GridWorldLabActivity extends Activity {
     private volatile double lastTrainingStepsPerSecond;
     private volatile long lastReplayUpdates;
     private volatile int lastReplaySize;
+    private volatile String replayMemoryError = "";
+    private final ReplayMemory replayMemory = new ReplayMemory();
 
 
     private void applyHiddenSize() {
@@ -624,7 +632,8 @@ public final class GridWorldLabActivity extends Activity {
             checkpoint.put("rewardVersion", REWARD_VERSION);
             checkpoint.put("rewardShaping", "BFS shortest-distance delta: +0.10 closer, -0.10 farther; base rewards retained");
             checkpoint.put("savedAt", System.currentTimeMillis());
-            write(new File(dir, "q_network.json"), checkpoint.toString(2));
+            writeAtomic(new File(dir, "q_network.json"), checkpoint.toString(2));
+            saveReplayMemoryAtomic(dir);
             JSONObject report = new JSONObject();
             report.put("format", "aimeng-android-random-gridworld-report/v3");
             report.put("mapSize", SIZE);
@@ -632,7 +641,7 @@ public final class GridWorldLabActivity extends Activity {
             report.put("inputFeatures", "8 local features + 144 wall-map cells + last 8 positions (x,y)");
             report.put("executionBackend", "CPU Java forward/backprop; NPU/GPU not yet wired into this QNet");
             report.put("shortTermMemory", "last 8 positions per episode; repeated-visit penalty=-0.08 during training");
-            report.put("longTermMemory", "trained Q-network weights saved in q_network.json; sampled experience replay is session-local");
+            report.put("longTermMemory", "trained weights in q_network.json plus persistent sampled experience replay in replay_memory.bin");
             // Report configured per-episode history, not the unrelated current UI path length.
             report.put("shortTermMemoryLength", HISTORY_LENGTH);
             report.put("reportPathLength", Math.min(HISTORY_LENGTH, path.size()));
@@ -647,7 +656,9 @@ public final class GridWorldLabActivity extends Activity {
             report.put("experienceReplayWarmup", REPLAY_WARMUP);
             report.put("experienceReplayUpdates", lastReplayUpdates);
             report.put("experienceReplayFinalSize", lastReplaySize);
-            report.put("memoryModel", "last 8 positions are episode-local short-term memory; replay is training-session episodic memory; q_network.json stores persistent learned weights");
+            report.put("memoryModel", "last 8 positions are episode-local short-term memory; replay_memory.bin persists up to 2048 transitions across launches; q_network.json stores persistent learned weights");
+            report.put("replayMemoryPersistence", "atomic binary checkpoint alongside q_network.json");
+            report.put("replayMemoryError", replayMemoryError);
             report.put("recurrentTraining", "truncated BPTT across internal thought cycles");
             report.put("executionBackend", "CPU Java recurrent forward/backprop; NPU/GPU not yet wired into this QNet");
             report.put("rewardVersion", REWARD_VERSION);
@@ -735,6 +746,42 @@ public final class GridWorldLabActivity extends Activity {
         } catch (Exception ignored) { }
     }
 
+    private void loadReplayMemory() {
+        File dir = new File(getFilesDir(), "gridworld-lab");
+        File file = new File(dir, "replay_memory.bin");
+        if (!file.isFile()) return;
+        try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
+            replayMemory.readFrom(in);
+            lastReplaySize = replayMemory.size;
+            replayMemoryError = "";
+        } catch (Exception e) {
+            replayMemory.clear();
+            lastReplaySize = 0;
+            replayMemoryError = e.getClass().getSimpleName() + ": " + String.valueOf(e.getMessage());
+        }
+    }
+
+    private void saveReplayMemoryAtomic(File dir) throws Exception {
+        File target = new File(dir, "replay_memory.bin");
+        File temp = new File(dir, "replay_memory.bin.tmp");
+        File backup = new File(dir, "replay_memory.bin.bak");
+        try (FileOutputStream fos = new FileOutputStream(temp);
+             DataOutputStream out = new DataOutputStream(new BufferedOutputStream(fos))) {
+            replayMemory.writeTo(out);
+            out.flush();
+            fos.getFD().sync();
+        }
+        if (backup.exists() && !backup.delete()) throw new IllegalStateException("无法清理经验记忆备份");
+        boolean hadTarget = target.exists();
+        if (hadTarget && !target.renameTo(backup)) throw new IllegalStateException("无法备份旧经验记忆");
+        if (!temp.renameTo(target)) {
+            if (hadTarget) backup.renameTo(target);
+            throw new IllegalStateException("无法提交经验记忆文件");
+        }
+        if (backup.exists()) backup.delete();
+        replayMemoryError = "";
+    }
+
     private void saveTrainingCheckpoint(int completedEpisodes) {
         try {
             File dir = new File(getFilesDir(), "gridworld-lab");
@@ -745,6 +792,7 @@ public final class GridWorldLabActivity extends Activity {
             checkpoint.put("savedAt", System.currentTimeMillis());
             checkpoint.put("checkpointKind", "periodic_training_autosave");
             writeAtomic(new File(dir, "q_network.json"), checkpoint.toString());
+            saveReplayMemoryAtomic(dir);
             lastAutosaveError = "";
         } catch (Exception e) {
             lastAutosaveError = e.getClass().getSimpleName() + ": " + String.valueOf(e.getMessage());
@@ -838,6 +886,41 @@ public final class GridWorldLabActivity extends Activity {
 
         int sample(Random random) {
             return random.nextInt(size);
+        }
+
+        void clear() { size = 0; cursor = 0; }
+
+        void writeTo(DataOutputStream out) throws Exception {
+            out.writeInt(0x41494D52); // "AIMR"
+            out.writeInt(1);
+            out.writeInt(size);
+            int start = (cursor - size + REPLAY_CAPACITY) % REPLAY_CAPACITY;
+            for (int n = 0; n < size; n++) {
+                int slot = (start + n) % REPLAY_CAPACITY;
+                for (int i = 0; i < INPUT_SIZE; i++) out.writeDouble(states[slot][i]);
+                for (int i = 0; i < INPUT_SIZE; i++) out.writeDouble(nextStates[slot][i]);
+                out.writeInt(actions[slot]);
+                out.writeDouble(rewards[slot]);
+                out.writeBoolean(dones[slot]);
+            }
+        }
+
+        void readFrom(DataInputStream in) throws Exception {
+            clear();
+            if (in.readInt() != 0x41494D52 || in.readInt() != 1) throw new IllegalStateException("经验记忆文件格式不匹配");
+            int count = in.readInt();
+            if (count < 0 || count > REPLAY_CAPACITY) throw new IllegalStateException("经验记忆数量越界");
+            for (int n = 0; n < count; n++) {
+                double[] state = new double[INPUT_SIZE];
+                double[] next = new double[INPUT_SIZE];
+                for (int i = 0; i < INPUT_SIZE; i++) state[i] = in.readDouble();
+                for (int i = 0; i < INPUT_SIZE; i++) next[i] = in.readDouble();
+                int action = in.readInt();
+                double reward = in.readDouble();
+                boolean done = in.readBoolean();
+                if (action < 0 || action >= 4 || !Double.isFinite(reward)) throw new IllegalStateException("经验记录无效");
+                add(state, action, reward, next, done);
+            }
         }
     }
 
