@@ -75,6 +75,11 @@ public final class NeuronLabActivity extends Activity {
     private ProgressBar activeTrainProgress;
     private TextView activeTrainLabel;
     private TextView pageTrainingReport;
+    private EditText poolSizeField;
+    private EditText poolActiveField;
+    private EditText poolInputField;
+    private TextView poolReport;
+    private HeterogeneousNeuronRuntime poolRuntime;
 
     private volatile NeuronWorkspace workspace;
     private String currentPage = "home";
@@ -168,8 +173,8 @@ public final class NeuronLabActivity extends Activity {
         navRow = new LinearLayout(this);
         navRow.setOrientation(LinearLayout.HORIZONTAL);
         String[][] pages = {
-                {"home", "总览"}, {"neurons", "神经元"}, {"network", "网络图"},
-                {"train", "训练任务"}, {"run", "运行"}, {"data", "数据/保存"}
+                {"home", "总览"}, {"neurons", "神经元"}, {"runtime", "群体运行时"},
+                {"network", "网络图"}, {"train", "训练任务"}, {"run", "运行"}, {"data", "数据/保存"}
         };
         for (String[] entry : pages) {
             Button b = new Button(this);
@@ -214,6 +219,7 @@ public final class NeuronLabActivity extends Activity {
 
         switch (page) {
             case "neurons": buildNeuronsPage(content); break;
+            case "runtime": buildRuntimePage(content); break;
             case "network": buildNetworkPage(content); break;
             case "train": buildTrainingPage(content); break;
             case "run": buildRunPage(content); break;
@@ -225,11 +231,75 @@ public final class NeuronLabActivity extends Activity {
     private String pageForNavIndex(int index) {
         switch (index) {
             case 1: return "neurons";
-            case 2: return "network";
-            case 3: return "train";
-            case 4: return "run";
-            case 5: return "data";
+            case 2: return "runtime";
+            case 3: return "network";
+            case 4: return "train";
+            case 5: return "run";
+            case 6: return "data";
             default: return "home";
+        }
+    }
+
+    private void buildRuntimePage(LinearLayout content) {
+        LinearLayout intro = card(content, "大规模神经元池 · 实验性运行时");
+        addText(intro, "这里与现有 128 单元训练网络分开。池大小可设为 2 到 200,000，使用连续 float 数组并按任务输入进行 top-k 激活路由；参数预算默认不超过 64 MiB。", 13, false);
+        addText(intro, "当前版本实际执行的是 CPU 参考路由。GPU 后端尚未接入，现有 QNN/HTP 路径也不支持此大池通用调度，因此不会伪报 NPU/GPU 已加速。路由分数来自未训练的初始化权重，只验证规模、内存与调度管线。", 12, true);
+
+        LinearLayout config = card(content, "池配置与任务输入");
+        poolSizeField = editText(poolRuntime == null ? "10000" : String.valueOf(poolRuntime.size()),
+                "神经元总量（2..200000）", InputType.TYPE_CLASS_NUMBER);
+        poolActiveField = editText("64", "每轮激活候选数（最多 4096）", InputType.TYPE_CLASS_NUMBER);
+        poolInputField = editText("0.2,0.5,-0.1,0.8", "任务数值向量，逗号分隔（1..16 维）",
+                InputType.TYPE_CLASS_TEXT | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
+        config.addView(poolSizeField, params(-1, 48, 0, 4, 0, 0));
+        config.addView(poolActiveField, params(-1, 48, 0, 6, 0, 0));
+        config.addView(poolInputField, params(-1, 48, 0, 6, 0, 0));
+        Button route = primaryButton("创建/复用神经元池并执行路由测试");
+        route.setOnClickListener(v -> runPoolRoutingTest());
+        config.addView(route, params(-1, 48, 0, 8, 0, 0));
+        Button plan = secondaryButton("只检查内存预算与后端规划");
+        plan.setOnClickListener(v -> showPoolPlan());
+        config.addView(plan, params(-1, 44, 0, 6, 0, 0));
+
+        LinearLayout results = card(content, "执行报告");
+        poolReport = label("尚未执行。", 12, false);
+        poolReport.setTextColor(0xFF344054);
+        poolReport.setTextIsSelectable(true);
+        results.addView(poolReport, params(-1, -2, 0, 0, 0, 0));
+        addText(results, "说明：本原型已实现有界池、预算预检和 O(N log K) top-k 路由，但还没有训练语义、持久化单元参数或真实 GPU/NPU 适配器。下一步应先给路由权重加入可验证的训练/保存，再按实测基准接入后端。", 11, false);
+    }
+
+    private void showPoolPlan() {
+        try {
+            int count = Integer.parseInt(poolSizeField.getText().toString().trim());
+            int active = Integer.parseInt(poolActiveField.getText().toString().trim());
+            HeterogeneousNeuronRuntime.Plan plan = HeterogeneousNeuronRuntime.plan(
+                    count, 16, active, HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES,
+                    false, false);
+            poolReport.setText(plan.toReport());
+        } catch (Throwable error) {
+            poolReport.setText("规划失败：" + shortError(error));
+        }
+    }
+
+    private void runPoolRoutingTest() {
+        try {
+            int count = Integer.parseInt(poolSizeField.getText().toString().trim());
+            int active = Integer.parseInt(poolActiveField.getText().toString().trim());
+            if (poolRuntime == null || poolRuntime.size() != count)
+                poolRuntime = new HeterogeneousNeuronRuntime(count,
+                        HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES, 20261009L);
+            String[] parts = poolInputField.getText().toString().trim().split(",");
+            if (parts.length < 1 || parts.length > HeterogeneousNeuronRuntime.MAX_INPUTS)
+                throw new IllegalArgumentException("输入向量需要 1..16 个数字");
+            float[] input = new float[parts.length];
+            for (int i = 0; i < parts.length; i++) input[i] = Float.parseFloat(parts[i].trim());
+            HeterogeneousNeuronRuntime.RouteResult result = poolRuntime.route(input, active);
+            poolReport.setText(result.toReport() + "\n\n" +
+                    HeterogeneousNeuronRuntime.plan(count, input.length, active,
+                            HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES, false, false).toReport());
+        } catch (Throwable error) {
+            poolReport.setText("路由失败：" + shortError(error));
         }
     }
 
