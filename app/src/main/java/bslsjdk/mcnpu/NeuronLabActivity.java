@@ -501,13 +501,16 @@ public final class NeuronLabActivity extends Activity {
         addActionRow(config, new String[]{"保存神经元池", "恢复已保存池"}, new Runnable[]{
                 this::savePoolCheckpoint, this::loadPoolCheckpoint
         });
+        Button batchRoute = secondaryButton("批量 GPU / NPU 路由测速");
+        batchRoute.setOnClickListener(v -> runPoolBatchRoutingTest());
+        config.addView(batchRoute, params(-1, 46, 0, 6, 0, 0));
 
         LinearLayout results = card(content, "执行报告");
         poolReport = label("尚未执行。", 12, false);
         poolReport.setTextColor(0xFF344054);
         poolReport.setTextIsSelectable(true);
         results.addView(poolReport, params(-1, -2, 0, 0, 0, 0));
-        addText(results, "说明：本原型已实现有界池、预算预检和 O(N log K) top-k 路由，但还没有训练语义、持久化单元参数或真实 GPU/NPU 适配器。下一步应先给路由权重加入可验证的训练/保存，再按实测基准接入后端。", 11, false);
+        addText(results, "说明：单状态路由保留 CPU 参考与实测 GPU 路径；批量路由会对 CPU、GLES GPU 和已初始化的 QNN HTP NPU 做数值校验及端到端测速，只选择确实更快且误差合格的后端。批量测试最多 32 个状态、工作集不超过 32 MiB。", 11, false);
     }
 
     private void showPoolPlan() {
@@ -542,6 +545,52 @@ public final class NeuronLabActivity extends Activity {
         } catch (Throwable error) {
             poolReport.setText("路由失败：" + shortError(error));
         }
+    }
+
+    private void runPoolBatchRoutingTest() {
+        final int count, active;
+        final float[] base;
+        try {
+            count = Integer.parseInt(poolSizeField.getText().toString().trim());
+            active = Integer.parseInt(poolActiveField.getText().toString().trim());
+            String[] parts = poolInputField.getText().toString().trim().split(",");
+            if (parts.length < 1 || parts.length > HeterogeneousNeuronRuntime.MAX_INPUTS)
+                throw new IllegalArgumentException("输入向量需要 1..16 个数字");
+            base = new float[parts.length];
+            for (int i = 0; i < parts.length; i++) base[i] = Float.parseFloat(parts[i].trim());
+            if (poolRuntime == null || poolRuntime.size() != count)
+                poolRuntime = new HeterogeneousNeuronRuntime(count,
+                        HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES, 20261009L);
+        } catch (Throwable error) {
+            poolReport.setText("批量路由参数错误：" + shortError(error));
+            return;
+        }
+        final HeterogeneousNeuronRuntime runtime = poolRuntime;
+        poolReport.setText("批量 GPU/NPU 路由任务已排队。正在检查内存预算并测量真实后端……");
+        worker.execute(() -> {
+            try {
+                Future<String> job = computeScheduler.submit("pool-batch-gpu-npu-route",
+                        40L * 1024L * 1024L, () -> {
+                    boolean npuReady = NpuRuntime.isReady() || NpuRuntime.init(getApplicationContext());
+                    float[][] batch = new float[16][base.length];
+                    for (int r = 0; r < batch.length; r++) {
+                        float factor = 0.80f + (r % 9) * 0.05f;
+                        for (int j = 0; j < base.length; j++) batch[r][j] = base[j] * factor;
+                    }
+                    HeterogeneousNeuronRuntime.BatchRouteResult result = runtime.routeBatch(batch, active);
+                    return result.toReport() + "\nNPU_ready=" + npuReady
+                            + "\nNPU_status=" + NpuRuntime.status()
+                            + "\nCPU/GPU/NPU are compared on the same batch; accelerator output must pass numerical tolerance."
+                            + "\n" + computeScheduler.snapshot().toReport();
+                });
+                String result = awaitScheduledResult(job, "批量 GPU/NPU 路由");
+                runOnUiThread(() -> { if (poolReport != null) poolReport.setText(result); });
+            } catch (Throwable error) {
+                String message = "批量路由失败或等待内存：" + shortError(error)
+                        + "\n" + computeScheduler.snapshot().toReport();
+                runOnUiThread(() -> { if (poolReport != null) poolReport.setText(message); });
+            }
+        });
     }
 
     private File poolCheckpointFile() {
