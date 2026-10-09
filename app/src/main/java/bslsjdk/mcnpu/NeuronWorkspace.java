@@ -252,6 +252,11 @@ public final class NeuronWorkspace {
         for (Neuron n : neurons) out.add(n.copy());
         return out;
     }
+    public synchronized List<Neuron> savedNeuronsSnapshot() {
+        ArrayList<Neuron> out = new ArrayList<>();
+        for (Neuron n : savedNeurons) out.add(n.copy());
+        return out;
+    }
     public synchronized List<Sample> samplesSnapshot() {
         ArrayList<Sample> out = new ArrayList<>();
         for (Sample s : samples) out.add(new Sample(s.input, s.output));

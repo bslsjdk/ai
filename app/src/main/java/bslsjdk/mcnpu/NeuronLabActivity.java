@@ -12,7 +12,6 @@ import android.os.Debug;
 import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -801,24 +800,26 @@ public final class NeuronLabActivity extends Activity {
         if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
         Uri uri = data.getData();
         if (requestCode == REQ_IMPORT) {
+            final String importType = pendingImportType;
             worker.execute(() -> {
                 try {
                     String fileName = displayName(uri);
                     String content = readUri(uri);
-                    handleImport(content, fileName);
+                    handleImport(content, fileName, importType);
                 } catch (Throwable e) {
                     runOnUiThread(() -> dialog("文件导入失败", shortError(e)));
                 }
             });
         } else if (requestCode == REQ_EXPORT) {
             final String exportText = pendingExportContent;
+            final String exportName = pendingExportName;
             if (exportText == null) { toast("导出内容已失效，请重新操作。"); return; }
             worker.execute(() -> {
                 try (OutputStream out = getContentResolver().openOutputStream(uri, "wt")) {
                     if (out == null) throw new java.io.IOException("无法打开目标文件");
                     out.write(exportText.getBytes(StandardCharsets.UTF_8));
                     out.flush();
-                    runOnUiThread(() -> toast("文件已导出：" + pendingExportName));
+                    runOnUiThread(() -> toast("文件已导出：" + exportName));
                 } catch (Throwable e) {
                     runOnUiThread(() -> dialog("文件导出失败", shortError(e)));
                 } finally {
@@ -830,9 +831,9 @@ public final class NeuronLabActivity extends Activity {
         }
     }
 
-    private void handleImport(String content, String fileName) {
+    private void handleImport(String content, String fileName, String importType) {
         try {
-            if (pendingImportType.equals("workspace")) {
+            if (importType.equals("workspace")) {
                 NeuronWorkspace imported = NeuronWorkspace.fromJson(new JSONObject(content));
                 if (imported.getEstimatedBytes() > NeuronWorkspace.MAX_WORKSPACE_BUDGET_BYTES)
                     throw new IllegalArgumentException("导入工作区估算占用超过 64 MiB 安全预算，已拒绝加载");
@@ -842,7 +843,7 @@ public final class NeuronLabActivity extends Activity {
                 runOnUiThread(() -> { showPage("home"); toast("完整工作区已导入并保存。"); });
                 return;
             }
-            if (pendingImportType.equals("dataset")) {
+            if (importType.equals("dataset")) {
                 try {
                     workspace.importDatasetContent(content, fileName, false);
                 } catch (IllegalArgumentException mismatch) {
@@ -850,7 +851,7 @@ public final class NeuronLabActivity extends Activity {
                     if (message != null && message.startsWith("DATA_DIMENSION_MISMATCH:")) {
                         String[] p = message.split(":");
                         int inputs = Integer.parseInt(p[1]), outputs = Integer.parseInt(p[2]);
-                        runOnUiThread(() -> confirmImportDimensions(content, fileName,
+                        runOnUiThread(() -> confirmImportDimensions(content, fileName, importType,
                                 "训练数据是 " + inputs + " 输入 / " + outputs + " 输出；当前网络是 "
                                         + workspace.inputCount + " 输入 / " + workspace.outputCount
                                         + " 输出。是否重建网络结构？网络权重将重置，但导入前的工作区已自动保存。"));
@@ -858,7 +859,7 @@ public final class NeuronLabActivity extends Activity {
                     }
                     throw mismatch;
                 }
-            } else if (pendingImportType.equals("neuron")) {
+            } else if (importType.equals("neuron")) {
                 try {
                     workspace.importNeuronContent(content, false);
                 } catch (IllegalArgumentException mismatch) {
@@ -866,7 +867,7 @@ public final class NeuronLabActivity extends Activity {
                     if (message != null && message.startsWith("DATA_DIMENSION_MISMATCH:")) {
                         String[] p = message.split(":");
                         int inputs = Integer.parseInt(p[1]), outputs = Integer.parseInt(p[2]);
-                        runOnUiThread(() -> confirmImportDimensions(content, fileName,
+                        runOnUiThread(() -> confirmImportDimensions(content, fileName, importType,
                                 "导入神经元需要 " + inputs + " 输入 / " + outputs + " 输出；当前网络是 "
                                         + workspace.inputCount + " / " + workspace.outputCount
                                         + "。重建后再导入，会重置当前网络权重，但不会删除已保存副本。"));
@@ -874,15 +875,15 @@ public final class NeuronLabActivity extends Activity {
                     }
                     throw mismatch;
                 }
-            } else if (pendingImportType.equals("task")) {
+            } else if (importType.equals("task")) {
                 workspace.importTaskContent(content);
             } else {
-                throw new IllegalArgumentException("未知导入类型：" + pendingImportType);
+                throw new IllegalArgumentException("未知导入类型：" + importType);
             }
             persistWorkspaceNow();
             String report = workspace.lastReport;
             runOnUiThread(() -> {
-                showPage(pendingImportType.equals("dataset") ? "train" : "data");
+                showPage(importType.equals("dataset") ? "train" : "data");
                 toast(report == null || report.isEmpty() ? "导入完成并已保存。" : report);
             });
         } catch (Throwable e) {
@@ -890,7 +891,7 @@ public final class NeuronLabActivity extends Activity {
         }
     }
 
-    private void confirmImportDimensions(String content, String fileName, String message) {
+    private void confirmImportDimensions(String content, String fileName, String importType, String message) {
         new AlertDialog.Builder(this).setTitle("输入/输出维度不匹配")
                 .setMessage(message)
                 .setNegativeButton("取消", (d, w) -> toast("已取消导入，没有修改网络。"))
@@ -900,7 +901,7 @@ public final class NeuronLabActivity extends Activity {
                         File backup = new File(getFilesDir(), "neuron-workspace-backup-"
                                 + System.currentTimeMillis() + ".json");
                         workspace.saveInternal(backup);
-                        if (pendingImportType.equals("dataset"))
+                        if (importType.equals("dataset"))
                             workspace.importDatasetContent(content, fileName, true);
                         else workspace.importNeuronContent(content, true);
                         persistWorkspaceNow();
