@@ -517,9 +517,10 @@ public final class NeuronLabActivity extends Activity {
         try {
             int count = Integer.parseInt(poolSizeField.getText().toString().trim());
             int active = Integer.parseInt(poolActiveField.getText().toString().trim());
+            boolean gpuReady = GpuComputeRuntime.status().contains("GPU_GLES_CONTEXT_READY");
             HeterogeneousNeuronRuntime.Plan plan = HeterogeneousNeuronRuntime.plan(
                     count, 16, active, HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES,
-                    false, false);
+                    gpuReady, NpuRuntime.isReady());
             poolReport.setText(plan.toReport());
         } catch (Throwable error) {
             poolReport.setText("规划失败：" + shortError(error));
@@ -541,7 +542,9 @@ public final class NeuronLabActivity extends Activity {
             HeterogeneousNeuronRuntime.RouteResult result = poolRuntime.route(input, active);
             poolReport.setText(result.toReport() + "\n\n" +
                     HeterogeneousNeuronRuntime.plan(count, input.length, active,
-                            HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES, false, false).toReport());
+                            HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES,
+                            GpuComputeRuntime.status().contains("GPU_GLES_CONTEXT_READY"),
+                            NpuRuntime.isReady()).toReport());
         } catch (Throwable error) {
             poolReport.setText("路由失败：" + shortError(error));
         }
