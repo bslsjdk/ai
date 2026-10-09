@@ -304,8 +304,26 @@ static std::string loadMlxModel(const std::string &path, uint64_t requested) {
            " inference=MLX4BIT_NPU_EXECUTOR";
 }
 static std::string loadModel(const std::string &path, uint64_t requested) {
-    if (path.size() >= 11 && path.compare(path.size()-11, 11, ".safetensors") == 0)
-        return loadMlxModel(path, requested);
+    // Detect the container format from file contents, not the filename. Android
+    // document providers frequently expose opaque URI names, and users may select
+    // a valid Safetensors file whose display name is not preserved by the provider.
+    // Safetensors starts with an 8-byte little-endian JSON-header length followed
+    // by '{'; GGUF starts with the literal "GGUF".
+    {
+        std::ifstream probe(path, std::ios::binary);
+        if (!probe) return "ERR ORNITH15_RUNTIME open_failed";
+        unsigned char prefix[9] = {};
+        probe.read(reinterpret_cast<char *>(prefix), sizeof(prefix));
+        const std::streamsize got = probe.gcount();
+        if (got >= 9 && prefix[8] == '{') {
+            uint64_t header_len = 0;
+            for (int i = 0; i < 8; ++i) header_len |= (uint64_t)prefix[i] << (8 * i);
+            if (header_len > 0 && header_len <= 64ull * 1024ull * 1024ull)
+                return loadMlxModel(path, requested);
+        }
+        if (got >= 4 && std::memcmp(prefix, "GGUF", 4) != 0)
+            return "ERR ORNITH15_RUNTIME unsupported_model_format: expected Safetensors or GGUF";
+    }
 #if MCNPU_HAS_LLAMA
     if (g.loaded) {
         if (g.sampler) { llama_sampler_free(g.sampler); g.sampler=nullptr; }
