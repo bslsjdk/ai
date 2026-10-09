@@ -1,6 +1,18 @@
 # AI 项目长期工作记忆 / 防错记录
 
-更新时间：2026-10-08
+更新时间：2026-10-09
+
+## 2026-10-09 方向变更：9B 模型已退役，手机主入口改为 AIMENG 神经元实验
+
+用户明确决定不再继续把 Ornith 1.5 9B 作为当前 AI 的主模型。当前任务是把 `bslsjdk/ai` 这个 Android 应用改为逐步增长的神经元/计算单元实验平台，并尽量使用现有 Qualcomm QNN / HTP V73 NPU 做真实前向数值计算。
+
+- 当前开发分支：`feat/mobile-neuron-unit-runtime`，基于 `main`。
+- 新的 launcher：`NeuronLabActivity`；旧 `ChatActivity` 暂时保留但不再是启动入口，避免一次性删除旧代码造成 native 构建回归。
+- `NeuronLabEngine`：2–16 个可配置 affine toy units，CPU 梯度更新、held-out 消融评分、进入/退出阈值、至少保留一个活动单元、JSONL 轨迹。
+- `NpuNeuronForward`：通过已有 `NpuRuntime.matMulInt8Buf` JNI 路径调用真实 QNN/HTP INT8 MatMul，并与 CPU 预测比较。训练参数更新与评分仍在 CPU；不能称为 NPU 训练。
+- CI 已移除下载 Ornith 9B tokenizer 和克隆 llama.cpp 的步骤，仍会构建现有 QNN HTP V73 资产/native backend。模型相关 native 源文件目前只是暂留，实验启动路径不会加载模型权重。
+- 整个 Android app runtime 硬上限仍为 4096 MiB，目标晋级峰值低于 3800 MiB；先 2–4 个单元，真机验证后再扩大。
+- 任何 NPU 路径都必须检查 QNN 初始化、返回数据、CPU/NPU 误差和实际设备峰值内存。CI 编译不等于真机 HTP 已成功运行。
 
 ## 绝对目标仓库
 当前所有 AI 项目代码、修复、性能优化、NPU/模型运行时工作，只允许操作：
@@ -8,16 +20,8 @@ https://github.com/bslsjdk/ai
 
 除非用户明确要求，否则严禁修改、回滚或继续操作 `bslsjdk/mcnpu`。
 
-## 当前目标模型
-唯一当前目标模型是：
-
-- **Ornith-1.5-9B-MLX-4bit**
-- 官方仓库：`ornith-ai/Ornith-1.5-9B-MLX-4bit`
-- 格式：MLX / Safetensors / 4-bit affine quantization
-- 不是 GGUF Q4_K_M
-- 当前工作名称必须写 **Ornith-1.5**，不能写成 Ornith-3.5、Ornith35 或其他不存在的目标版本。
-
-官方模型资料已核对：Hugging Face 当前明确列出 `ornith-ai/Ornith-1.5-9B-MLX-4bit`，文件包含 `model.safetensors`、`config.json`、`tokenizer.json` 等。
+## 已退役模型（仅历史记录）
+Ornith-1.5-9B-MLX-4bit 曾是旧目标模型，但用户已明确退役该方向。不得继续把它作为当前 app launcher、CI 必需下载项或神经元实验的运行依赖。相关旧实现暂时保留以降低删除 native 代码的风险，除非用户明确要求彻底清理，否则优先先验证新的手机神经元实验。
 
 ## 已犯错误，必须永久避免
 1. 曾把目标模型错误写成/实现成“Ornith 3.5 / ornith35”。这是错误命名，必须修正为 **Ornith-1.5**。
@@ -34,7 +38,7 @@ https://github.com/bslsjdk/ai
 - GGUF/llama.cpp 是旧基线/兼容路径，不能因为新增 MLX 路径而破坏。
 - MLX 4-bit 必须按 Safetensors 中的 affine 4-bit packed weight 规则处理，不能当成 GGUF Q4_K_M。
 
-## 当前模型事实
+## 已退役模型的历史架构事实（不再是当前目标）
 Ornith-1.5-9B-MLX-4bit：
 - 9B dense
 - hidden size 4096
@@ -63,7 +67,7 @@ Ornith-1.5-9B-MLX-4bit：
 
 如果仓库里仍存在旧的 ornith35 文件/符号，它们属于错误命名遗留，必须在修复过程中迁移到 ornith15，并确保 CMake/include/调用点一致。
 
-## 2026-10-08 当前实现进度
+## 2026-10-08 旧 9B 模型实现历史（已退役方向）
 - 已按官方 Qwen3.5 实现修正 full-attention 的 q_proj 8192 维交错布局：[Q_256, gate_256] per head。
 - 已按官方实现修正 partial RoPE：前 32 维与后 32 维配对，频率分母为 32，而不是相邻维配对。
 - 已修正 Qwen3.5 zero-centered RMSNorm：输入/后置/最终/q-k norm 使用 `(1 + weight)`；GatedDeltaNet 输出 norm 使用 `weight * SiLU(z)`。
@@ -231,3 +235,13 @@ Ornith-1.5-9B-MLX-4bit：
 - Fixed runtime reinitialization lifecycle: `ornith15_executor_init_runtime()` no longer discards already prepared static layer weights/final norm when rebuilding recurrent/KV runtime state for the same loaded model.
 - Latest code HEAD after this pass: `82f4b8e1b1ad1323fb0d2867e12c359521cba346`.
 - Do not claim compilation has passed until a workflow job reaches actual steps and produces compiler output.
+
+
+## 2026-10-09 手机神经元实验下一步
+
+1. 先让 CI 完成 Java/资源编译、NDK CMake 编译、APK 打包，并检查 APK launcher 与旧签名升级身份。
+2. 真机安装后，先运行 2–4 单元 CPU 学习实验，检查 held-out MSE 是否下降、JSONL trace 是否写入、应用峰值 RSS/PSS 是否低于门槛。
+3. 单独运行 QNN 前向按钮，核对日志中的 HTP 初始化与 MatMul 成功证据，比较 CPU/NPU held-out MSE；若误差大，不得默认 NPU 结果正确。
+4. 修正 INT8 量化/缩放和小矩阵 shape；只有真实设备结果可靠，才把 NPU 前向设为默认路径。
+5. 再比较 all-active、score-gated、score-gated+exploration 三种策略的质量与真实计算量。当前睡眠单元仍参与 CPU 参数更新，因此尚未证明评分策略节省了算力。
+6. 逐步从 affine toy unit 升级为可连接的小网络，再研究单元替换/回滚；不要把当前玩具回归实验说成语言模型或真实生物神经元。
