@@ -195,8 +195,8 @@ jobs:
           keytool -list -keystore "$KEYSTORE" -alias ornithnpu -storepass "$KEY_PASS" >/dev/null
           "$ZIPALIGN" -f 4 app/build/outputs/apk/release/app-release-unsigned.apk build/signing/ornithnpu-aligned.apk
           "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias ornithnpu --ks-pass pass:"$KEY_PASS" --key-pass pass:"$KEY_PASS" --out app/build/outputs/apk/release/AIMENG-NeuronLab-arm64-signed.apk build/signing/ornithnpu-aligned.apk
-          "$APKSIGNER" verify --verbose app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk
-          sha256sum app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk
+          "$APKSIGNER" verify --verbose app/build/outputs/apk/release/AIMENG-NeuronLab-arm64-signed.apk
+          sha256sum app/build/outputs/apk/release/AIMENG-NeuronLab-arm64-signed.apk
           keytool -list -v -keystore "$KEYSTORE" -alias ornithnpu -storepass "$KEY_PASS" 2>/dev/null | grep -i 'SHA256:' || echo "(signer digest unavailable)"
 
       - name: Publish APK as a prerelease (no Actions storage)
