@@ -19,14 +19,19 @@ public final class NpuNeuronForward implements NeuronLabEngine.ForwardBackend {
         if (!NpuRuntime.isReady()) throw new IllegalStateException("NPU_NOT_READY " + NpuRuntime.getLastError());
         if (active == null || active.isEmpty() || samples == null || samples.isEmpty())
             throw new IllegalArgumentException("empty active units or samples");
-        int m = samples.size(), k = 2, n = active.size();
+        // HTP accepts only whitelisted matrix dimensions. Pad all three axes to
+        // the known-good 32 bucket rather than sending tiny 4x2x4 shapes that
+        // native mmSizeAllowed() will reject.
+        final int m = 32, k = 32, n = 32;
+        if (samples.size() > m || active.size() > n)
+            throw new IllegalArgumentException("NPU lab bucket supports at most 32 samples and units");
         byte[] a = new byte[m * k];
         byte[] b = new byte[k * n];
-        for (int r = 0; r < m; r++) {
+        for (int r = 0; r < samples.size(); r++) {
             a[r * k] = quantize(samples.get(r).x * FEATURE_SCALE);
             a[r * k + 1] = quantize(FEATURE_SCALE);
         }
-        for (int c = 0; c < n; c++) {
+        for (int c = 0; c < active.size(); c++) {
             b[c] = quantize(active.get(c).weight * FEATURE_SCALE);
             b[n + c] = quantize(active.get(c).bias * FEATURE_SCALE);
         }
@@ -38,9 +43,9 @@ public final class NpuNeuronForward implements NeuronLabEngine.ForwardBackend {
         float scaleC = buffer.getFloat();
         if (!Float.isFinite(scaleC) || scaleC <= 0.0f)
             throw new IllegalStateException("HTP_INVALID_OUTPUT_SCALE " + scaleC);
-        double[][] out = new double[m][n];
-        for (int r = 0; r < m; r++) {
-            for (int c = 0; c < n; c++) {
+        double[][] out = new double[samples.size()][active.size()];
+        for (int r = 0; r < samples.size(); r++) {
+            for (int c = 0; c < active.size(); c++) {
                 int q = raw[4 + r * n + c];
                 out[r][c] = ((double) q * scaleC) / PRODUCT_SCALE;
             }
