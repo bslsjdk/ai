@@ -151,13 +151,11 @@ public final class HeterogeneousNeuronRuntime {
         if (bytes > budgetBytes) throw new IllegalArgumentException("神经元池超过内存预算");
         long ops = (long) units * inputCount * 2L;
         Backend selected = Backend.CPU;
-        String reason = "默认 CPU 参考路径；当前版本未把大池路由接到 GPU/NPU 张量后端。";
-        // Deliberately do not infer backend availability from device presence or pool size.
-        // Future adapters must supply measured break-even data and compatible operators.
+        String reason = "单状态路由保留 CPU 参考路径；批量路由已连接 GLES GPU 与 QNN HTP 候选，并按实测耗时和数值误差选择后端。";
         if (npuBackendConnected && ops >= 1_000_000L)
-            reason = "NPU 后端已声明连接，但必须通过算子/形状校验及基准测试后才能正式选择。";
+            reason += " NPU 已就绪；批量路径仍需在同一输入批次上通过精度与速度门槛。";
         else if (gpuBackendConnected && ops >= 1_000_000L)
-            reason = "GPU 后端已声明连接，但必须通过基准测试证明收益后才能正式选择。";
+            reason += " GPU context 已就绪；小批次可能因启动/传输开销而继续使用 CPU。";
         return new Plan(selected, reason, bytes, ops, gpuBackendConnected, npuBackendConnected);
     }
 
