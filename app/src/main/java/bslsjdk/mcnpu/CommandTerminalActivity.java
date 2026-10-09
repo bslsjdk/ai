@@ -190,7 +190,7 @@ public final class CommandTerminalActivity extends Activity {
             intent.setClassName("com.termux", "com.termux.app.RunCommandService");
             intent.setAction("com.termux.RUN_COMMAND");
             intent.putExtra("com.termux.RUN_COMMAND_PATH", "/data/data/com.termux/files/usr/bin/bash");
-            String bounded = "if command -v timeout >/dev/null 2>&1; then timeout 120s bash -lc \"$1\"; else bash -lc \"$1\"; fi";
+            String bounded = "ulimit -v 3145728 || { echo MEMORY_LIMIT_UNAVAILABLE; exit 125; }; command -v timeout >/dev/null 2>&1 || { echo TIMEOUT_TOOL_MISSING; exit 125; }; timeout 120s bash -lc \"$1\"";
             intent.putExtra("com.termux.RUN_COMMAND_ARGUMENTS", new String[]{"-lc", bounded, "aimeng", command});
             intent.putExtra("com.termux.RUN_COMMAND_WORKDIR", "/data/data/com.termux/files/home");
             intent.putExtra("com.termux.RUN_COMMAND_BACKGROUND", true);
@@ -244,7 +244,7 @@ public final class CommandTerminalActivity extends Activity {
                 shizukuRunning = true;
                 result.append(executeViaShizuku(command));
             } else {
-                String script = "cd /sdcard 2>/dev/null || cd /; eval \"$1\" 2>&1";
+                String script = "ulimit -v 3145728 || { echo MEMORY_LIMIT_UNAVAILABLE; exit 125; }; cd /sdcard 2>/dev/null || cd /; eval \"$1\" 2>&1";
                 ProcessBuilder pb = new ProcessBuilder("/system/bin/sh", "-c", script, "aimeng", command);
                 pb.redirectErrorStream(true);
                 process = pb.start();
