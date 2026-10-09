@@ -249,6 +249,11 @@ public final class GridWorldLabActivity extends Activity {
                     });
                 }
             }
+            long elapsedMs = Math.max(1L, System.currentTimeMillis() - started);
+            lastTrainingElapsedMs = elapsedMs;
+            lastTrainingEnvironmentSteps = totalSteps;
+            lastTrainingEpisodesPerSecond = lastCompletedEpisode * 1000.0 / elapsedMs;
+            lastTrainingStepsPerSecond = totalSteps * 1000.0 / elapsedMs;
             training = false;
             // Count completed episodes, including a partial run stopped by the user.
             episodesDone += lastCompletedEpisode;
@@ -273,6 +278,10 @@ public final class GridWorldLabActivity extends Activity {
     }
 
     private volatile int lastCompletedEpisode;
+    private volatile long lastTrainingElapsedMs;
+    private volatile long lastTrainingEnvironmentSteps;
+    private volatile double lastTrainingEpisodesPerSecond;
+    private volatile double lastTrainingStepsPerSecond;
 
 
     private void applyHiddenSize() {
@@ -591,6 +600,10 @@ public final class GridWorldLabActivity extends Activity {
             report.put("goalAdjacentGreedyTests", goalProbe[1]);
             report.put("goalAdjacentGreedyAccuracy", goalProbe[0] / (double)Math.max(1, goalProbe[1]));
             report.put("episodesTrained", episodesDone);
+            report.put("lastTrainingElapsedMs", lastTrainingElapsedMs);
+            report.put("lastTrainingEnvironmentSteps", lastTrainingEnvironmentSteps);
+            report.put("lastTrainingEpisodesPerSecond", lastTrainingEpisodesPerSecond);
+            report.put("lastTrainingStepsPerSecond", lastTrainingStepsPerSecond);
             report.put("evaluationType", "fresh_random_maps");
             report.put("evaluationEpisodes", evalEpisodes);
             report.put("evaluationSuccesses", evalSuccesses);
@@ -605,7 +618,7 @@ public final class GridWorldLabActivity extends Activity {
             report.put("stoppedByMastery", stoppedByMastery);
             report.put("fastWinRule", "reaches goal and steps <= shortestPathSteps * 1.6 + 2");
             report.put("guaranteedPathGenerator", "randomized_route + off-route walls + BFS validation");
-            report.put("note", "On-device randomized-map test; evaluation maps are generated independently.");
+            report.put("note", "On-device randomized-map test; evaluation maps are generated independently. Throughput values are from the most recent training run and include periodic held-out evaluation overhead.");
             latestReportText = report.toString(2);
             write(new File(dir, "training_report.json"), latestReportText);
             if (status != null) status.setText("网络与报告已保存。可点“复制训练报告”直接复制内容，不必进入安卓应用内部目录。");
