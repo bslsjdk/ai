@@ -17,6 +17,16 @@ The Android CI builds arm64-v8a, fetches the pinned QNN HTP V73 runtime stack, c
 
 The retired 9B model is no longer downloaded as part of the build and is not needed to open or run the neuron lab. Legacy inference source files remain in the repository temporarily to reduce the risk of an unrelated native cleanup breaking the NPU service; they are not the launcher path and the lab does not load model weights.
 
+## Heterogeneous compute policy
+
+The runtime must not send each tiny neuron operation back and forth between CPU and NPU. Device transitions, tensor packing, quantization, synchronization, and padding can cost more than the computation itself.
+
+- **CPU first:** parameter updates, score calculations, unit admission/retirement, trace writing, and control flow stay on CPU.
+- **NPU when it fits:** use QNN/HTP for sufficiently large, batched matrix operations with supported shape buckets and quantization. The current 32x32x32 padded call is a correctness/availability probe for a tiny workload, not evidence of a speedup.
+- **GPU is optional, not assumed:** only add a GPU backend after identifying a supported Android GPU compute API and benchmarking end-to-end latency, power, and memory. Do not duplicate every operation across CPU/GPU/NPU.
+- **Dispatch by measured cost:** compare CPU time against NPU time including packing, padding, synchronization, and result conversion. Small workloads stay on CPU; NPU receives a batch only when measured total cost is lower.
+- **No parallelism by slogan:** avoid concurrent CPU/NPU execution unless independent batches exist and measurement shows a benefit. Correctness and the 4 GiB whole-process budget take priority.
+
 ## Important limits
 
 - This is a deterministic toy regression experiment, **not a language model** and not a biological brain simulation.
