@@ -184,10 +184,17 @@ public final class GridWorldLabActivity extends Activity {
                 int[] mapDistances = distanceMap(map);
                 List<Integer> history = new ArrayList<>();
                 history.add(pos);
+                // Reuse the two state vectors throughout this episode; observations are
+                // overwritten in place after the preceding update has consumed them.
+                double[] stateBuffer = new double[INPUT_SIZE];
+                double[] nextBuffer = new double[INPUT_SIZE];
+                double[] wallFeatures = new double[CELLS];
+                for (int cell = 0; cell < CELLS; cell++) wallFeatures[cell] = map.walls.contains(cell) ? 1.0 : 0.0;
                 int steps = 0;
                 boolean reachedGoal = false;
                 for (; steps < MAX_STEPS && !cancelTraining; steps++) {
-                    double[] s = observe(pos, map.goal, map.walls, history);
+                    observeInto(stateBuffer, pos, map.goal, map.walls, history, wallFeatures);
+                    double[] s = stateBuffer;
                     double epsilon = Math.max(0.05, 1.0 - 0.95 * (ep / (double) Math.min(count, 10000)));
                     // Avoid duplicate forwards: only compute Q values when greedy action selection needs them.
                     Forward currentForward = null;
@@ -208,9 +215,9 @@ public final class GridWorldLabActivity extends Activity {
                     if (oldDistance >= 0 && nextDistance >= 0) {
                         reward += DISTANCE_REWARD_PER_STEP * (oldDistance - nextDistance);
                     }
-                    double[] next = observe(tr.next, map.goal, map.walls, nextHistory);
+                    observeInto(nextBuffer, tr.next, map.goal, map.walls, nextHistory, wallFeatures);
                     // TD target needs only max(Q), not a retained Forward/BPTT cache.
-                    double target = tr.done ? reward : reward + 0.92 * net.maxQ(next);
+                    double target = tr.done ? reward : reward + 0.92 * net.maxQ(nextBuffer);
                     net.update(s, currentForward, action, target);
                     pos = tr.next;
                     history = nextHistory;
@@ -526,8 +533,17 @@ public final class GridWorldLabActivity extends Activity {
     }
 
     private double[] observe(int pos, int target, Set<Integer> mapWalls, List<Integer> history) {
-        int x = pos % SIZE, y = pos / SIZE, gx = target % SIZE, gy = target / SIZE;
         double[] s = new double[INPUT_SIZE];
+        double[] wallFeatures = new double[CELLS];
+        for (int cell = 0; cell < CELLS; cell++) wallFeatures[cell] = mapWalls.contains(cell) ? 1.0 : 0.0;
+        observeInto(s, pos, target, mapWalls, history, wallFeatures);
+        return s;
+    }
+
+    private static void observeInto(double[] s, int pos, int target, Set<Integer> mapWalls,
+                                    List<Integer> history, double[] wallFeatures) {
+        java.util.Arrays.fill(s, 0.0);
+        int x = pos % SIZE, y = pos / SIZE, gx = target % SIZE, gy = target / SIZE;
         s[0] = x / (double)(SIZE - 1); s[1] = y / (double)(SIZE - 1);
         s[2] = gx / (double)(SIZE - 1); s[3] = gy / (double)(SIZE - 1);
         for (int a = 0; a < 4; a++) {
@@ -535,7 +551,7 @@ public final class GridWorldLabActivity extends Activity {
             s[4 + a] = nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE
                     || mapWalls.contains(ny * SIZE + nx) ? 1.0 : 0.0;
         }
-        for (int cell = 0; cell < CELLS; cell++) s[BASE_FEATURES + cell] = mapWalls.contains(cell) ? 1.0 : 0.0;
+        System.arraycopy(wallFeatures, 0, s, BASE_FEATURES, CELLS);
         int historyStart = Math.max(0, history.size() - HISTORY_LENGTH);
         int count = Math.min(HISTORY_LENGTH, history.size());
         for (int i = 0; i < count; i++) {
@@ -543,7 +559,6 @@ public final class GridWorldLabActivity extends Activity {
             s[BASE_FEATURES + MAP_FEATURES + i * 2] = (cell % SIZE) / (double)(SIZE - 1);
             s[BASE_FEATURES + MAP_FEATURES + i * 2 + 1] = (cell / SIZE) / (double)(SIZE - 1);
         }
-        return s;
     }
 
     private Transition transition(int pos, int action, MapData map) {
