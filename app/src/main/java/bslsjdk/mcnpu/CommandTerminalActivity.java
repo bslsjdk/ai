@@ -4,8 +4,11 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.ComponentName;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.IBinder;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.Gravity;
@@ -22,6 +25,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import rikka.shizuku.Shizuku;
@@ -43,6 +48,8 @@ public final class CommandTerminalActivity extends Activity {
     private Button runButton, stopButton;
     private CheckBox termuxMode;
     private volatile boolean termuxRunning;
+    private volatile boolean shizukuRunning;
+    private volatile ITerminalShellService activeShellService;
     private final StringBuilder transcript = new StringBuilder();
 
     @Override protected void onCreate(Bundle state) {
@@ -233,53 +240,56 @@ public final class CommandTerminalActivity extends Activity {
         boolean truncated = false;
         int exitCode = -1;
         try {
-            String script = "cd /sdcard 2>/dev/null || cd /; eval \"$1\" 2>&1";
             if (ShizukuHelper.granted()) {
-                process = Shizuku.newProcess(new String[]{"/system/bin/sh", "-c", script, "aimeng", command}, null, "/sdcard");
+                shizukuRunning = true;
+                result.append(executeViaShizuku(command));
             } else {
+                String script = "cd /sdcard 2>/dev/null || cd /; eval \"$1\" 2>&1";
                 ProcessBuilder pb = new ProcessBuilder("/system/bin/sh", "-c", script, "aimeng", command);
                 pb.redirectErrorStream(true);
                 process = pb.start();
-            }
-            synchronized (processLock) { currentProcess = process; }
-            final Process active = process;
-            Thread reader = new Thread(() -> {
-                try (BufferedReader br = new BufferedReader(new InputStreamReader(active.getInputStream(), StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = br.readLine()) != null) {
-                        synchronized (result) {
-                            if (result.length() < MAX_OUTPUT_CHARS) result.append(line).append('\n');
+                synchronized (processLock) { currentProcess = process; }
+                final Process active = process;
+                Thread reader = new Thread(() -> {
+                    try (BufferedReader br = new BufferedReader(new InputStreamReader(active.getInputStream(), StandardCharsets.UTF_8))) {
+                        String line;
+                        while ((line = br.readLine()) != null) {
+                            synchronized (result) {
+                                if (result.length() < MAX_OUTPUT_CHARS) result.append(line).append('\n');
+                            }
+                            publishOutput(result.toString());
                         }
-                        publishOutput(result.toString());
+                    } catch (Throwable ex) {
+                        synchronized (result) { if (result.length() < MAX_OUTPUT_CHARS) result.append("\n[读取输出失败] ").append(ex).append('\n'); }
                     }
-                } catch (Throwable e) {
-                    synchronized (result) { result.append("\n[读取输出失败] ").append(e).append('\n'); }
+                }, "aimeng-command-output");
+                reader.setDaemon(true);
+                reader.start();
+                boolean ended = process.waitFor(COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                if (!ended) {
+                    process.destroy();
+                    if (!process.waitFor(1500, TimeUnit.MILLISECONDS)) process.destroyForcibly();
+                    synchronized (result) { result.append("\n[超时] 命令超过 120 秒，已请求终止主进程。子进程是否全部退出取决于命令自身。\n"); }
+                } else {
+                    exitCode = process.exitValue();
                 }
-            }, "aimeng-command-output");
-            reader.setDaemon(true);
-            reader.start();
-            boolean ended = process.waitFor(COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            if (!ended) {
-                process.destroy();
-                if (!process.waitFor(1500, TimeUnit.MILLISECONDS)) process.destroyForcibly();
-                synchronized (result) { result.append("\n[超时] 命令超过 120 秒，已请求终止主进程。子进程是否全部退出取决于命令自身。\n"); }
-            } else {
-                exitCode = process.exitValue();
+                reader.join(1500);
+                synchronized (result) {
+                    if (result.length() >= MAX_OUTPUT_CHARS) truncated = true;
+                    result.append("\n[结束] ");
+                    if (stopping) result.append("已请求停止");
+                    else if (!ended) result.append("超时");
+                    else result.append("退出码=").append(exitCode);
+                    result.append("；执行身份=应用 UID\n");
+                    if (truncated) result.append("[输出达到上限，后续输出已截断]\n");
+                }
             }
-            reader.join(1500);
-            synchronized (result) {
-                if (result.length() >= MAX_OUTPUT_CHARS) truncated = true;
-                result.append("\n[结束] ");
-                if (stopping) result.append("已请求停止");
-                else if (!ended) result.append("超时");
-                else result.append("退出码=").append(exitCode);
-                result.append("；执行身份=").append(ShizukuHelper.granted() ? "Shizuku shell" : "应用 UID").append('\n');
-                if (truncated) result.append("[输出达到上限，后续输出已截断]\n");
-            }
-        } catch (Throwable e) {
-            synchronized (result) { result.append("\n[执行失败] ").append(e.getClass().getSimpleName()).append(": ").append(String.valueOf(e.getMessage())).append('\n'); }
+        } catch (Throwable ex) {
+            synchronized (result) { result.append("\n[执行失败] ").append(ex.getClass().getSimpleName()).append(": ").append(String.valueOf(ex.getMessage())).append('\n'); }
         } finally {
             synchronized (processLock) { if (currentProcess == process) currentProcess = null; }
+            shizukuRunning = false;
+            activeShellService = null;
             final String finalResult;
             synchronized (result) { finalResult = result.toString(); }
             runOnUiThread(() -> {
@@ -292,7 +302,61 @@ public final class CommandTerminalActivity extends Activity {
         }
     }
 
+    private String executeViaShizuku(String command) throws Exception {
+        if (Shizuku.getUid() == 0) {
+            throw new SecurityException("检测到 Shizuku 使用 root 身份。为避免误改系统分区，AIMENG 终端目前只允许非 root 的 ADB shell 身份执行命令。请用无线调试方式启动 Shizuku。");
+        }
+        Shizuku.UserServiceArgs args = new Shizuku.UserServiceArgs(
+                new ComponentName(getPackageName(), TerminalShellUserService.class.getName()))
+                .daemon(false)
+                .processNameSuffix("terminal")
+                .version(BuildConfig.VERSION_CODE);
+        CountDownLatch connected = new CountDownLatch(1);
+        AtomicReference<ITerminalShellService> remoteRef = new AtomicReference<>();
+        AtomicReference<Throwable> connectionError = new AtomicReference<>();
+        ServiceConnection connection = new ServiceConnection() {
+            @Override public void onServiceConnected(ComponentName name, IBinder binder) {
+                remoteRef.set(ITerminalShellService.Stub.asInterface(binder));
+                connected.countDown();
+            }
+            @Override public void onServiceDisconnected(ComponentName name) {
+                connectionError.set(new IllegalStateException("Shizuku shell service disconnected"));
+                connected.countDown();
+            }
+            @Override public void onBindingDied(ComponentName name) {
+                connectionError.set(new IllegalStateException("Shizuku shell service binding died"));
+                connected.countDown();
+            }
+            @Override public void onNullBinding(ComponentName name) {
+                connectionError.set(new IllegalStateException("Shizuku returned an empty shell service"));
+                connected.countDown();
+            }
+        };
+        Shizuku.bindUserService(args, connection);
+        try {
+            if (!connected.await(12, TimeUnit.SECONDS)) throw new IllegalStateException("等待 Shizuku shell service 超时");
+            if (connectionError.get() != null) throw new IllegalStateException(connectionError.get().getMessage());
+            ITerminalShellService remote = remoteRef.get();
+            if (remote == null) throw new IllegalStateException("Shizuku shell service binder is null");
+            activeShellService = remote;
+            return remote.execute(command, "/sdcard", 120, MAX_OUTPUT_CHARS - 200);
+        } finally {
+            activeShellService = null;
+            try { Shizuku.unbindUserService(args, connection, false); } catch (Throwable ignored) {}
+        }
+    }
+
     private void stopCommand() {
+        if (shizukuRunning) {
+            ITerminalShellService remote = activeShellService;
+            if (remote != null) {
+                try { remote.cancel(); append("\n[已向 Shizuku shell 发送停止请求。]\n"); }
+                catch (Throwable ex) { toast("停止请求失败：" + ex.getMessage()); }
+            } else {
+                toast("Shizuku 命令正在启动，停止请求暂时无法送达。");
+            }
+            return;
+        }
         if (termuxRunning) {
             toast("Termux 命令由后台服务执行；此页不能直接杀掉它。命令会尝试在 120 秒后超时结束。");
             return;
@@ -329,11 +393,11 @@ public final class CommandTerminalActivity extends Activity {
 
     private void refreshStatus() {
         if (status == null) return;
-        status.setText("状态：" + executionMode() + (currentProcess == null ? " · 空闲" : " · 运行中"));
+        status.setText("状态：" + executionMode() + (currentProcess == null && !termuxRunning && !shizukuRunning ? " · 空闲" : " · 运行中"));
     }
 
     private String executionMode() {
-        if (ShizukuHelper.granted()) return "Shizuku shell（非 root）";
+        if (ShizukuHelper.granted()) return "Shizuku 命令执行（root 身份会被拦截）";
         if (ShizukuHelper.available()) return "Shizuku 已连接但未授权，当前为应用 UID";
         return "普通应用权限（非 root）";
     }
