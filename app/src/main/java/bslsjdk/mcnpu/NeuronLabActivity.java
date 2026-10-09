@@ -277,31 +277,31 @@ public final class NeuronLabActivity extends Activity {
         if (automaticTestRunning) return;
         if (training) { toast("请先暂停训练，再运行全自动测试。"); return; }
         automaticTestRunning = true;
-        lastAutomaticTestLog = "自动测试启动中…\\n请保持应用打开。";
+        lastAutomaticTestLog = "自动测试启动中…\n请保持应用打开。";
         if (automaticTestReport != null) automaticTestReport.setText(lastAutomaticTestLog);
         if (automaticTestButton != null) { automaticTestButton.setEnabled(false); automaticTestButton.setText("正在自动测试…"); }
         toast("全自动测试已开始，完成后可复制日志。");
         worker.execute(() -> {
             StringBuilder log = new StringBuilder(4096);
             long started = System.currentTimeMillis();
-            log.append("AIMENG AUTO DIAGNOSTIC\\n")
-                    .append("time=").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(new Date(started))).append('\\n')
-                    .append("app_version=").append(BuildConfig.VERSION_NAME).append('\\n')
-                    .append("build_sha=").append(BuildConfig.AIMENG_BUILD_SHA).append('\\n')
-                    .append("android_sdk=").append(android.os.Build.VERSION.SDK_INT).append('\\n')
-                    .append("device=").append(android.os.Build.MANUFACTURER).append(' ').append(android.os.Build.MODEL).append('\\n')
-                    .append("cpu_cores=").append(Runtime.getRuntime().availableProcessors()).append('\\n')
-                    .append("runtime_ram_limit_mib=4096\\n")
-                    .append("memory_before=").append(memoryStatus()).append('\\n');
+            log.append("AIMENG AUTO DIAGNOSTIC\n")
+                    .append("time=").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(new Date(started))).append('\n')
+                    .append("app_version=").append(BuildConfig.VERSION_NAME).append('\n')
+                    .append("build_sha=").append(BuildConfig.AIMENG_BUILD_SHA).append('\n')
+                    .append("android_sdk=").append(android.os.Build.VERSION.SDK_INT).append('\n')
+                    .append("device=").append(android.os.Build.MANUFACTURER).append(' ').append(android.os.Build.MODEL).append('\n')
+                    .append("cpu_cores=").append(Runtime.getRuntime().availableProcessors()).append('\n')
+                    .append("runtime_ram_limit_mib=4096\n")
+                    .append("memory_before=").append(memoryStatus()).append('\n');
             try {
-                log.append("\\n[1] CPU ROUTING BENCHMARK\\n");
+                log.append("\n[1] CPU ROUTING BENCHMARK\n");
                 int[] sizes = new int[]{64, 256, 1024, 4096, 10000};
                 float[] input = new float[]{0.2f, 0.5f, -0.1f, 0.8f};
                 for (int size : sizes) {
-                    if (isFinishing() || isDestroyed()) { log.append("CANCELLED=activity_closing\\n"); break; }
+                    if (isFinishing() || isDestroyed()) { log.append("CANCELLED=activity_closing\n"); break; }
                     double rss = currentRssMiB();
                     if (rss > 3800.0) {
-                        log.append("SAFETY_STOP=rss_over_3800_mib_before_pool_").append(size).append('\\n');
+                        log.append("SAFETY_STOP=rss_over_3800_mib_before_pool_").append(size).append('\n');
                         break;
                     }
                     HeterogeneousNeuronRuntime runtime = new HeterogeneousNeuronRuntime(
@@ -315,18 +315,18 @@ public final class NeuronLabActivity extends Activity {
                             .append(" median_ms=").append(String.format(Locale.US, "%.3f", times[2] / 1_000_000.0))
                             .append(" best_ms=").append(String.format(Locale.US, "%.3f", times[0] / 1_000_000.0))
                             .append(" estimated_pool_mib=").append(String.format(Locale.US, "%.3f", runtime.estimatedBytes() / (1024.0 * 1024.0)))
-                            .append('\\n');
+                            .append('\n');
                 }
-                log.append("\\n[2] CONCEPT LABEL / WORKSPACE ROUNDTRIP\\n");
+                log.append("\n[2] CONCEPT LABEL / WORKSPACE ROUNDTRIP\n");
                 NeuronWorkspace snapshot = NeuronWorkspace.fromJson(new JSONObject(workspace.toJson().toString()));
-                log.append("workspace_roundtrip=PASS\\n")
-                        .append("input_concepts=").append(snapshot.inputConceptNames()).append('\\n')
-                        .append("output_concepts=").append(snapshot.outputConceptNames()).append('\\n')
-                        .append("note=labels_are_numeric_dimension_names_not_a_natural_language_encoder\\n");
+                log.append("workspace_roundtrip=PASS\n")
+                        .append("input_concepts=").append(snapshot.inputConceptNames()).append('\n')
+                        .append("output_concepts=").append(snapshot.outputConceptNames()).append('\n')
+                        .append("note=labels_are_numeric_dimension_names_not_a_natural_language_encoder\n");
             } catch (Throwable error) {
-                log.append("CPU_OR_WORKSPACE_TEST=FAIL: ").append(shortError(error)).append('\\n');
+                log.append("CPU_OR_WORKSPACE_TEST=FAIL: ").append(shortError(error)).append('\n');
             }
-            log.append("\\n[3] QNN / HTP INDEPENDENT MATMUL PROBE\\n");
+            log.append("\n[3] QNN / HTP INDEPENDENT MATMUL PROBE\n");
             try {
                 if (!NpuRuntime.isReady() && !NpuRuntime.init(getApplicationContext()))
                     throw new IllegalStateException("NPU init failed: " + NpuRuntime.getLastError());
@@ -338,22 +338,22 @@ public final class NeuronLabActivity extends Activity {
                 double ms = (System.nanoTime() - t0) / 1_000_000.0;
                 if (out == null || out.length < 4 + m * n)
                     throw new IllegalStateException("invalid output length; native=" + NpuRuntime.getLastNativeError());
-                log.append("npu_probe=PASS\\nbackend=").append(NpuRuntime.status())
-                        .append("\\nshape=32x32x32\\nmatmul_ms=").append(String.format(Locale.US, "%.3f", ms))
-                        .append("\\nmeaning=standalone NPU operator only; not neural-training acceleration evidence\\n");
+                log.append("npu_probe=PASS\nbackend=").append(NpuRuntime.status())
+                        .append("\nshape=32x32x32\nmatmul_ms=").append(String.format(Locale.US, "%.3f", ms))
+                        .append("\nmeaning=standalone NPU operator only; not neural-training acceleration evidence\n");
             } catch (Throwable error) {
-                log.append("npu_probe=FAIL_OR_UNAVAILABLE\\nreason=").append(shortError(error)).append('\\n')
-                        .append("fallback=CPU_REFERENCE\\n");
+                log.append("npu_probe=FAIL_OR_UNAVAILABLE\nreason=").append(shortError(error)).append('\n')
+                        .append("fallback=CPU_REFERENCE\n");
             }
             double finalRss = currentRssMiB();
-            log.append("\\n[4] MEMORY / SAFETY\\n")
-                    .append("memory_after=").append(memoryStatus()).append('\\n')
-                    .append("rss_mib=").append(String.format(Locale.US, "%.1f", finalRss)).append('\\n')
-                    .append("runtime_ram_guard=").append(finalRss > 3800.0 ? "WARNING_OVER_3800_MIB" : "UNDER_3800_MIB_AT_SAMPLE").append('\\n')
-                    .append("gpu_backend=NOT_CONNECTED_TO_NEURON_WORKSPACE\\n")
-                    .append("training_backend=CPU\\n")
-                    .append("result=diagnostic_only; device timings required to validate performance\\n")
-                    .append("duration_ms=").append(System.currentTimeMillis() - started).append('\\n');
+            log.append("\n[4] MEMORY / SAFETY\n")
+                    .append("memory_after=").append(memoryStatus()).append('\n')
+                    .append("rss_mib=").append(String.format(Locale.US, "%.1f", finalRss)).append('\n')
+                    .append("runtime_ram_guard=").append(finalRss > 3800.0 ? "WARNING_OVER_3800_MIB" : "UNDER_3800_MIB_AT_SAMPLE").append('\n')
+                    .append("gpu_backend=NOT_CONNECTED_TO_NEURON_WORKSPACE\n")
+                    .append("training_backend=CPU\n")
+                    .append("result=diagnostic_only; device timings required to validate performance\n")
+                    .append("duration_ms=").append(System.currentTimeMillis() - started).append('\n');
             String result = log.toString();
             lastAutomaticTestLog = result;
             automaticTestRunning = false;
