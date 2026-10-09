@@ -5,12 +5,10 @@ android {
     compileSdk 35
     ndkVersion "27.0.12077973"
     defaultConfig {
-        // Development builds install under a separate id so they do not collide with
-        // a release APK signed with a different key - "signatures do not match" blocks
-        // the install outright, and there is no way past it except uninstalling first.
-        //
-        // namespace and applicationId intentionally share the same stable Ornith NPU package identity.
-        applicationId "bslsjdk.ornithnpu"
+        // Preserve MCNPU's original install identity so an upgraded Ornith build
+        // replaces the existing app instead of creating a second app or requiring
+        // uninstall. Namespace is intentionally independent from applicationId.
+        applicationId "bslsjdk.mcnpu.dev"
         minSdk 30
         targetSdk 35
         // Bumped every CI build so the APK always installs as an upgrade instead of

@@ -189,48 +189,40 @@ jobs:
           unzip -l "$APK" | grep -E 'lib/arm64-v8a/libornithnpu.so|assets/qnnlibs/libQnnHtp.so|assets/qnnlibs/libQnnHtpV73Skel.so|assets/qnnlibs/libQnnHtpV73Stub.so'
           ls -lh "$APK"
 
-      - name: Prepare persistent signing-key cache
-        run: mkdir -p build/signing
-
-      # Do not commit the private key to this public repository. The workflow cache
-      # keeps the development signing key stable across the main-branch build runs.
-      - name: Restore persistent development signing key
-        id: signing-key-cache
-        uses: actions/cache@v4
-        with:
-          path: build/signing/ornithnpu-release.jks
-          key: ${{ runner.os }}-ornithnpu-signing-key-v1
-
-      - name: Sign APK
-        shell: bash
+      - name: Prepare signing identity
+        env:
+          ORNITHNPU_KEYSTORE_B64: ${{ secrets.ORNITHNPU_KEYSTORE_B64 }}
+          ORNITHNPU_KEYSTORE_PASSWORD: ${{ secrets.ORNITHNPU_KEYSTORE_PASSWORD }}
+          MCNPU_KEYSTORE_B64: ${{ secrets.MCNPU_KEYSTORE_B64 }}
+          MCNPU_KEYSTORE_PASSWORD: ${{ secrets.MCNPU_KEYSTORE_PASSWORD }}
         run: |
-          set -eux
+          set -euo pipefail
           mkdir -p build/signing
-          BUILD_TOOLS="$ANDROID_SDK_ROOT/build-tools/35.0.0"
-          ZIPALIGN="$BUILD_TOOLS/zipalign"
-          APKSIGNER="$BUILD_TOOLS/apksigner"
-          test -x "$ZIPALIGN"
-          test -x "$APKSIGNER"
-          KEYSTORE=build/signing/ornithnpu-release.jks
-          if [ ! -s "$KEYSTORE" ]; then
-            echo "::error::Persistent signing-key cache missing. Refusing to generate another key because this would break upgrade signatures."
+          # Prefer the original MCNPU release key so upgrades retain the same signer.
+          # The Ornith-specific key is only a fallback for repositories that explicitly
+          # configured it; never generate a random key on a hosted runner.
+          KEYSTORE=build/signing/mcnpu-release.jks
+          if [ -n "${MCNPU_KEYSTORE_B64:-}" ]; then
+            printf '%s' "$MCNPU_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
+            KEY_PASS="${MCNPU_KEYSTORE_PASSWORD:-changeit}"
+            KEY_ALIAS=mcnpu
+            echo "keystore: original MCNPU release key"
+          elif [ -n "${ORNITHNPU_KEYSTORE_B64:-}" ]; then
+            printf '%s' "$ORNITHNPU_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
+            KEY_PASS="${ORNITHNPU_KEYSTORE_PASSWORD:-changeit}"
+            KEY_ALIAS=ornithnpu
+            echo "::warning::Using Ornith-specific signing key; if it differs from the installed MCNPU signer, Android will reject an in-place upgrade."
+          else
+            echo "::error::No stable release keystore configured. Set MCNPU_KEYSTORE_B64 and MCNPU_KEYSTORE_PASSWORD to preserve the existing app signature."
             exit 1
           fi
-          KEY_PASS=changeit
-          echo "keystore: persistent development key restored from Actions cache"
-          "$ZIPALIGN" -f 4 app/build/outputs/apk/release/app-release-unsigned.apk build/signing/ornithnpu-aligned.apk
-          "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias ornithnpu --ks-pass pass:"$KEY_PASS" --key-pass pass:"$KEY_PASS" --out app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk build/signing/ornithnpu-aligned.apk
+          keytool -list -keystore "$KEYSTORE" -alias "$KEY_ALIAS" -storepass "$KEY_PASS" >/dev/null
+          "$ZIPALIGN" -f 4 app/build/outputs/apk/release/app-release-unsigned.apk build/signing/mcnpu-aligned.apk
+          "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias "$KEY_ALIAS" --ks-pass pass:"$KEY_PASS" --key-pass pass:"$KEY_PASS" --out app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk build/signing/mcnpu-aligned.apk
           "$APKSIGNER" verify --verbose app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk
           sha256sum app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk
-          # Print the actual certificate fingerprint, not the keystore's alias list.
-          keytool -list -v -keystore "$KEYSTORE" -alias ornithnpu -storepass "$KEY_PASS" 2>/dev/null | grep -i 'SHA256:' || echo "(signer digest unavailable)"
-      # Delivery route: a release asset. It must NOT be a prerelease: GitHub's
-      # /releases/latest only resolves to a full release, so publishing as a
-      # prerelease makes that URL 404 and leaves no stable link to hand out. Release assets do NOT draw on the account's
-      # Actions storage quota, which is exhausted until the billing cycle resets, so this
-      # is the route that keeps working. The upload-artifact step was removed: while the
-      # quota is out it can only fail, and a permanently red annotation is worse than none.
-      # One rolling tag with the asset replaced each build, so no pile of old APKs.
+          keytool -list -v -keystore "$KEYSTORE" -alias "$KEY_ALIAS" -storepass "$KEY_PASS" 2>/dev/null | grep -i 'SHA256:' || echo "(signer digest unavailable)"
+
       - name: Publish APK as a prerelease (no Actions storage)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -250,10 +242,10 @@ jobs:
             echo "- version: 1.0.${GITHUB_RUN_NUMBER} (versionCode ${GITHUB_RUN_NUMBER})"
             echo "- size: ${SIZE} bytes"
             echo "- sha256: ${SUM}"
-            echo "- signing: persistent development key in the Actions cache; stable across builds while that cache is retained"
+            echo "- signing: configured stable release keystore; original MCNPU key preferred"
             echo ""
             echo "Engineering build for on-device testing."
-            echo "Signed with the persistent development key. Earlier CI builds used throwaway signatures, so the initial migration may require one final reinstall; subsequent builds reuse this key."
+            echo "Signed with the configured stable release key. In-place upgrade requires the same key as the installed MCNPU APK."
           } > build/release-notes.md
           # Recreate instead of upload --clobber: GitHub keeps the ORIGINAL created_at on
           # upload, so the page would keep saying "7 hours ago" while the APK inside is
