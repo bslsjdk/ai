@@ -237,6 +237,17 @@ Ornith-1.5-9B-MLX-4bit：
 - Do not claim compilation has passed until a workflow job reaches actual steps and produces compiler output.
 
 
+## 2026-10-09 异构计算原则补充
+
+用户明确要求：不要为了“同时用 CPU+NPU”而把神经元计算切成大量细碎跨设备任务。只把适合 NPU 的优势部分交给 NPU，其余交给 CPU；将来若 Android GPU 后端确实有优势，也可以承接适合的计算，但不能先假设 GPU 一定更快。
+
+- 当前分工：CPU 执行学习参数更新、贡献/评分、进退场策略、调度、轨迹记录；NPU 只用于批量 INT8 MatMul 前向路径验证。
+- 当前 NPU 32x32x32 padding 是为了满足已知 HTP shape 白名单，**不等于该小任务比 CPU 快**。对于 2–16 个 toy units，NPU 按钮主要用于验证后端正确性与数值误差，不应作为性能结论。
+- 生产调度应把量化、tensor packing、padding、IPC/driver 提交、同步、结果转换的开销一起算入；微小工作留在 CPU，只有批量矩阵的端到端成本低于 CPU 时才派给 NPU。
+- 不要默认让 CPU/NPU 同时竞争同一份神经元状态。优先采用粗粒度、明确的阶段边界；只有独立任务且实测有收益时才并行。
+- GPU 是可选的后续 backend。先确认 Android 可用的 GPU compute API、驱动兼容性、数值精度、功耗和内存，再通过统一的 backend 接口接入。不得假称当前已支持 GPU 计算。
+- 每个实验要记录实际 backend、CPU baseline、端到端时间、数据搬运/同步开销、误差与峰值 RSS/PSS；backend 不可用或数值偏差过大时安全回退 CPU。
+
 ## 2026-10-09 手机神经元实验下一步
 
 1. 先让 CI 完成 Java/资源编译、NDK CMake 编译、APK 打包，并检查 APK launcher 与旧签名升级身份。
