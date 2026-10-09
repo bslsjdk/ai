@@ -260,6 +260,9 @@ public final class NeuronLabActivity extends Activity {
         Button plan = secondaryButton("只检查内存预算与后端规划");
         plan.setOnClickListener(v -> showPoolPlan());
         config.addView(plan, params(-1, 44, 0, 6, 0, 0));
+        addActionRow(config, new String[]{"保存神经元池", "恢复已保存池"}, new Runnable[]{
+                this::savePoolCheckpoint, this::loadPoolCheckpoint
+        });
 
         LinearLayout results = card(content, "执行报告");
         poolReport = label("尚未执行。", 12, false);
@@ -300,6 +303,43 @@ public final class NeuronLabActivity extends Activity {
                             HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES, false, false).toReport());
         } catch (Throwable error) {
             poolReport.setText("路由失败：" + shortError(error));
+        }
+    }
+
+    private File poolCheckpointFile() {
+        return new File(getFilesDir(), "neuron-pool-v1.bin");
+    }
+
+    private void savePoolCheckpoint() {
+        try {
+            if (poolRuntime == null) {
+                int count = Integer.parseInt(poolSizeField.getText().toString().trim());
+                poolRuntime = new HeterogeneousNeuronRuntime(count,
+                        HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES, 20261009L);
+            }
+            poolRuntime.save(poolCheckpointFile());
+            poolReport.setText("已保存神经元池二进制检查点："
+                    + poolCheckpointFile().getAbsolutePath()
+                    + "\\n单元数：" + poolRuntime.size()
+                    + "\\n参数估算：" + String.format(Locale.US, "%.2f MiB",
+                    poolRuntime.estimatedBytes() / (1024.0 * 1024.0)));
+        } catch (Throwable error) {
+            poolReport.setText("保存失败：" + shortError(error));
+        }
+    }
+
+    private void loadPoolCheckpoint() {
+        try {
+            poolRuntime = HeterogeneousNeuronRuntime.load(poolCheckpointFile(),
+                    HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES);
+            poolSizeField.setText(String.valueOf(poolRuntime.size()));
+            poolReport.setText("已恢复神经元池检查点。\\" +
+                    "池大小：" + poolRuntime.size() + "\\n参数估算：" +
+                    String.format(Locale.US, "%.2f MiB",
+                            poolRuntime.estimatedBytes() / (1024.0 * 1024.0))
+                    + "\\n注意：检查点保存的是当前初始化权重，不代表这些权重已经训练。");
+        } catch (Throwable error) {
+            poolReport.setText("恢复失败：" + shortError(error));
         }
     }
 
