@@ -189,13 +189,16 @@ jobs:
           unzip -l "$APK" | grep -E 'lib/arm64-v8a/libornithnpu.so|assets/qnnlibs/libQnnHtp.so|assets/qnnlibs/libQnnHtpV73Skel.so|assets/qnnlibs/libQnnHtpV73Stub.so'
           ls -lh "$APK"
 
-      # The applicationId is bslsjdk.mcnpu.dev. Use the original MCNPU key so
-      # Android can update the existing app in place. Never substitute a cache key.
-      - name: Sign APK with the original MCNPU release key
+      # Keep the stable Ornith signing key across all subsequent CI builds.
+      - name: Restore persistent Ornith signing key
+        id: signing-key-cache
+        uses: actions/cache@v4
+        with:
+          path: build/signing/ornithnpu-release.jks
+          key: ${{ runner.os }}-ornithnpu-signing-key-v1
+
+      - name: Sign APK with the persistent Ornith key
         shell: bash
-        env:
-          MCNPU_KEYSTORE_B64: ${{ secrets.MCNPU_KEYSTORE_B64 }}
-          MCNPU_KEYSTORE_PASSWORD: ${{ secrets.MCNPU_KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
           mkdir -p build/signing
@@ -204,19 +207,18 @@ jobs:
           APKSIGNER="$BUILD_TOOLS/apksigner"
           test -x "$ZIPALIGN"
           test -x "$APKSIGNER"
-          if [ -z "${MCNPU_KEYSTORE_B64:-}" ] || [ -z "${MCNPU_KEYSTORE_PASSWORD:-}" ]; then
-            echo "::error::Original MCNPU signing secrets are missing. Refusing to publish an APK that would force an uninstall."
+          KEYSTORE=build/signing/ornithnpu-release.jks
+          if [ ! -s "$KEYSTORE" ]; then
+            echo "::error::Persistent Ornith signing key is missing. Refusing to generate a new key because it would break upgrades."
             exit 1
           fi
-          KEYSTORE=build/signing/mcnpu-release.jks
-          printf '%s' "$MCNPU_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
-          KEY_PASS="$MCNPU_KEYSTORE_PASSWORD"
-          keytool -list -keystore "$KEYSTORE" -alias mcnpu -storepass "$KEY_PASS" >/dev/null
-          "$ZIPALIGN" -f 4 app/build/outputs/apk/release/app-release-unsigned.apk build/signing/mcnpu-aligned.apk
-          "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias mcnpu --ks-pass pass:"$KEY_PASS" --key-pass pass:"$KEY_PASS" --out app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk build/signing/mcnpu-aligned.apk
+          KEY_PASS=changeit
+          keytool -list -keystore "$KEYSTORE" -alias ornithnpu -storepass "$KEY_PASS" >/dev/null
+          "$ZIPALIGN" -f 4 app/build/outputs/apk/release/app-release-unsigned.apk build/signing/ornithnpu-aligned.apk
+          "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias ornithnpu --ks-pass pass:"$KEY_PASS" --key-pass pass:"$KEY_PASS" --out app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk build/signing/ornithnpu-aligned.apk
           "$APKSIGNER" verify --verbose app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk
           sha256sum app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk
-          keytool -list -v -keystore "$KEYSTORE" -alias mcnpu -storepass "$KEY_PASS" 2>/dev/null | grep -i 'SHA256:' || echo "(signer digest unavailable)"
+          keytool -list -v -keystore "$KEYSTORE" -alias ornithnpu -storepass "$KEY_PASS" 2>/dev/null | grep -i 'SHA256:' || echo "(signer digest unavailable)"
 
       - name: Publish APK as a prerelease (no Actions storage)
         env:

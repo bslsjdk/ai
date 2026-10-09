@@ -37,7 +37,7 @@
         </activity>
         <receiver android:name=".NpuWakeReceiver" android:exported="true" android:enabled="true">
             <intent-filter>
-                <action android:name="bslsjdk.mcnpu.action.WAKE" />
+                <action android:name="bslsjdk.ornithnpu.action.WAKE" />
             </intent-filter>
         </receiver>
         <provider
