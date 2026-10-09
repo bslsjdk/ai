@@ -41,6 +41,9 @@ public final class GridWorldLabActivity extends Activity {
     private static final int[] DY = {-1, 0, 1, 0};
     private static final String[] ACTIONS = {"上", "右", "下", "左"};
     private static final int MAX_STEPS = 120;
+    private static final int FAST_STREAK_REQUIRED = 100;
+    private static final double FAST_STEP_FACTOR = 1.6;
+    private static final int FAST_STEP_ALLOWANCE = 2;
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -57,6 +60,9 @@ public final class GridWorldLabActivity extends Activity {
     private double episodeReward;
     private long episodesDone;
     private int evalEpisodes, evalSuccesses;
+    private volatile int fastWinStreak;
+    private volatile int lastEpisodeSteps = -1;
+    private volatile boolean stoppedByMastery;
     private double[] lastHidden = new double[HIDDEN];
     private double[] lastQ = new double[4];
 
@@ -129,9 +135,12 @@ public final class GridWorldLabActivity extends Activity {
         watching = false;
         cancelTraining = false;
         lastCompletedEpisode = 0;
+        fastWinStreak = 0;
+        lastEpisodeSteps = -1;
+        stoppedByMastery = false;
         training = true;
-        status.setText("开始随机地图训练：" + count + " 局。可以用“停止训练”安全终止。");
-        log.setText("每局更换起点、终点和障碍；地图保证有解。正在后台训练。");
+        status.setText("开始随机地图训练：最多 " + count + " 局；连续 " + FAST_STREAK_REQUIRED + " 局快速通关即提前停止。");
+        log.setText("每局更换随机地图；每局结束立即检查快速通关条件。");
         worker.execute(() -> {
             long wins = 0, totalSteps = 0;
             int reportEvery = count >= 100000 ? 5000 : 500;
@@ -140,6 +149,8 @@ public final class GridWorldLabActivity extends Activity {
                 MapData map = generateMap(rng);
                 int pos = map.start;
                 int steps = 0;
+                int shortestSteps = shortestDistance(map);
+                boolean reachedGoal = false;
                 for (; steps < MAX_STEPS && !cancelTraining; steps++) {
                     double[] s = observe(pos, map.goal, map.walls);
                     double epsilon = Math.max(0.05, 1.0 - 0.95 * (ep / (double) count));
@@ -149,10 +160,18 @@ public final class GridWorldLabActivity extends Activity {
                     double target = tr.done ? tr.reward : tr.reward + 0.92 * max(net.forward(next).q);
                     net.update(s, action, target);
                     pos = tr.next;
-                    if (tr.done) { wins++; break; }
+                    if (tr.done) { wins++; reachedGoal = true; break; }
                 }
-                totalSteps += Math.min(steps + 1, MAX_STEPS);
+                int episodeSteps = Math.min(steps + 1, MAX_STEPS);
+                totalSteps += episodeSteps;
                 lastCompletedEpisode = ep;
+                lastEpisodeSteps = reachedGoal ? episodeSteps : -1;
+                boolean fastWin = reachedGoal && episodeSteps <= shortestSteps * FAST_STEP_FACTOR + FAST_STEP_ALLOWANCE;
+                fastWinStreak = fastWin ? fastWinStreak + 1 : 0;
+                if (fastWinStreak >= FAST_STREAK_REQUIRED) {
+                    stoppedByMastery = true;
+                    break;
+                }
                 if (ep % reportEvery == 0 || ep == count) {
                     final int finished = ep;
                     final long winCount = wins;
@@ -173,10 +192,15 @@ public final class GridWorldLabActivity extends Activity {
             main.post(() -> {
                 evaluatePolicy(100);
                 saveCheckpoint();
-                status.setText(cancelTraining ? "训练已停止；当前权重和报告已保存。" : "训练完成。下面显示的是 100 张新随机地图的独立测试。");
+                status.setText(cancelTraining ? "训练已手动停止并保存。"
+                        : stoppedByMastery ? "提前停止：已连续 " + FAST_STREAK_REQUIRED + " 局快速通关。"
+                        : "本次训练局数上限已达到。");
                 log.setText(String.format(Locale.US,
-                        "独立测试地图：%d\n成功：%d\n成功率：%.1f%%\n注意：测试地图在评估时新生成，不是训练期间的成绩。",
-                        evalEpisodes, evalSuccesses, 100.0 * evalSuccesses / Math.max(1, evalEpisodes)));
+                        "本次训练局数：%d\n连续快速通关：%d/%d\n上一局步数：%s\n快速通关判定：成功且步数≤最短路×%.1f+%d\n独立随机地图测试：%d/100（%.1f%%）",
+                        lastCompletedEpisode, fastWinStreak, FAST_STREAK_REQUIRED,
+                        lastEpisodeSteps < 0 ? "未成功" : Integer.toString(lastEpisodeSteps),
+                        FAST_STEP_FACTOR, FAST_STEP_ALLOWANCE, evalSuccesses,
+                        100.0 * evalSuccesses / Math.max(1, evalEpisodes)));
                 refreshReadout();
             });
         });
@@ -326,9 +350,9 @@ public final class GridWorldLabActivity extends Activity {
     private void refreshReadout() {
         if (board != null) board.invalidate();
         if (metrics != null) metrics.setText(String.format(Locale.US,
-                "训练局数：%d\n地图：%d×%d · 隐藏层：%d · 当前步数：%d/%d\n独立随机地图测试：%d/%d（%.1f%%）\n本局奖励：%.3f",
-                episodesDone, SIZE, SIZE, HIDDEN, moves, MAX_STEPS, evalSuccesses, evalEpisodes,
-                100.0 * evalSuccesses / Math.max(1, evalEpisodes), episodeReward));
+                "训练局数：%d\n地图：%d×%d · 隐藏层：%d · 当前步数：%d/%d\n连续快速通关：%d/%d\n独立随机地图测试：%d/%d（%.1f%%）\n本局奖励：%.3f",
+                episodesDone, SIZE, SIZE, HIDDEN, moves, MAX_STEPS, fastWinStreak, FAST_STREAK_REQUIRED,
+                evalSuccesses, evalEpisodes, 100.0 * evalSuccesses / Math.max(1, evalEpisodes), episodeReward));
         if (activationText != null) {
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < lastHidden.length; i++) {
@@ -358,6 +382,11 @@ public final class GridWorldLabActivity extends Activity {
             report.put("evaluationEpisodes", evalEpisodes);
             report.put("evaluationSuccesses", evalSuccesses);
             report.put("successRate", evalSuccesses / (double)Math.max(1, evalEpisodes));
+            report.put("fastWinStreak", fastWinStreak);
+            report.put("fastWinStreakRequired", FAST_STREAK_REQUIRED);
+            report.put("lastEpisodeSteps", lastEpisodeSteps);
+            report.put("stoppedByMastery", stoppedByMastery);
+            report.put("fastWinRule", "reaches goal and steps <= shortestPathSteps * 1.6 + 2");
             report.put("guaranteedPathGenerator", "randomized_route + off-route walls + BFS validation");
             report.put("note", "On-device randomized-map test; evaluation maps are generated independently.");
             write(new File(dir, "training_report.json"), report.toString(2));
