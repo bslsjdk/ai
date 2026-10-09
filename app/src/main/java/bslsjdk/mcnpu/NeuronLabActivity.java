@@ -406,7 +406,7 @@ public final class NeuronLabActivity extends Activity {
                     .append("memory_after=").append(memoryStatus()).append('\n')
                     .append("rss_mib=").append(String.format(Locale.US, "%.1f", finalRss)).append('\n')
                     .append("runtime_ram_guard=").append(finalRss > 3800.0 ? "WARNING_OVER_3800_MIB" : "UNDER_3800_MIB_AT_SAMPLE").append('\n')
-                    .append("gpu_backend=NOT_CONNECTED_TO_NEURON_WORKSPACE\n")
+                    .append("gpu_backend=GLES31_PROBE_ONLY_NOT_CONNECTED_TO_NEURON_WORKSPACE\n")
                     .append("training_backend=CPU\n")
                     .append("result=diagnostic_only; device timings required to validate performance\n")
                     .append("duration_ms=").append(System.currentTimeMillis() - started).append('\n');
