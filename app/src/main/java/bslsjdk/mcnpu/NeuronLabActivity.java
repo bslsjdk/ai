@@ -80,6 +80,7 @@ public final class NeuronLabActivity extends Activity {
     private String npuStatus = "NPU 正在初始化；不影响 CPU 训练。";
     private String trainingStatus = "尚未开始训练。";
     private String lastPredictionReport = "输入一组数值，观察隐藏神经元激活与各输出的贡献。";
+    private String lastInputText = "0";
     private volatile boolean training;
     private volatile boolean cancelTraining;
     private volatile boolean npuDiagnosticRunning;
@@ -1188,6 +1189,10 @@ public final class NeuronLabActivity extends Activity {
                 height < 0 ? height : dp(height));
         lp.setMargins(dp(left), dp(top), dp(right), dp(bottom));
         return lp;
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
     private String format(double value) { return String.format(Locale.US, "%.6f", value); }
