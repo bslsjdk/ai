@@ -320,8 +320,8 @@ public final class NeuronLabActivity extends Activity {
             poolRuntime.save(poolCheckpointFile());
             poolReport.setText("已保存神经元池二进制检查点："
                     + poolCheckpointFile().getAbsolutePath()
-                    + "\\n单元数：" + poolRuntime.size()
-                    + "\\n参数估算：" + String.format(Locale.US, "%.2f MiB",
+                    + "\n单元数：" + poolRuntime.size()
+                    + "\n参数估算：" + String.format(Locale.US, "%.2f MiB",
                     poolRuntime.estimatedBytes() / (1024.0 * 1024.0)));
         } catch (Throwable error) {
             poolReport.setText("保存失败：" + shortError(error));
@@ -333,11 +333,11 @@ public final class NeuronLabActivity extends Activity {
             poolRuntime = HeterogeneousNeuronRuntime.load(poolCheckpointFile(),
                     HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES);
             poolSizeField.setText(String.valueOf(poolRuntime.size()));
-            poolReport.setText("已恢复神经元池检查点。\\" +
-                    "池大小：" + poolRuntime.size() + "\\n参数估算：" +
-                    String.format(Locale.US, "%.2f MiB",
-                            poolRuntime.estimatedBytes() / (1024.0 * 1024.0))
-                    + "\\n注意：检查点保存的是当前初始化权重，不代表这些权重已经训练。");
+            poolReport.setText("已恢复神经元池检查点。"
+                    + "\n池大小：" + poolRuntime.size()
+                    + "\n参数估算：" + String.format(Locale.US, "%.2f MiB",
+                    poolRuntime.estimatedBytes() / (1024.0 * 1024.0))
+                    + "\n注意：检查点保存的是当前初始化权重，不代表这些权重已经训练。");
         } catch (Throwable error) {
             poolReport.setText("恢复失败：" + shortError(error));
         }
