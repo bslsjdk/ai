@@ -1561,7 +1561,6 @@ std::string runMatMulInt8Buf(const int8_t* Ain,const int8_t* Bin,int8_t* Cout,ui
         mg->dimsC[0]=Nb; mg->dimsC[1]=Mb;
         const std::string graphName="mcnpu_mmb_"+std::to_string(Mb)+"x"+std::to_string(Kb)+"x"+std::to_string(Nb);
         rc=f.graphCreate(g.context,graphName.c_str(),nullptr,&mg->graph);
-        ++g.graphCount;
         if(rc!=QNN_SUCCESS||!mg->graph){
             g.matMulGraphs8.erase(inserted.first);
             return "ERR BUF_GRAPH_CREATE rc="+std::to_string((int)rc);
@@ -1581,6 +1580,10 @@ std::string runMatMulInt8Buf(const int8_t* Ain,const int8_t* Bin,int8_t* Cout,ui
         op.v1.name="matmul";
         op.v1.packageName="qti.aisw";
         op.v1.typeName=QNN_OP_MAT_MUL;
+        // Match the validated MCNPU graph config explicitly, even though the
+        // initializer should zero these fields on current QNN headers.
+        op.v1.numOfParams=0;
+        op.v1.params=nullptr;
         op.v1.numOfInputs=2;
         op.v1.inputTensors=ins;
         op.v1.numOfOutputs=1;
@@ -1598,6 +1601,10 @@ std::string runMatMulInt8Buf(const int8_t* Ain,const int8_t* Bin,int8_t* Cout,ui
             g.matMulGraphs8.erase(key);
             return "ERR BUF_GRAPH_FINALIZE rc="+std::to_string((int)rc);
         }
+        // MCNPU counts graph slots only after finalization succeeds. The native
+        // QNN context owns graph resources, so a finalized graph remains charged
+        // even if the subsequent RSS guard rejects the operation.
+        ++g.graphCount;
         {
             std::string graph_rss_error;
             if (!ornith15_memory_within_limit(graph_rss_error)) {
