@@ -273,6 +273,124 @@ public final class NeuronLabActivity extends Activity {
         addText(guide, "1. 点「全自动测试」并等待完成。\n2. 点「复制完整日志」。\n3. 回到聊天直接粘贴。也可以点「分享/发送日志」选择应用。", 13, false);
     }
 
+    private void runAutomaticTest() {
+        if (automaticTestRunning) return;
+        if (training) { toast("请先暂停训练，再运行全自动测试。"); return; }
+        automaticTestRunning = true;
+        lastAutomaticTestLog = "自动测试启动中…\\n请保持应用打开。";
+        if (automaticTestReport != null) automaticTestReport.setText(lastAutomaticTestLog);
+        if (automaticTestButton != null) { automaticTestButton.setEnabled(false); automaticTestButton.setText("正在自动测试…"); }
+        toast("全自动测试已开始，完成后可复制日志。");
+        worker.execute(() -> {
+            StringBuilder log = new StringBuilder(4096);
+            long started = System.currentTimeMillis();
+            log.append("AIMENG AUTO DIAGNOSTIC\\n")
+                    .append("time=").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(new Date(started))).append('\\n')
+                    .append("app_version=").append(BuildConfig.VERSION_NAME).append('\\n')
+                    .append("build_sha=").append(BuildConfig.AIMENG_BUILD_SHA).append('\\n')
+                    .append("android_sdk=").append(android.os.Build.VERSION.SDK_INT).append('\\n')
+                    .append("device=").append(android.os.Build.MANUFACTURER).append(' ').append(android.os.Build.MODEL).append('\\n')
+                    .append("cpu_cores=").append(Runtime.getRuntime().availableProcessors()).append('\\n')
+                    .append("runtime_ram_limit_mib=4096\\n")
+                    .append("memory_before=").append(memoryStatus()).append('\\n');
+            try {
+                log.append("\\n[1] CPU ROUTING BENCHMARK\\n");
+                int[] sizes = new int[]{64, 256, 1024, 4096, 10000};
+                float[] input = new float[]{0.2f, 0.5f, -0.1f, 0.8f};
+                for (int size : sizes) {
+                    if (isFinishing() || isDestroyed()) { log.append("CANCELLED=activity_closing\\n"); break; }
+                    double rss = currentRssMiB();
+                    if (rss > 3800.0) {
+                        log.append("SAFETY_STOP=rss_over_3800_mib_before_pool_").append(size).append('\\n');
+                        break;
+                    }
+                    HeterogeneousNeuronRuntime runtime = new HeterogeneousNeuronRuntime(
+                            size, HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES, 20261009L + size);
+                    int active = Math.min(32, size);
+                    for (int i = 0; i < 2; i++) runtime.route(input, active);
+                    long[] times = new long[5];
+                    for (int i = 0; i < times.length; i++) times[i] = runtime.route(input, active).elapsedNanos;
+                    java.util.Arrays.sort(times);
+                    log.append("pool=").append(size).append(" active=").append(active)
+                            .append(" median_ms=").append(String.format(Locale.US, "%.3f", times[2] / 1_000_000.0))
+                            .append(" best_ms=").append(String.format(Locale.US, "%.3f", times[0] / 1_000_000.0))
+                            .append(" estimated_pool_mib=").append(String.format(Locale.US, "%.3f", runtime.estimatedBytes() / (1024.0 * 1024.0)))
+                            .append('\\n');
+                }
+                log.append("\\n[2] CONCEPT LABEL / WORKSPACE ROUNDTRIP\\n");
+                NeuronWorkspace snapshot = NeuronWorkspace.fromJson(new JSONObject(workspace.toJson().toString()));
+                log.append("workspace_roundtrip=PASS\\n")
+                        .append("input_concepts=").append(snapshot.inputConceptNames()).append('\\n')
+                        .append("output_concepts=").append(snapshot.outputConceptNames()).append('\\n')
+                        .append("note=labels_are_numeric_dimension_names_not_a_natural_language_encoder\\n");
+            } catch (Throwable error) {
+                log.append("CPU_OR_WORKSPACE_TEST=FAIL: ").append(shortError(error)).append('\\n');
+            }
+            log.append("\\n[3] QNN / HTP INDEPENDENT MATMUL PROBE\\n");
+            try {
+                if (!NpuRuntime.isReady() && !NpuRuntime.init(getApplicationContext()))
+                    throw new IllegalStateException("NPU init failed: " + NpuRuntime.getLastError());
+                int m = 32, k = 32, n = 32;
+                byte[] a = new byte[m * k], b = new byte[k * n];
+                for (int i = 0; i < 8; i++) { a[i * k] = 10; b[i] = 10; b[n + i] = 10; }
+                long t0 = System.nanoTime();
+                byte[] out = NpuRuntime.matMulInt8Buf(a, b, m, k, n);
+                double ms = (System.nanoTime() - t0) / 1_000_000.0;
+                if (out == null || out.length < 4 + m * n)
+                    throw new IllegalStateException("invalid output length; native=" + NpuRuntime.getLastNativeError());
+                log.append("npu_probe=PASS\\nbackend=").append(NpuRuntime.status())
+                        .append("\\nshape=32x32x32\\nmatmul_ms=").append(String.format(Locale.US, "%.3f", ms))
+                        .append("\\nmeaning=standalone NPU operator only; not neural-training acceleration evidence\\n");
+            } catch (Throwable error) {
+                log.append("npu_probe=FAIL_OR_UNAVAILABLE\\nreason=").append(shortError(error)).append('\\n')
+                        .append("fallback=CPU_REFERENCE\\n");
+            }
+            double finalRss = currentRssMiB();
+            log.append("\\n[4] MEMORY / SAFETY\\n")
+                    .append("memory_after=").append(memoryStatus()).append('\\n')
+                    .append("rss_mib=").append(String.format(Locale.US, "%.1f", finalRss)).append('\\n')
+                    .append("runtime_ram_guard=").append(finalRss > 3800.0 ? "WARNING_OVER_3800_MIB" : "UNDER_3800_MIB_AT_SAMPLE").append('\\n')
+                    .append("gpu_backend=NOT_CONNECTED_TO_NEURON_WORKSPACE\\n")
+                    .append("training_backend=CPU\\n")
+                    .append("result=diagnostic_only; device timings required to validate performance\\n")
+                    .append("duration_ms=").append(System.currentTimeMillis() - started).append('\\n');
+            String result = log.toString();
+            lastAutomaticTestLog = result;
+            automaticTestRunning = false;
+            runOnUiThread(() -> {
+                if (automaticTestReport != null) automaticTestReport.setText(result);
+                if (automaticTestButton != null) { automaticTestButton.setEnabled(true); automaticTestButton.setText("全自动测试"); }
+                if (globalStatus != null) globalStatus.setText("自动测试完成，可复制完整日志。");
+                if (!isFinishing() && !isDestroyed()) new AlertDialog.Builder(NeuronLabActivity.this)
+                        .setTitle("全自动测试完成")
+                        .setMessage("打开「全自动测试」页面，点「复制完整日志」，再回到聊天粘贴即可。")
+                        .setPositiveButton("查看日志", (d, which) -> showPage("autotest"))
+                        .setNegativeButton("稍后", null).show();
+            });
+        });
+    }
+
+    private void copyAutomaticTestLog() {
+        if (lastAutomaticTestLog == null || lastAutomaticTestLog.trim().isEmpty()) {
+            toast("还没有日志，请先点「全自动测试」。"); return;
+        }
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        if (clipboard == null) { toast("剪贴板不可用，请使用分享日志按钮。"); return; }
+        clipboard.setPrimaryClip(ClipData.newPlainText("AIMENG auto diagnostic", lastAutomaticTestLog));
+        toast("完整日志已复制，回到聊天直接粘贴即可。");
+    }
+
+    private void shareAutomaticTestLog() {
+        if (lastAutomaticTestLog == null || lastAutomaticTestLog.trim().isEmpty()) {
+            toast("还没有日志，请先点「全自动测试」。"); return;
+        }
+        Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
+        send.putExtra(Intent.EXTRA_SUBJECT, "AIMENG 全自动测试日志");
+        send.putExtra(Intent.EXTRA_TEXT, lastAutomaticTestLog);
+        startActivity(Intent.createChooser(send, "分享全自动测试日志"));
+    }
+
     private void buildRuntimePage(LinearLayout content) {
         LinearLayout intro = card(content, "大规模神经元池 · 实验性运行时");
         addText(intro, "这里与现有 128 单元训练网络分开。池大小可设为 2 到 200,000，使用连续 float 数组并按任务输入进行 top-k 激活路由；参数预算默认不超过 64 MiB。", 13, false);
@@ -392,6 +510,10 @@ public final class NeuronLabActivity extends Activity {
         addActionRow(quick, new String[]{"管理神经元", "保存工作区", "NPU 诊断"}, new Runnable[]{
                 () -> showPage("neurons"), this::persistWorkspaceWithToast, this::runNpuDiagnostic
         });
+
+        Button autoTest = primaryButton("全自动测试 · 生成可复制的性能日志");
+        autoTest.setOnClickListener(v -> showPage("autotest"));
+        quick.addView(autoTest, params(-1, 50, 0, 8, 0, 0));
 
         Button gridWorld = primaryButton("打开迷宫实验 · 观看神经网络学习");
         gridWorld.setOnClickListener(v -> startActivity(
