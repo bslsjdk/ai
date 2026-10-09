@@ -46,6 +46,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Native Android workbench for the bounded multi-input/multi-output neuron network.
@@ -82,6 +83,7 @@ public final class NeuronLabActivity extends Activity {
     private EditText poolInputField;
     private TextView poolReport;
     private HeterogeneousNeuronRuntime poolRuntime;
+    private MemoryAwareComputeScheduler computeScheduler;
     private TextView automaticTestReport;
     private Button automaticTestButton;
     private volatile boolean automaticTestRunning;
@@ -117,6 +119,7 @@ public final class NeuronLabActivity extends Activity {
         // Android 15+ enforces edge-to-edge for targetSdk 35. Apply real system-bar
         // insets to the root so the title and bottom navigation never sit under bars.
         getWindow().setDecorFitsSystemWindows(false);
+        computeScheduler = new MemoryAwareComputeScheduler(this::currentRssBytes);
         loadInternalWorkspace();
         buildShell();
         showPage("home");
@@ -297,25 +300,27 @@ public final class NeuronLabActivity extends Activity {
                 log.append("\n[1] CPU ROUTING BENCHMARK\n");
                 int[] sizes = new int[]{64, 256, 1024, 4096, 10000};
                 float[] input = new float[]{0.2f, 0.5f, -0.1f, 0.8f};
+                log.append("scheduler_policy=FIFO; hard_limit_mib=4096; reserve_mib=512; jobs_defer_until_memory_fits\n");
                 for (int size : sizes) {
                     if (isFinishing() || isDestroyed()) { log.append("CANCELLED=activity_closing\n"); break; }
-                    double rss = currentRssMiB();
-                    if (rss > 3800.0) {
-                        log.append("SAFETY_STOP=rss_over_3800_mib_before_pool_").append(size).append('\n');
-                        break;
-                    }
-                    HeterogeneousNeuronRuntime runtime = new HeterogeneousNeuronRuntime(
-                            size, HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES, 20261009L + size);
-                    int active = Math.min(32, size);
-                    for (int i = 0; i < 2; i++) runtime.route(input, active);
-                    long[] times = new long[5];
-                    for (int i = 0; i < times.length; i++) times[i] = runtime.route(input, active).elapsedNanos;
-                    java.util.Arrays.sort(times);
-                    log.append("pool=").append(size).append(" active=").append(active)
-                            .append(" median_ms=").append(String.format(Locale.US, "%.3f", times[2] / 1_000_000.0))
-                            .append(" best_ms=").append(String.format(Locale.US, "%.3f", times[0] / 1_000_000.0))
-                            .append(" estimated_pool_mib=").append(String.format(Locale.US, "%.3f", runtime.estimatedBytes() / (1024.0 * 1024.0)))
-                            .append('\n');
+                    final int poolSize = size;
+                    long estimate = HeterogeneousNeuronRuntime.estimateBytes(poolSize) + 1024L * 1024L;
+                    Future<String> benchmark = computeScheduler.submit("cpu-route-" + poolSize, estimate, () -> {
+                        HeterogeneousNeuronRuntime runtime = new HeterogeneousNeuronRuntime(
+                                poolSize, HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES, 20261009L + poolSize);
+                        int active = Math.min(32, poolSize);
+                        for (int warmup = 0; warmup < 2; warmup++) runtime.route(input, active);
+                        long[] times = new long[5];
+                        for (int i = 0; i < times.length; i++) times[i] = runtime.route(input, active).elapsedNanos;
+                        java.util.Arrays.sort(times);
+                        return "pool=" + poolSize + " active=" + active
+                                + " median_ms=" + String.format(Locale.US, "%.3f", times[2] / 1_000_000.0)
+                                + " best_ms=" + String.format(Locale.US, "%.3f", times[0] / 1_000_000.0)
+                                + " estimated_pool_mib=" + String.format(Locale.US, "%.3f", runtime.estimatedBytes() / (1024.0 * 1024.0));
+                    });
+                    log.append(benchmark.get()).append('\n');
+                    log.append("scheduler_state_after_pool_").append(poolSize).append("=\n")
+                            .append(computeScheduler.snapshot().toReport()).append('\n');
                 }
                 log.append("\n[2] CONCEPT LABEL / WORKSPACE ROUNDTRIP\n");
                 JSONObject serializedWorkspace = workspace.toJson();
