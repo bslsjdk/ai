@@ -275,19 +275,24 @@ public final class HeterogeneousNeuronRuntime {
             for (float v : row) if (!Float.isFinite(v)) throw new IllegalArgumentException("non-finite input");
         }
         int batch = inputs.length;
-        long workBytes = ((long)batch*dims + (long)dims*poolSize + (long)batch*poolSize)*4L;
-        if (workBytes > 32L*1024L*1024L)
-            throw new IllegalArgumentException("batch workset exceeds 32 MiB; reduce batch or pool");
+        // Conservative transient estimate includes the CPU reference, transposed
+        // weights, Java/native copies and GPU staging buffers, not just tensor payloads.
+        long workBytes = ((long)dims*poolSize + (long)batch*poolSize*4L + (long)batch*dims)*4L;
+        if (workBytes > 48L*1024L*1024L)
+            throw new IllegalArgumentException("estimated batch working set exceeds 48 MiB; reduce batch or pool");
         long t0 = System.nanoTime();
-        float[] cpu = cpuBatch(inputs, dims);
-        long cpuNs = System.nanoTime()-t0;
-        float[] chosen = cpu;
-        String backend = "CPU";
-        String decision = "CPU_REFERENCE cpu_ms=" + cpuNs/1e6;
+        float[] chosen;
         if (!batchBackendDecisionMade) {
+            float[] cpu = cpuBatch(inputs, dims);
+            long cpuNs = System.nanoTime()-t0;
+            chosen = cpu;
+            String backend = "CPU";
+            String decision = "CPU_REFERENCE cpu_ms=" + cpuNs/1e6;
             float[] wt = transposeForDims(dims);
             float[] flat = new float[batch*dims];
             for (int r=0;r<batch;r++) System.arraycopy(inputs[r],0,flat,r*dims,dims);
+            // Compile/warm the shader before comparing steady-state latency.
+            GpuComputeRuntime.matMul(flat,wt,batch,dims,poolSize);
             long g0=System.nanoTime();
             float[] raw=GpuComputeRuntime.matMul(flat,wt,batch,dims,poolSize);
             long gpuNs=System.nanoTime()-g0;
@@ -347,7 +352,7 @@ public final class HeterogeneousNeuronRuntime {
             for(int r=0;r<batch;r++) System.arraycopy(inputs[r],0,flat,r*dims,dims);
             float[] raw=GpuComputeRuntime.matMul(flat,transposeForDims(dims),batch,dims,poolSize);
             if(raw!=null && raw.length==batch*poolSize) chosen=activate(raw);
-            else { chosen=cpu; batchBackend="CPU"; batchBackendDecision="GPU runtime failure fallback: "+GpuComputeRuntime.getLastError(); }
+            else { chosen=cpuBatch(inputs,dims); batchBackend="CPU"; batchBackendDecision="GPU runtime failure fallback: "+GpuComputeRuntime.getLastError(); }
         } else if("QNN_HTP_V73_INT8".equals(batchBackend)) {
             try {
                 byte[] a=new byte[batch*dims],b=new byte[dims*poolSize];
@@ -359,7 +364,9 @@ public final class HeterogeneousNeuronRuntime {
                 chosen=new float[batch*poolSize];
                 for(int r=0;r<batch;r++) for(int u=0;u<poolSize;u++)
                     chosen[r*poolSize+u]=(float)Math.tanh(packed[4+r*poolSize+u]*scaleC/0.01f+bias[u]);
-            } catch(Throwable e) { chosen=cpu; batchBackend="CPU"; batchBackendDecision="NPU runtime failure fallback: "+e.getMessage(); }
+            } catch(Throwable e) { chosen=cpuBatch(inputs,dims); batchBackend="CPU"; batchBackendDecision="NPU runtime failure fallback: "+e.getMessage(); }
+        } else {
+            chosen=cpuBatch(inputs,dims);
         }
         int[][] selected=new int[batch][requestedActive];
         for(int r=0;r<batch;r++) {
