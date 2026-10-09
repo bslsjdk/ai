@@ -799,7 +799,7 @@ public final class NeuronWorkspace {
                 + (cancelled ? "（用户停止，保留当前最佳权重）" : "") + "\n"
                 + "验证集 MSE：" + format(initialValidation) + " → " + format(finalValidation) + "\n"
                 + "训练集 MSE：" + format(finalTraining) + "\n"
-                + "耗时：" + elapsed + " ms；后端：CPU；激活：tanh；输出：linear；优化器：Adam\n"
+                + "耗时：" + elapsed + " ms；后端：" + lastTrainingBackend + "；激活：tanh；输出：linear；优化器：Adam\n"
                 + "评分含义：score = 遮蔽该隐藏神经元后验证集 MSE 的增加量；正值越大，当前验证集越依赖它。它不是通用能力证明。";
         lastReport = report;
         try {
@@ -817,7 +817,7 @@ public final class NeuronWorkspace {
             task.put("finalValidationMse", finalValidation);
             task.put("finalTrainingMse", finalTraining);
             task.put("elapsedMs", elapsed);
-            task.put("backend", "CPU");
+            task.put("backend", lastTrainingBackend);
             task.put("cancelled", cancelled);
             task.put("earlyStopped", earlyStopped);
             task.put("status", cancelled ? "cancelled" : "completed");
@@ -836,13 +836,17 @@ public final class NeuronWorkspace {
         double[][] gOut = new double[hCount][outputCount];
         double[] gOutputBias = new double[outputCount];
 
-        for (Sample s : training) {
-            // Training needs activations and outputs, not the per-neuron contribution matrix.
-            // Avoiding that HxO allocation for every sample/epoch reduces mobile GC pauses.
-            ForwardResult f = forwardForTraining(s.input);
+        // Compute the hidden layer once per epoch. For sufficiently large workloads,
+        // CPU and GLES GPU calculate disjoint neuron ranges concurrently. Parameters
+        // are not updated until the full-batch gradient has been accumulated, so this
+        // is mathematically equivalent to the original full-batch forward pass.
+        double[][] hiddenBatch = buildEpochHiddenActivations(training);
+        for (int sampleIndex = 0; sampleIndex < training.size(); sampleIndex++) {
+            Sample sample = training.get(sampleIndex);
+            ForwardResult f = forwardForTraining(sample.input, hiddenBatch[sampleIndex]);
             double[] dOut = new double[outputCount];
             for (int o = 0; o < outputCount; o++) {
-                dOut[o] = 2.0 * (f.output[o] - s.output[o]) / outputCount;
+                dOut[o] = 2.0 * (f.output[o] - sample.output[o]) / outputCount;
                 gOutputBias[o] += dOut[o];
                 for (int h = 0; h < hCount; h++)
                     if (neurons.get(h).enabled) gOut[h][o] += dOut[o] * f.hidden[h];
@@ -854,7 +858,7 @@ public final class NeuronWorkspace {
                 for (int o = 0; o < outputCount; o++) upstream += dOut[o] * n.outputWeights[o];
                 double delta = upstream * (1.0 - f.hidden[h] * f.hidden[h]);
                 gHiddenBias[h] += delta;
-                for (int i = 0; i < inputCount; i++) gIn[h][i] += delta * s.input[i];
+                for (int i = 0; i < inputCount; i++) gIn[h][i] += delta * sample.input[i];
             }
         }
 
@@ -894,6 +898,164 @@ public final class NeuronWorkspace {
         }
     }
 
+    private static final java.util.concurrent.ExecutorService TRAINING_GPU_EXECUTOR =
+            java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "aimeng-training-gpu");
+                t.setDaemon(true);
+                return t;
+            });
+    private boolean trainingHybridDecisionMade;
+    private boolean useHybridTraining;
+    private boolean trainingHybridValidated;
+    private int trainingHybridInputShape = -1;
+    private int trainingHybridHiddenShape = -1;
+    private boolean trainingGpuWarmed;
+    private String lastTrainingBackend = "CPU";
+
+    private double[][] buildEpochHiddenActivations(List<Sample> data) {
+        final int rows = data.size();
+        final int hiddenCount = neurons.size();
+        final int dims = inputCount;
+        double[][] hidden = new double[rows][hiddenCount];
+        long bytes = ((long) rows * dims + (long) dims * (hiddenCount / 2)
+                + (long) rows * (hiddenCount / 2)) * Float.BYTES;
+        boolean eligible = rows >= 64 && hiddenCount >= 32 && dims >= 4
+                && bytes <= 32L * 1024L * 1024L;
+        if (!eligible) {
+            computeCpuHiddenRange(data, hidden, 0, hiddenCount);
+            lastTrainingBackend = "CPU";
+            return hidden;
+        }
+
+        if (trainingHybridInputShape != dims || trainingHybridHiddenShape != hiddenCount) {
+            trainingHybridInputShape = dims;
+            trainingHybridHiddenShape = hiddenCount;
+            trainingHybridDecisionMade = false;
+            trainingHybridValidated = false;
+            useHybridTraining = false;
+        }
+        if (trainingHybridDecisionMade && !useHybridTraining) {
+            computeCpuHiddenRange(data, hidden, 0, hiddenCount);
+            lastTrainingBackend = "CPU (GPU calibration rejected)";
+            return hidden;
+        }
+
+        int cpuEnd = Math.max(1, hiddenCount / 2);
+        int gpuCount = hiddenCount - cpuEnd;
+        float[] flatInputs = new float[rows * dims];
+        for (int r = 0; r < rows; r++) {
+            double[] in = data.get(r).input;
+            for (int j = 0; j < dims; j++) flatInputs[r * dims + j] = (float) in[j];
+        }
+        float[] transposed = new float[dims * gpuCount];
+        for (int j = 0; j < dims; j++) {
+            for (int h = cpuEnd; h < hiddenCount; h++) {
+                Neuron neuron = neurons.get(h);
+                transposed[j * gpuCount + h - cpuEnd] =
+                        neuron.enabled ? (float) neuron.inputWeights[j] : 0f;
+            }
+        }
+
+        if (!trainingGpuWarmed) {
+            float[] warm = GpuComputeRuntime.matMul(flatInputs, transposed, rows, dims, gpuCount);
+            if (warm == null || warm.length != rows * gpuCount) {
+                trainingHybridDecisionMade = true;
+                useHybridTraining = false;
+                computeCpuHiddenRange(data, hidden, 0, hiddenCount);
+                lastTrainingBackend = "CPU (GPU unavailable: " + GpuComputeRuntime.getLastError() + ")";
+                return hidden;
+            }
+            trainingGpuWarmed = true;
+        }
+
+        double[][] cpuReference = null;
+        long cpuOnlyMs = 0;
+        if (!trainingHybridDecisionMade) {
+            long cpuStart = System.nanoTime();
+            cpuReference = new double[rows][hiddenCount];
+            computeCpuHiddenRange(data, cpuReference, 0, hiddenCount);
+            cpuOnlyMs = (System.nanoTime() - cpuStart) / 1_000_000L;
+        }
+
+        final double[][] target = hidden;
+        java.util.concurrent.Future<float[]> gpuFuture = TRAINING_GPU_EXECUTOR.submit(
+                () -> GpuComputeRuntime.matMul(flatInputs, transposed, rows, dims, gpuCount));
+        long hybridStart = System.nanoTime();
+        computeCpuHiddenRange(data, target, 0, cpuEnd);
+        float[] gpuRaw;
+        try {
+            gpuRaw = gpuFuture.get();
+        } catch (Exception error) {
+            gpuFuture.cancel(true);
+            trainingHybridDecisionMade = true;
+            useHybridTraining = false;
+            computeCpuHiddenRange(data, hidden, 0, hiddenCount);
+            lastTrainingBackend = "CPU (GPU task failed)";
+            return hidden;
+        }
+        if (gpuRaw == null || gpuRaw.length != rows * gpuCount) {
+            trainingHybridDecisionMade = true;
+            useHybridTraining = false;
+            computeCpuHiddenRange(data, hidden, 0, hiddenCount);
+            lastTrainingBackend = "CPU (GPU output invalid)";
+            return hidden;
+        }
+        for (int r = 0; r < rows; r++) {
+            for (int k = 0; k < gpuCount; k++) {
+                Neuron neuron = neurons.get(cpuEnd + k);
+                hidden[r][cpuEnd + k] = neuron.enabled
+                        ? Math.tanh((double) gpuRaw[r * gpuCount + k] + neuron.bias) : 0.0;
+            }
+        }
+
+        double hybridMs = (System.nanoTime() - hybridStart) / 1_000_000.0;
+        if (cpuReference != null) {
+            double maxDiff = maxHiddenDifference(cpuReference, hidden);
+            trainingHybridDecisionMade = true;
+            trainingHybridValidated = Double.isFinite(maxDiff) && maxDiff <= 0.001;
+            useHybridTraining = trainingHybridValidated && hybridMs < cpuOnlyMs * 0.90;
+            if (!useHybridTraining) {
+                hidden = cpuReference;
+                lastTrainingBackend = "CPU (hybrid rejected; cpu_ms=" + cpuOnlyMs
+                        + ", hybrid_ms=" + String.format(Locale.US, "%.3f", hybridMs)
+                        + ", max_abs=" + maxDiff + ")";
+                return hidden;
+            }
+        }
+        if (!trainingHybridValidated && trainingHybridDecisionMade && !useHybridTraining) {
+            computeCpuHiddenRange(data, hidden, 0, hiddenCount);
+            lastTrainingBackend = "CPU (hybrid validation failed)";
+            return hidden;
+        }
+        lastTrainingBackend = "CPU+GLES31_GPU (disjoint hidden-neuron ranges)";
+        return hidden;
+    }
+
+    private void computeCpuHiddenRange(List<Sample> data, double[][] target, int startHidden, int endHidden) {
+        for (int r = 0; r < data.size(); r++) {
+            double[] input = data.get(r).input;
+            for (int h = startHidden; h < endHidden; h++) {
+                Neuron neuron = neurons.get(h);
+                if (!neuron.enabled) { target[r][h] = 0.0; continue; }
+                double sum = neuron.bias;
+                for (int j = 0; j < inputCount; j++) sum += neuron.inputWeights[j] * input[j];
+                target[r][h] = Math.tanh(sum);
+            }
+        }
+    }
+
+    private static double maxHiddenDifference(double[][] expected, double[][] actual) {
+        double max = 0.0;
+        for (int r = 0; r < expected.length; r++) {
+            for (int h = 0; h < expected[r].length; h++) {
+                double diff = Math.abs(expected[r][h] - actual[r][h]);
+                if (!Double.isFinite(diff)) return Double.POSITIVE_INFINITY;
+                if (diff > max) max = diff;
+            }
+        }
+        return max;
+    }
+
     private double[] outputBias;
 
     /** Allocation-light forward pass for backpropagation; no contribution matrix or input clone. */
@@ -907,6 +1069,10 @@ public final class NeuronWorkspace {
             for (int j = 0; j < inputCount; j++) z += weights[j] * input[j];
             hidden[i] = Math.tanh(z);
         }
+        return forwardForTraining(input, hidden);
+    }
+
+    private ForwardResult forwardForTraining(double[] input, double[] hidden) {
         double[] output = outputBias.clone();
         for (int i = 0; i < neurons.size(); i++) {
             double activation = hidden[i];
