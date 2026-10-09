@@ -328,6 +328,32 @@ public final class NeuronLabActivity extends Activity {
                     log.append("scheduler_state_after_pool_").append(poolSize).append("=\n")
                             .append(computeScheduler.snapshot().toReport()).append('\n');
                 }
+                log.append("\n[1B] BATCHED CPU/GPU/NPU ROUTING\n");
+                try {
+                    Future<String> batchProbe = computeScheduler.submit("batch-heterogeneous-route-probe",
+                            40L * 1024L * 1024L, () -> {
+                        boolean npuReady = NpuRuntime.isReady() || NpuRuntime.init(getApplicationContext());
+                        HeterogeneousNeuronRuntime batchRuntime = new HeterogeneousNeuronRuntime(
+                                50000, HeterogeneousNeuronRuntime.DEFAULT_POOL_BUDGET_BYTES, 20261010L);
+                        float[][] batchInputs = new float[16][16];
+                        for (int r = 0; r < batchInputs.length; r++) for (int j = 0; j < 16; j++)
+                            batchInputs[r][j] = (float)Math.sin((r + 1) * (j + 3) * 0.17) * 0.8f;
+                        HeterogeneousNeuronRuntime.BatchRouteResult calibration =
+                                batchRuntime.routeBatch(batchInputs, 32);
+                        HeterogeneousNeuronRuntime.BatchRouteResult steady =
+                                batchRuntime.routeBatch(batchInputs, 32);
+                        return "npu_ready=" + npuReady + "\nNPU_status=" + NpuRuntime.status()
+                                + "\ncalibration_and_backend_selection:\n" + calibration.toReport()
+                                + "\nsteady_state:\n" + steady.toReport()
+                                + "\nworking_set_guard=48_MiB_batch_limit; scheduler_reservation=40_MiB"
+                                + "\n" + computeScheduler.snapshot().toReport();
+                    });
+                    log.append(awaitScheduledResult(batchProbe, "批量 CPU/GPU/NPU 路由")).append('\n');
+                } catch (Throwable batchError) {
+                    log.append("batch_route_probe=FAIL_OR_DEFERRED reason=")
+                            .append(shortError(batchError)).append('\n')
+                            .append(computeScheduler.snapshot().toReport()).append('\n');
+                }
                 log.append("\n[2] CONCEPT LABEL / WORKSPACE ROUNDTRIP\n");
                 JSONObject serializedWorkspace = workspace.toJson();
                 if (serializedWorkspace.optJSONArray("inputConcepts") == null
