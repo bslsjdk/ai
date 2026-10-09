@@ -2,11 +2,16 @@ package bslsjdk.ornithnpu;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -17,6 +22,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import rikka.shizuku.Shizuku;
 
@@ -28,17 +34,21 @@ import rikka.shizuku.Shizuku;
 public final class CommandTerminalActivity extends Activity {
     private static final long COMMAND_TIMEOUT_SECONDS = 120;
     private static final int MAX_OUTPUT_CHARS = 500_000;
+    private static final AtomicInteger TERMUX_REQUEST_IDS = new AtomicInteger(4100);
     private final Object processLock = new Object();
     private volatile Process currentProcess;
     private volatile boolean stopping;
     private EditText commandInput;
     private TextView status, output;
     private Button runButton, stopButton;
+    private CheckBox termuxMode;
+    private volatile boolean termuxRunning;
     private final StringBuilder transcript = new StringBuilder();
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         ShizukuHelper.init();
+        TermuxCommandResultReceiver.resultHandler = this::onTermuxResult;
         buildUi();
         append("AIMENG 通用命令终端\n");
         append("默认目录：/sdcard\n");
@@ -94,6 +104,12 @@ public final class CommandTerminalActivity extends Activity {
         quick.addView(auth, new LinearLayout.LayoutParams(0, dp(46), 1));
         root.addView(quick, lp(0, 4));
 
+        termuxMode = new CheckBox(this);
+        termuxMode.setText("在 Termux 环境执行（需要安装 Termux 并单独授权）");
+        termuxMode.setTextSize(12);
+        root.addView(termuxMode, lp(0, 4));
+        root.addView(label("Termux 模式可使用已安装的 Python、OpenJDK、Git 等包；需授权 RUN_COMMAND，并在 Termux 中启用 allow-external-apps。", 11, false), lp(0, 2));
+
         TextView outTitle = label("终端输出", 16, true);
         root.addView(outTitle, lp(0, 10));
         output = label("", 12, false);
@@ -129,7 +145,7 @@ public final class CommandTerminalActivity extends Activity {
         final String command = commandInput.getText().toString().trim();
         if (command.isEmpty()) { toast("先输入一条命令。"); return; }
         synchronized (processLock) {
-            if (currentProcess != null) { toast("已有命令正在运行。"); return; }
+            if (currentProcess != null || termuxRunning) { toast("已有命令正在运行。"); return; }
             stopping = false;
         }
         append("\n$ " + command + "\n");
@@ -137,9 +153,78 @@ public final class CommandTerminalActivity extends Activity {
         stopButton.setEnabled(true);
         commandInput.setEnabled(false);
         refreshStatus();
+        if (termuxMode != null && termuxMode.isChecked()) {
+            executeInTermux(command);
+            return;
+        }
         Thread thread = new Thread(() -> execute(command), "aimeng-command-runner");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void executeInTermux(String command) {
+        try {
+            getPackageManager().getPackageInfo("com.termux", 0);
+        } catch (Throwable missing) {
+            finishTermuxDispatchError("未检测到 Termux。系统 shell 本身不附带 Python/JDK；安装并初始化 Termux 后才能使用该模式。");
+            return;
+        }
+        if (checkSelfPermission("com.termux.permission.RUN_COMMAND") != PackageManager.PERMISSION_GRANTED) {
+            new AlertDialog.Builder(this)
+                    .setTitle("需要授权 Termux 命令执行")
+                    .setMessage("请在 Android 设置 → 应用 → AIMENG 神经元实验 → 权限 → 其他权限中，允许“在 Termux 环境中运行命令”。还需要在 Termux 的 ~/.termux/termux.properties 中设置 allow-external-apps=true，并重启 Termux。")
+                    .setPositiveButton("知道了", (d, w) -> { })
+                    .show();
+            finishTermuxDispatchError("缺少 com.termux.permission.RUN_COMMAND 授权。");
+            return;
+        }
+        try {
+            Intent intent = new Intent();
+            intent.setClassName("com.termux", "com.termux.app.RunCommandService");
+            intent.setAction("com.termux.RUN_COMMAND");
+            intent.putExtra("com.termux.RUN_COMMAND_PATH", "/data/data/com.termux/files/usr/bin/bash");
+            String bounded = "if command -v timeout >/dev/null 2>&1; then timeout 120s bash -lc \"$1\"; else bash -lc \"$1\"; fi";
+            intent.putExtra("com.termux.RUN_COMMAND_ARGUMENTS", new String[]{"-lc", bounded, "aimeng", command});
+            intent.putExtra("com.termux.RUN_COMMAND_WORKDIR", "/data/data/com.termux/files/home");
+            intent.putExtra("com.termux.RUN_COMMAND_BACKGROUND", true);
+            intent.putExtra("com.termux.RUN_COMMAND_SESSION_ACTION", "0");
+            intent.putExtra("com.termux.RUN_COMMAND_LABEL", "AIMENG command");
+            intent.putExtra("com.termux.RUN_COMMAND_DESCRIPTION", "Command submitted by the user from AIMENG's terminal.");
+            Intent resultIntent = new Intent(this, TermuxCommandResultReceiver.class);
+            int requestId = TERMUX_REQUEST_IDS.incrementAndGet();
+            int flags = PendingIntent.FLAG_ONE_SHOT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) flags |= PendingIntent.FLAG_MUTABLE;
+            PendingIntent pending = PendingIntent.getBroadcast(this, requestId, resultIntent, flags);
+            intent.putExtra("com.termux.RUN_COMMAND_PENDING_INTENT", pending);
+            termuxRunning = true;
+            stopButton.setEnabled(false);
+            status.setText("状态：Termux 后台命令运行中 · 最长 120 秒（依赖 Termux timeout 工具）");
+            startService(intent);
+        } catch (Throwable e) {
+            termuxRunning = false;
+            finishTermuxDispatchError("无法启动 Termux 命令：" + e.getClass().getSimpleName() + ": " + String.valueOf(e.getMessage()));
+        }
+    }
+
+    private void onTermuxResult(String result) {
+        runOnUiThread(() -> {
+            termuxRunning = false;
+            append(result);
+            runButton.setEnabled(true);
+            stopButton.setEnabled(false);
+            commandInput.setEnabled(true);
+            refreshStatus();
+        });
+    }
+
+    private void finishTermuxDispatchError(String message) {
+        runOnUiThread(() -> {
+            append("[Termux 执行失败] " + message + "\n");
+            runButton.setEnabled(true);
+            stopButton.setEnabled(false);
+            commandInput.setEnabled(true);
+            refreshStatus();
+        });
     }
 
     private void execute(String command) {
@@ -208,6 +293,10 @@ public final class CommandTerminalActivity extends Activity {
     }
 
     private void stopCommand() {
+        if (termuxRunning) {
+            toast("Termux 命令由后台服务执行；此页不能直接杀掉它。命令会尝试在 120 秒后超时结束。");
+            return;
+        }
         stopping = true;
         Process p = currentProcess;
         if (p != null) {
@@ -272,6 +361,7 @@ public final class CommandTerminalActivity extends Activity {
     @Override protected void onResume() { super.onResume(); refreshStatus(); }
 
     @Override protected void onDestroy() {
+        TermuxCommandResultReceiver.resultHandler = null;
         stopping = true;
         Process p = currentProcess;
         if (p != null) try { p.destroy(); } catch (Throwable ignored) {}
