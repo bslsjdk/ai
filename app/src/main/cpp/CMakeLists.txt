@@ -18,7 +18,8 @@ set(MCNPU_SOURCES
     ornith15_executor.cpp
     ornith15_executor.h
     runtime_memory_budget.cpp
-    runtime_memory_budget.h)
+    runtime_memory_budget.h
+    gpu_compute.cpp)
 if(LLAMA_CPP_SRC)
     list(APPEND MCNPU_SOURCES mcnpu_ggml_backend.cpp)
 endif()
@@ -47,7 +48,9 @@ if(LLAMA_CPP_SRC)
     target_include_directories(ornithnpu PRIVATE ${LLAMA_CPP_SRC}/ggml/include ${LLAMA_CPP_SRC}/ggml/src)
 endif()
 find_library(log-lib log)
-target_link_libraries(ornithnpu PRIVATE ${log-lib} dl)
+find_library(egl-lib EGL)
+find_library(glesv3-lib GLESv3)
+target_link_libraries(ornithnpu PRIVATE ${log-lib} dl ${egl-lib} ${glesv3-lib})
 target_compile_features(ornithnpu PRIVATE cxx_std_17)
 target_compile_options(ornithnpu PRIVATE -fvisibility=hidden -ffunction-sections -fdata-sections -Wall -Wextra)
 target_link_options(ornithnpu PRIVATE -Wl,--gc-sections)
