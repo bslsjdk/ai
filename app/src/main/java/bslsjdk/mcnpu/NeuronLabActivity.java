@@ -12,6 +12,7 @@ import android.os.Debug;
 import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
+import android.view.WindowInsets;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -102,6 +103,9 @@ public final class NeuronLabActivity extends Activity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        // Android 15+ enforces edge-to-edge for targetSdk 35. Apply real system-bar
+        // insets to the root so the title and bottom navigation never sit under bars.
+        getWindow().setDecorFitsSystemWindows(false);
         loadInternalWorkspace();
         buildShell();
         showPage("home");
@@ -129,13 +133,22 @@ public final class NeuronLabActivity extends Activity {
         shell = new LinearLayout(this);
         shell.setOrientation(LinearLayout.VERTICAL);
         shell.setBackgroundColor(0xFFF3F5F8);
+        shell.setOnApplyWindowInsetsListener((view, insets) -> {
+            android.graphics.Insets bars = insets.getInsets(
+                    WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+            android.graphics.Insets ime = insets.getInsets(WindowInsets.Type.ime());
+            int bottomInset = Math.max(bars.bottom, ime.bottom);
+            // Absolute padding is reassigned on every dispatch, avoiding cumulative insets.
+            view.setPadding(bars.left, bars.top, bars.right, bottomInset);
+            return insets;
+        });
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.VERTICAL);
         header.setPadding(dp(18), dp(12), dp(18), dp(10));
         header.setBackgroundColor(Color.WHITE);
         header.addView(label("AIMENG · 神经元工作台", 23, true));
-        TextView subtitle = label("多输入 / 多输出 · 本地训练 · 神经元独立保存", 12, false);
+        TextView subtitle = label("独立神经元单元 · 本地训练 · 评分筛选 · 单个/批量保存", 12, false);
         subtitle.setTextColor(0xFF667085);
         header.addView(subtitle, params(-1, -2, 0, 3, 0, 0));
         TextView buildFingerprint = label("构建版本 " + BuildConfig.VERSION_NAME + " · commit " + BuildConfig.AIMENG_BUILD_SHA, 11, true);
@@ -369,11 +382,11 @@ public final class NeuronLabActivity extends Activity {
         add.setOnClickListener(v -> addNeuron());
         config.addView(add, params(-1, 46, 0, 6, 0, 0));
 
-        LinearLayout graph = card(content, "连接示意图");
+        LinearLayout graph = card(content, "神经元群与真实权重连接");
         NetworkDiagramView diagram = new NetworkDiagramView(this);
         diagram.setGraph(workspace.inputCount, workspace.outputCount, workspace.neuronsSnapshot());
         graph.addView(diagram, params(-1, 360, 0, 0, 0, 0));
-        addText(graph, "线条表示输入权重/输出权重的相对大小；绿色是活动单元，灰色是已禁用单元。图形为当前隐藏层结构示意，过大的网络会只绘制部分节点。", 11, false);
+        addText(graph, "每个圆点代表一个真实的独立神经元单元；连线来自当前输入/输出权重，不伪造神经元之间的连接。当前数值网络的训练器仍使用输入—神经元—输出计算，图形只改变布局，不声称已经实现任意稀疏拓扑。", 11, false);
 
         LinearLayout library = card(content, "从神经元库恢复");
         addText(library, "神经元库：" + workspace.savedNeuronCount() + " 个。导入前会检查输入/输出维度。", 12, false);
