@@ -138,6 +138,9 @@ public final class NeuronLabActivity extends Activity {
         TextView subtitle = label("多输入 / 多输出 · 本地训练 · 神经元独立保存", 12, false);
         subtitle.setTextColor(0xFF667085);
         header.addView(subtitle, params(-1, -2, 0, 3, 0, 0));
+        TextView buildFingerprint = label("构建版本 " + BuildConfig.VERSION_NAME + " · commit " + BuildConfig.AIMENG_BUILD_SHA, 11, true);
+        buildFingerprint.setTextColor(0xFF155E58);
+        header.addView(buildFingerprint, params(-1, -2, 0, 4, 0, 0));
         globalStatus = label("工作区自动保存到应用内部存储。", 11, false);
         globalStatus.setTextColor(0xFF287D72);
         header.addView(globalStatus, params(-1, -2, 0, 5, 0, 0));
