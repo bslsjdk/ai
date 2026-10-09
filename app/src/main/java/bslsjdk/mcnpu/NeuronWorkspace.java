@@ -910,13 +910,21 @@ public final class NeuronWorkspace {
     private int trainingHybridInputShape = -1;
     private int trainingHybridHiddenShape = -1;
     private boolean trainingGpuWarmed;
+    private double[][] epochHiddenScratch;
+    private int epochHiddenRows = -1;
+    private int epochHiddenWidth = -1;
     private String lastTrainingBackend = "CPU";
 
     private double[][] buildEpochHiddenActivations(List<Sample> data) {
         final int rows = data.size();
         final int hiddenCount = neurons.size();
         final int dims = inputCount;
-        double[][] hidden = new double[rows][hiddenCount];
+        if (epochHiddenScratch == null || epochHiddenRows != rows || epochHiddenWidth != hiddenCount) {
+            epochHiddenScratch = new double[rows][hiddenCount];
+            epochHiddenRows = rows;
+            epochHiddenWidth = hiddenCount;
+        }
+        double[][] hidden = epochHiddenScratch;
         long bytes = ((long) rows * dims + (long) dims * (hiddenCount / 2)
                 + (long) rows * (hiddenCount / 2)) * Float.BYTES;
         boolean eligible = rows >= 64 && hiddenCount >= 32 && dims >= 4
@@ -969,12 +977,12 @@ public final class NeuronWorkspace {
         }
 
         double[][] cpuReference = null;
-        long cpuOnlyMs = 0;
+        double cpuOnlyMs = 0.0;
         if (!trainingHybridDecisionMade) {
             long cpuStart = System.nanoTime();
             cpuReference = new double[rows][hiddenCount];
             computeCpuHiddenRange(data, cpuReference, 0, hiddenCount);
-            cpuOnlyMs = (System.nanoTime() - cpuStart) / 1_000_000L;
+            cpuOnlyMs = (System.nanoTime() - cpuStart) / 1_000_000.0;
         }
 
         final double[][] target = hidden;
