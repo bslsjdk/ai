@@ -391,6 +391,8 @@ public final class NeuronWorkspace {
         outputBias = new double[outputs];
         inputCount = inputs;
         outputCount = outputs;
+        if (inputConcepts == null || inputConcepts.length != inputs) inputConcepts = defaultConcepts("输入", inputs);
+        if (outputConcepts == null || outputConcepts.length != outputs) outputConcepts = defaultConcepts("输出", outputs);
         initializeNeurons(hidden);
         if (dimensionsChanged || addDemoData) {
             samples.clear();
