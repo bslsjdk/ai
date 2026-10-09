@@ -212,16 +212,12 @@ jobs:
           test -x "$ZIPALIGN"
           test -x "$APKSIGNER"
           KEYSTORE=build/signing/ornithnpu-release.jks
-          if [ -s "$KEYSTORE" ]; then
-            KEY_PASS=changeit
-            echo "keystore: persistent development key restored from Actions cache"
-          else
-            # Bootstrap only: old builds used temporary runner keys, which were not
-            # retained. This first persistent-key APK may require one final reinstall.
-            echo "::warning::No cached key yet; creating the one-time persistent development signing key."
-            keytool -genkeypair -v -keystore "$KEYSTORE" -storepass changeit -keypass changeit -alias ornithnpu -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=OrnithNPU,O=bslsjdk"
-            KEY_PASS=changeit
+          if [ ! -s "$KEYSTORE" ]; then
+            echo "::error::Persistent signing-key cache missing. Refusing to generate another key because this would break upgrade signatures."
+            exit 1
           fi
+          KEY_PASS=changeit
+          echo "keystore: persistent development key restored from Actions cache"
           "$ZIPALIGN" -f 4 app/build/outputs/apk/release/app-release-unsigned.apk build/signing/ornithnpu-aligned.apk
           "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias ornithnpu --ks-pass pass:"$KEY_PASS" --key-pass pass:"$KEY_PASS" --out app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk build/signing/ornithnpu-aligned.apk
           "$APKSIGNER" verify --verbose app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk
