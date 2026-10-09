@@ -31,9 +31,13 @@ public final class NpuNeuronForward implements NeuronLabEngine.ForwardBackend {
             a[r * k] = quantize(samples.get(r).x * FEATURE_SCALE);
             a[r * k + 1] = quantize(FEATURE_SCALE);
         }
-        for (int c = 0; c < active.size(); c++) {
-            b[c] = quantize(active.get(c).weight * FEATURE_SCALE);
-            b[n + c] = quantize(active.get(c).bias * FEATURE_SCALE);
+        // Repeat active columns across the padded output bucket. The native
+        // backend calibrates its output scale from nonzero output samples; leaving
+        // most columns zero can make a one-unit ensemble too sparse to calibrate.
+        for (int c = 0; c < n; c++) {
+            NeuronLabEngine.Unit unit = active.get(c % active.size());
+            b[c] = quantize(unit.weight * FEATURE_SCALE);
+            b[n + c] = quantize(unit.bias * FEATURE_SCALE);
         }
         byte[] raw = NpuRuntime.matMulInt8Buf(a, b, m, k, n);
         if (raw == null || raw.length < 4 + m * n) {
