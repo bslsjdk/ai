@@ -836,42 +836,35 @@ public final class GridWorldLabActivity extends Activity {
             double grad = Math.max(-1.0, Math.min(1.0, f.q[action] - target));
             double[][] h = f.thoughtH;
             double[][] pre = f.thoughtPre;
-            double[][] deltaPre = new double[THOUGHT_CYCLES][hiddenSize];
-            double[] deltaH = new double[hiddenSize];
-            double[][] gradW1 = new double[hiddenSize][inputSize];
-            double[][] gradRecurrent = new double[hiddenSize][hiddenSize];
-            double[] gradB1 = new double[hiddenSize];
-
-            // Output gradient starts at the final thought cycle.
-            for (int j = 0; j < hiddenSize; j++) deltaH[j] = grad * w2[action][j];
-            for (int t = THOUGHT_CYCLES - 1; t >= 0; t--) {
-                for (int j = 0; j < hiddenSize; j++) {
-                    deltaPre[t][j] = pre[t][j] > 0.0 ? deltaH[j] : 0.0;
-                    double d = deltaPre[t][j];
-                    if (d == 0.0) continue;
-                    gradB1[j] += d;
-                    for (int i = 0; i < inputSize; i++) if (x[i] != 0.0) gradW1[j][i] += d * x[i];
-                    if (t > 0) {
-                        for (int k = 0; k < hiddenSize; k++) gradRecurrent[j][k] += d * h[t - 1][k];
-                    }
-                }
-                if (t > 0) {
-                    double[] previousDelta = new double[hiddenSize];
-                    for (int k = 0; k < hiddenSize; k++) {
-                        double d = 0.0;
-                        for (int j = 0; j < hiddenSize; j++) d += deltaPre[t][j] * recurrent[j][k];
-                        previousDelta[k] = d;
-                    }
-                    deltaH = previousDelta;
+            // Only two thought cycles are currently configured. Keep backprop scratch
+            // one-dimensional: allocating [hidden][input] gradient matrices per step
+            // caused avoidable GC pressure on Android.
+            double[] deltaLast = new double[hiddenSize];
+            double[] deltaFirst = new double[hiddenSize];
+            for (int j = 0; j < hiddenSize; j++) {
+                double d = grad * w2[action][j];
+                deltaLast[j] = pre[THOUGHT_CYCLES - 1][j] > 0.0 ? d : 0.0;
+            }
+            if (THOUGHT_CYCLES > 1) {
+                for (int k = 0; k < hiddenSize; k++) {
+                    double d = 0.0;
+                    for (int j = 0; j < hiddenSize; j++) d += deltaLast[j] * recurrent[j][k];
+                    deltaFirst[k] = pre[0][k] > 0.0 ? d : 0.0;
                 }
             }
 
             final double lr = 0.0015;
-            // Apply accumulated BPTT gradients only after propagation is complete.
             for (int j = 0; j < hiddenSize; j++) {
-                b1[j] -= lr * gradB1[j];
-                for (int i = 0; i < inputSize; i++) w1[j][i] -= lr * gradW1[j][i];
-                for (int k = 0; k < hiddenSize; k++) recurrent[j][k] -= lr * gradRecurrent[j][k];
+                double first = THOUGHT_CYCLES > 1 ? deltaFirst[j] : 0.0;
+                double last = deltaLast[j];
+                b1[j] -= lr * (first + last);
+                double combined = first + last;
+                if (combined != 0.0) {
+                    for (int i = 0; i < inputSize; i++) if (x[i] != 0.0) w1[j][i] -= lr * combined * x[i];
+                }
+                if (THOUGHT_CYCLES > 1 && last != 0.0) {
+                    for (int k = 0; k < hiddenSize; k++) recurrent[j][k] -= lr * last * h[0][k];
+                }
             }
             for (int j = 0; j < hiddenSize; j++) w2[action][j] -= lr * grad * h[THOUGHT_CYCLES - 1][j];
             b2[action] -= lr * grad;
