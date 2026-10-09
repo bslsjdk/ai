@@ -56,6 +56,15 @@ bool initEgl() {
     if(majorGl<3 || (majorGl==3 && minorGl<1)){gError=std::string("ERR_GLES_COMPUTE_UNSUPPORTED version=")+version;return false;}
     return true;
 }
+struct CurrentContextGuard {
+    ~CurrentContextGuard() {
+        // EGL contexts are thread-current. Release after each JNI operation so
+        // a later call from the dedicated GPU worker can safely acquire it.
+        if (gDisplay != EGL_NO_DISPLAY)
+            eglMakeCurrent(gDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    }
+};
+
 bool compileProgram() {
     if(gProgram) return true;
     GLuint shader=glCreateShader(GL_COMPUTE_SHADER);
@@ -78,7 +87,9 @@ Java_bslsjdk_ornithnpu_GpuComputeRuntime_nativeMatMul(JNIEnv* env,jclass,jfloatA
     }
     const uint64_t aCount=(uint64_t)m*k,bCount=(uint64_t)k*n,cCount=(uint64_t)m*n;
     if((aCount+bCount+cCount)*sizeof(float)>64ULL*1024*1024){setError("ERR_GPU_WORKSET_LIMIT");return nullptr;}
-    if(!initEgl()||!compileProgram()) return nullptr;
+    if(!initEgl()) return nullptr;
+    CurrentContextGuard currentContextGuard;
+    if(!compileProgram()) return nullptr;
     std::vector<float> a(aCount),b(bCount),c(cCount);
     env->GetFloatArrayRegion(ja,0,(jsize)aCount,a.data());
     env->GetFloatArrayRegion(jb,0,(jsize)bCount,b.data());
@@ -114,6 +125,7 @@ extern "C" JNIEXPORT jstring JNICALL
 Java_bslsjdk_ornithnpu_GpuComputeRuntime_nativeStatus(JNIEnv* env,jclass){
     std::lock_guard<std::mutex> lock(gMutex);
     if(!initEgl()) return env->NewStringUTF(gError.c_str());
+    CurrentContextGuard currentContextGuard;
     const char* version=reinterpret_cast<const char*>(glGetString(GL_VERSION));
     const char* renderer=reinterpret_cast<const char*>(glGetString(GL_RENDERER));
     const char* vendor=reinterpret_cast<const char*>(glGetString(GL_VENDOR));
