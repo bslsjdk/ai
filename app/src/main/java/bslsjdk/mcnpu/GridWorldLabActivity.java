@@ -1,6 +1,9 @@
 package bslsjdk.ornithnpu;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -55,6 +58,7 @@ public final class GridWorldLabActivity extends Activity {
     private final List<Integer> path = new ArrayList<>();
     private TextView status, metrics, activationText, qText, log, hiddenActivationTitle;
     private EditText hiddenSizeInput;
+    private String latestReportText = "";
     private Board board;
     private volatile boolean training;
     private volatile boolean cancelTraining;
@@ -125,6 +129,7 @@ public final class GridWorldLabActivity extends Activity {
         addButton(controls, "生成新随机地图（保证有解）", () -> { watching = false; resetEpisode(); });
         addButton(controls, "单步执行", () -> { watching = false; stepGame(); });
         addButton(controls, "保存网络与报告", this::saveCheckpoint);
+        addButton(controls, "复制训练报告（发给 ChatGPT）", this::copyTrainingReport);
         status = text("状态", 13, true);
         metrics = text("", 12, false);
         activationText = text("", 11, false);
@@ -465,9 +470,27 @@ public final class GridWorldLabActivity extends Activity {
             report.put("fastWinRule", "reaches goal and steps <= shortestPathSteps * 1.6 + 2");
             report.put("guaranteedPathGenerator", "randomized_route + off-route walls + BFS validation");
             report.put("note", "On-device randomized-map test; evaluation maps are generated independently.");
-            write(new File(dir, "training_report.json"), report.toString(2));
-            if (status != null) status.setText("已保存网络和报告到应用内部 gridworld-lab 目录。");
+            latestReportText = report.toString(2);
+            write(new File(dir, "training_report.json"), latestReportText);
+            if (status != null) status.setText("网络与报告已保存。可点“复制训练报告”直接复制内容，不必进入安卓应用内部目录。");
         } catch (Exception e) { toast("保存失败：" + e.getMessage()); }
+    }
+
+    private void copyTrainingReport() {
+        try {
+            // Always snapshot the current state first, so the copied report matches the visible experiment.
+            saveCheckpoint();
+            if (latestReportText == null || latestReportText.trim().isEmpty()) {
+                toast("报告尚未生成，请稍后再试。");
+                return;
+            }
+            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            if (clipboard == null) { toast("系统剪贴板不可用。"); return; }
+            clipboard.setPrimaryClip(ClipData.newPlainText("AIMENG 随机地图训练报告", latestReportText));
+            toast("训练报告已复制。现在可直接粘贴到 ChatGPT 对话里。");
+        } catch (Exception e) {
+            toast("复制报告失败：" + e.getMessage());
+        }
     }
 
     private void loadCheckpoint() {
