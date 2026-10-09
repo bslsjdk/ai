@@ -1295,7 +1295,15 @@ public final class NeuronWorkspace {
 
     private static JSONArray toJsonArray(double[] values) {
         JSONArray arr = new JSONArray();
-        if (values != null) for (double v : values) arr.put(v);
+        if (values != null) {
+            for (double v : values) {
+                try {
+                    arr.put(v);
+                } catch (JSONException error) {
+                    throw new IllegalStateException("无法序列化数值数组", error);
+                }
+            }
+        }
         return arr;
     }
 
