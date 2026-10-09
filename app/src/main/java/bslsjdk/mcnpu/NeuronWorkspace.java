@@ -756,6 +756,7 @@ public final class NeuronWorkspace {
         useHybridTraining = false;
         trainingHybridValidated = false;
         lastTrainingBackend = "CPU (GPU calibration pending)";
+        trainingHybridCalibrationReport = "校准中；只有达到数值误差与速度门槛才会启用 GPU";
         long start = System.currentTimeMillis();
         ArrayList<Sample> training = new ArrayList<>();
         ArrayList<Sample> validation = new ArrayList<>();
@@ -825,6 +826,7 @@ public final class NeuronWorkspace {
                 + "验证集 MSE：" + format(initialValidation) + " → " + format(finalValidation) + "\n"
                 + "训练集 MSE：" + format(finalTraining) + "\n"
                 + "耗时：" + elapsed + " ms；后端：" + lastTrainingBackend + "；激活：tanh；输出：linear；优化器：Adam\n"
+                + "后端校准：" + trainingHybridCalibrationReport + "\n"
                 + "评分含义：score = 遮蔽该隐藏神经元后验证集 MSE 的增加量；正值越大，当前验证集越依赖它。它不是通用能力证明。";
         lastReport = report;
         try {
@@ -939,6 +941,7 @@ public final class NeuronWorkspace {
     private int epochHiddenRows = -1;
     private int epochHiddenWidth = -1;
     private String lastTrainingBackend = "CPU";
+    private String trainingHybridCalibrationReport = "本次训练尚未校准";
 
     private double[][] buildEpochHiddenActivations(List<Sample> data) {
         final int rows = data.size();
@@ -996,6 +999,7 @@ public final class NeuronWorkspace {
                 useHybridTraining = false;
                 computeCpuHiddenRange(data, hidden, 0, hiddenCount);
                 lastTrainingBackend = "CPU (GPU unavailable: " + GpuComputeRuntime.getLastError() + ")";
+                trainingHybridCalibrationReport = "GPU 不可用，已回退 CPU：" + GpuComputeRuntime.getLastError();
                 return hidden;
             }
             trainingGpuWarmed = true;
@@ -1024,6 +1028,7 @@ public final class NeuronWorkspace {
             useHybridTraining = false;
             computeCpuHiddenRange(data, hidden, 0, hiddenCount);
             lastTrainingBackend = "CPU (GPU task failed)";
+            trainingHybridCalibrationReport = "GPU 任务失败，已回退 CPU";
             return hidden;
         }
         if (gpuRaw == null || gpuRaw.length != rows * gpuCount) {
@@ -1031,6 +1036,7 @@ public final class NeuronWorkspace {
             useHybridTraining = false;
             computeCpuHiddenRange(data, hidden, 0, hiddenCount);
             lastTrainingBackend = "CPU (GPU output invalid)";
+            trainingHybridCalibrationReport = "GPU 输出无效，已回退 CPU";
             return hidden;
         }
         for (int r = 0; r < rows; r++) {
@@ -1047,6 +1053,11 @@ public final class NeuronWorkspace {
             trainingHybridDecisionMade = true;
             trainingHybridValidated = Double.isFinite(maxDiff) && maxDiff <= 0.001;
             useHybridTraining = trainingHybridValidated && hybridMs < cpuOnlyMs * 0.90;
+            trainingHybridCalibrationReport = String.format(Locale.US,
+                    "CPU hidden=%.3f ms；CPU/GPU hybrid=%.3f ms；max_abs=%.7g；数值=%s；速度=%s",
+                    cpuOnlyMs, hybridMs, maxDiff,
+                    trainingHybridValidated ? "PASS" : "FAIL",
+                    useHybridTraining ? "PASS (至少快 10%)" : "FAIL (保留 CPU)");
             if (!useHybridTraining) {
                 hidden = cpuReference;
                 lastTrainingBackend = "CPU (hybrid rejected; cpu_ms=" + cpuOnlyMs
