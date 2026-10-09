@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Build;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.view.Gravity;
@@ -16,11 +17,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.net.Uri;
 import android.content.Intent;
+import android.content.ClipboardManager;
+import android.content.ClipData;
 import android.database.Cursor;
 import android.provider.OpenableColumns;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -31,6 +37,9 @@ public final class ChatActivity extends Activity {
     private static final String MODEL_PATH = "model_path";
     private static final String MODEL_FILENAME = "ornith-1.5-9b-mlx-4bit.safetensors";
     private static final int PICK_MODEL = 4201;
+    private static final int SAVE_DIAGNOSTIC_REPORT = 4202;
+    private static final String LAST_DIAGNOSTIC_ERROR = "last_diagnostic_error";
+    private static final String LAST_DIAGNOSTIC_REPORT = "last_diagnostic_report";
     private static final int MAX_CONTEXT_MESSAGES = 32;
     // The full history remains persisted locally. AgentContext selects user-priority anchors,
     // relevant earlier turns and recent dialogue for the bounded native runtime.
@@ -46,6 +55,10 @@ public final class ChatActivity extends Activity {
     private TextView importStage;
     private LinearLayout emptyState;
     private TextView emptyHint;
+    private View diagnosticPanel;
+    private TextView diagnosticPreview;
+    private volatile String lastDiagnosticError = "";
+    private volatile String lastDiagnosticReport = "";
     private final Handler main = new Handler(Looper.getMainLooper());
 
     private final AgentToolRegistry toolRegistry = new AgentToolRegistry();
@@ -67,6 +80,10 @@ public final class ChatActivity extends Activity {
         importStage = findViewById(R.id.importStage);
         emptyState = findViewById(R.id.emptyState);
         emptyHint = findViewById(R.id.emptyHint);
+        diagnosticPanel = findViewById(R.id.diagnosticPanel);
+        diagnosticPreview = findViewById(R.id.diagnosticPreview);
+        findViewById(R.id.copyDiagnostic).setOnClickListener(v -> copyDiagnosticError());
+        findViewById(R.id.saveDiagnostic).setOnClickListener(v -> exportDiagnosticReport());
 
         findViewById(R.id.send).setOnClickListener(v -> sendMessage());
         findViewById(R.id.importModel).setOnClickListener(v -> importOrnithModel());
@@ -82,6 +99,9 @@ public final class ChatActivity extends Activity {
         });
 
         loadHistory();
+        String oldError = getSharedPreferences(PREFS, MODE_PRIVATE).getString(LAST_DIAGNOSTIC_ERROR, "");
+        String oldReport = getSharedPreferences(PREFS, MODE_PRIVATE).getString(LAST_DIAGNOSTIC_REPORT, "");
+        if (!oldError.isEmpty() && !oldReport.isEmpty()) showDiagnosticPanel(oldError, oldReport);
         updateRuntimeState();
         initLocalRuntime();
     }
@@ -89,16 +109,36 @@ public final class ChatActivity extends Activity {
     private void initLocalRuntime() {
         new Thread(() -> {
             boolean ok = NpuRuntime.init(getApplicationContext());
+            String restoreError = null;
             if (ok) {
                 String saved = getSharedPreferences(PREFS, MODE_PRIVATE)
                         .getString(MODEL_PATH, "");
-                if (!saved.isEmpty() && new File(saved).isFile()) {
-                    try { Ornith15Runtime.load(saved, 65536); } catch (Throwable ignored) {}
+                if (!saved.isEmpty()) {
+                    if (!new File(saved).isFile()) {
+                        restoreError = "ERR ORNITH15_RUNTIME model_missing (saved model file no longer exists)";
+                    } else {
+                        try {
+                            String result = Ornith15Runtime.load(saved, 65536);
+                            if (result == null || !result.startsWith("OK ORNITH15_RUNTIME/1"))
+                                restoreError = result == null ? "ERR ORNITH15_RUNTIME null_native_reply" : result;
+                        } catch (Throwable t) {
+                            restoreError = "ERR ORNITH15_RUNTIME " + t.getClass().getSimpleName()
+                                    + ": " + String.valueOf(t.getMessage());
+                        }
+                    }
                 }
+            } else {
+                restoreError = "NPU initialization failed: " + NpuRuntime.getLastError();
             }
+            final String failure = restoreError;
             main.post(() -> {
                 updateRuntimeState();
                 showEmptyStateIfNeeded();
+                if (failure != null && !failure.isEmpty()) {
+                    showDiagnosticError(failure);
+                    addBubble("system", "本地运行环境/模型自动恢复失败：" + failure);
+                    saveHistory();
+                }
             });
         }, "mcnpu-init").start();
     }
@@ -182,6 +222,126 @@ public final class ChatActivity extends Activity {
                     hwmGiB);
         }
         return "Ornith-1.5-9B · MCNPU HTP V73 · 已加载";
+    }
+
+    private void showDiagnosticError(String error) {
+        String safe = error == null || error.isEmpty() ? "未知错误（native 返回为空）" : error;
+        lastDiagnosticError = safe;
+        lastDiagnosticReport = buildDiagnosticReport(safe);
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                .putString(LAST_DIAGNOSTIC_ERROR, lastDiagnosticError)
+                .putString(LAST_DIAGNOSTIC_REPORT, lastDiagnosticReport)
+                .apply();
+        showDiagnosticPanel(lastDiagnosticError, lastDiagnosticReport);
+        statusLine.setText("运行失败 · 完整错误可复制，诊断可保存为 TXT");
+    }
+
+    private void showDiagnosticPanel(String error, String report) {
+        lastDiagnosticError = error == null ? "" : error;
+        lastDiagnosticReport = report == null ? "" : report;
+        diagnosticPreview.setText(lastDiagnosticError);
+        diagnosticPanel.setVisibility(View.VISIBLE);
+    }
+
+    private void clearDiagnosticError() {
+        lastDiagnosticError = "";
+        lastDiagnosticReport = "";
+        diagnosticPanel.setVisibility(View.GONE);
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                .remove(LAST_DIAGNOSTIC_ERROR)
+                .remove(LAST_DIAGNOSTIC_REPORT)
+                .apply();
+    }
+
+    private static void appendReportField(StringBuilder out, String key, String value, int maxChars) {
+        String text = value == null ? "<null>" : value;
+        if (text.length() > maxChars) text = text.substring(0, maxChars) + "\n[该状态字段已截断]";
+        out.append(key).append(": ").append(text).append("\n");
+    }
+
+    private String buildDiagnosticReport(String error) {
+        StringBuilder out = new StringBuilder(8192);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.US);
+        out.append("Ornith NPU diagnostic report\n");
+        out.append("time: ").append(dateFormat.format(new Date())).append("\n");
+        out.append("app_id: ").append(getPackageName()).append("\n");
+        try {
+            android.content.pm.PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            out.append("app_version: ").append(info.versionName).append("\n");
+            out.append("version_code: ").append(info.getLongVersionCode()).append("\n");
+        } catch (Throwable ignored) {
+            out.append("app_version: <unavailable>\n");
+        }
+        out.append("device: ").append(Build.MANUFACTURER).append(" ").append(Build.MODEL)
+                .append(" (").append(Build.DEVICE).append(")\n");
+        out.append("android: ").append(Build.VERSION.RELEASE).append(" / API ")
+                .append(Build.VERSION.SDK_INT).append("\n");
+        out.append("runtime_rss_policy: hard_limit=3584MiB; report does not dump model weights\n");
+        File model = new File(getFilesDir(), "models/" + MODEL_FILENAME);
+        out.append("model_file: ").append(model.isFile() ? "present" : "missing").append("\n");
+        if (model.isFile()) out.append("model_file_bytes: ").append(model.length()).append("\n");
+        out.append("npu_ready: ").append(NpuRuntime.isReady()).append("\n");
+        appendReportField(out, "npu_last_error", NpuRuntime.getLastError(), 4096);
+        try {
+            appendReportField(out, "npu_status", NpuRuntime.status(), 8192);
+        } catch (Throwable t) {
+            appendReportField(out, "npu_status_exception", t.toString(), 1024);
+        }
+        out.append("model_loaded: ").append(Ornith15Runtime.isLoaded()).append("\n");
+        try {
+            appendReportField(out, "ornith_runtime_info", Ornith15Runtime.info(), 8192);
+        } catch (Throwable t) {
+            appendReportField(out, "ornith_runtime_info_exception", t.toString(), 1024);
+        }
+        out.append("\n========== FULL ERROR (verbatim) ==========\n");
+        out.append(error == null ? "<null>" : error).append("\n");
+        out.append("========== END FULL ERROR ==========\n");
+        return out.toString();
+    }
+
+    private void copyDiagnosticError() {
+        String text = lastDiagnosticError;
+        if (text == null || text.isEmpty()) text = lastDiagnosticReport;
+        if (text == null || text.isEmpty()) {
+            Toast.makeText(this, "当前没有可复制的错误", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        if (clipboard == null) {
+            Toast.makeText(this, "系统剪贴板不可用", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        clipboard.setPrimaryClip(ClipData.newPlainText("Ornith NPU 完整错误", text));
+        Toast.makeText(this, "完整错误已复制", Toast.LENGTH_SHORT).show();
+    }
+
+    private void exportDiagnosticReport() {
+        if (lastDiagnosticReport == null || lastDiagnosticReport.isEmpty()) {
+            Toast.makeText(this, "当前没有诊断报告", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_TITLE, "ornith-npu-error-report.txt");
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        try {
+            startActivityForResult(intent, SAVE_DIAGNOSTIC_REPORT);
+        } catch (Throwable t) {
+            Toast.makeText(this, "无法创建报告文件：" + t.getClass().getSimpleName(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void writeDiagnosticReport(Uri uri) {
+        try (OutputStream out = getContentResolver().openOutputStream(uri, "w")) {
+            if (out == null) throw new java.io.IOException("无法创建输出文件");
+            out.write(lastDiagnosticReport.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            out.flush();
+            Toast.makeText(this, "诊断报告已保存", Toast.LENGTH_LONG).show();
+        } catch (Throwable t) {
+            Toast.makeText(this, "保存报告失败：" + t.getClass().getSimpleName() + ": "
+                    + String.valueOf(t.getMessage()), Toast.LENGTH_LONG).show();
+        }
     }
 
     private void sendMessage() {
@@ -360,6 +520,12 @@ public final class ChatActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == SAVE_DIAGNOSTIC_REPORT) {
+            if (resultCode == RESULT_OK && data != null && data.getData() != null) {
+                writeDiagnosticReport(data.getData());
+            }
+            return;
+        }
         if (requestCode != PICK_MODEL || resultCode != RESULT_OK || data == null || data.getData() == null) return;
         Uri uri = data.getData();
         new Thread(() -> {
@@ -415,12 +581,13 @@ public final class ChatActivity extends Activity {
                 String r = Ornith15Runtime.load(dst.getAbsolutePath(), 65536);
                 if (!r.startsWith("OK ORNITH15_RUNTIME/1")) {
                     // Surface the native reason verbatim: it carries npu_probe / arch / memory detail.
-                    throw new java.io.IOException(r.length() > 400 ? r.substring(0, 400) + "…" : r);
+                    throw new java.io.IOException(r);
                 }
                 getSharedPreferences(PREFS, MODE_PRIVATE).edit()
                         .putString(MODEL_PATH, dst.getAbsolutePath()).apply();
                 main.post(() -> {
                     clearStage();
+                    clearDiagnosticError();
                     updateRuntimeState();
                     Toast.makeText(this, "Ornith-1.5-9B-MLX-4bit 已加载", Toast.LENGTH_LONG).show();
                 });
@@ -429,9 +596,10 @@ public final class ChatActivity extends Activity {
                 main.post(() -> {
                     clearStage();
                     updateRuntimeState();
+                    showDiagnosticError(msg);
                     addBubble("system", "模型导入失败：" + msg);
                     saveHistory();
-                    Toast.makeText(this, "模型导入失败: " + msg, Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "模型导入失败：完整报错可复制或导出 TXT", Toast.LENGTH_LONG).show();
                 });
             }
         }, "ornith-model-load").start();

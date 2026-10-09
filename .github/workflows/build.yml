@@ -189,6 +189,18 @@ jobs:
           unzip -l "$APK" | grep -E 'lib/arm64-v8a/libornithnpu.so|assets/qnnlibs/libQnnHtp.so|assets/qnnlibs/libQnnHtpV73Skel.so|assets/qnnlibs/libQnnHtpV73Stub.so'
           ls -lh "$APK"
 
+      - name: Prepare persistent signing-key cache
+        run: mkdir -p build/signing
+
+      # Do not commit the private key to this public repository. The workflow cache
+      # keeps the development signing key stable across the main-branch build runs.
+      - name: Restore persistent development signing key
+        id: signing-key-cache
+        uses: actions/cache@v4
+        with:
+          path: build/signing/ornithnpu-release.jks
+          key: ${{ runner.os }}-ornithnpu-signing-key-v1
+
       - name: Sign APK
         shell: bash
         run: |
@@ -199,39 +211,23 @@ jobs:
           APKSIGNER="$BUILD_TOOLS/apksigner"
           test -x "$ZIPALIGN"
           test -x "$APKSIGNER"
-          SIGNING_B64="${OrnithNPU_KEYSTORE_B64:-${MCNPU_KEYSTORE_B64:-}}"
-          SIGNING_PASS="${OrnithNPU_KEYSTORE_PASSWORD:-${MCNPU_KEYSTORE_PASSWORD:-}}"
-          if [ -n "$SIGNING_B64" ]; then
-            echo "$SIGNING_B64" | base64 -d > build/signing/ornithnpu-release.jks
-            KEY_PASS="$SIGNING_PASS"
-            echo "keystore: fixed key from repository secrets (signature stable across builds)"
-          else
-            # Not a silent fallback any more. A freshly generated key signs differently
-            # from every earlier build, Android then refuses to install over the previous
-            # APK, and the only way through is uninstalling - which also wipes app data.
-            # Say so loudly rather than ship an APK that looks fine and cannot upgrade.
-            echo "::warning::OrnithNPU_KEYSTORE_B64 is not set - generating a throwaway key; this build will NOT install over the previous one."
-            keytool -genkeypair -v -keystore build/signing/ornithnpu-release.jks -storepass changeit -keypass changeit -alias ornithnpu -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=OrnithNPU,O=bslsjdk"
+          KEYSTORE=build/signing/ornithnpu-release.jks
+          if [ -s "$KEYSTORE" ]; then
             KEY_PASS=changeit
-            echo "keystore: THROWAWAY key - signature differs from every earlier build"
+            echo "keystore: persistent development key restored from Actions cache"
+          else
+            # Bootstrap only: old builds used temporary runner keys, which were not
+            # retained. This first persistent-key APK may require one final reinstall.
+            echo "::warning::No cached key yet; creating the one-time persistent development signing key."
+            keytool -genkeypair -v -keystore "$KEYSTORE" -storepass changeit -keypass changeit -alias ornithnpu -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=OrnithNPU,O=bslsjdk"
+            KEY_PASS=changeit
           fi
-          "$ZIPALIGN" -f 4             app/build/outputs/apk/release/app-release-unsigned.apk             build/signing/ornithnpu-aligned.apk
-          "$APKSIGNER" sign             --ks build/signing/ornithnpu-release.jks             --ks-key-alias ornithnpu             --ks-pass pass:"$KEY_PASS"             --key-pass pass:"$KEY_PASS"             --out app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk             build/signing/ornithnpu-aligned.apk
+          "$ZIPALIGN" -f 4 app/build/outputs/apk/release/app-release-unsigned.apk build/signing/ornithnpu-aligned.apk
+          "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias ornithnpu --ks-pass pass:"$KEY_PASS" --key-pass pass:"$KEY_PASS" --out app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk build/signing/ornithnpu-aligned.apk
           "$APKSIGNER" verify --verbose app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk
           sha256sum app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk
-          # Signer digest, printed so two builds can be compared: an unchanged value
-          # means this APK installs over the previous one, a change means Android will
-          # demand an uninstall first. Read straight off the keystore - no pipes that
-          # can return non-zero and take the whole step down with them.
-          keytool -list -keystore build/signing/ornithnpu-release.jks -alias ornithnpu \
-            -storepass "$KEY_PASS" 2>/dev/null | grep -i 'SHA256:' \
-            || echo "(signer digest unavailable)"
-        env:
-          OrnithNPU_KEYSTORE_B64: ${{ secrets.ORNITHNPU_KEYSTORE_B64 }}
-          OrnithNPU_KEYSTORE_PASSWORD: ${{ secrets.ORNITHNPU_KEYSTORE_PASSWORD }}
-          MCNPU_KEYSTORE_B64: ${{ secrets.MCNPU_KEYSTORE_B64 }}
-          MCNPU_KEYSTORE_PASSWORD: ${{ secrets.MCNPU_KEYSTORE_PASSWORD }}
-
+          # Print the actual certificate fingerprint, not the keystore's alias list.
+          keytool -list -v -keystore "$KEYSTORE" -alias ornithnpu -storepass "$KEY_PASS" 2>/dev/null | grep -i 'SHA256:' || echo "(signer digest unavailable)"
       # Delivery route: a release asset. It must NOT be a prerelease: GitHub's
       # /releases/latest only resolves to a full release, so publishing as a
       # prerelease makes that URL 404 and leaves no stable link to hand out. Release assets do NOT draw on the account's
@@ -258,10 +254,10 @@ jobs:
             echo "- version: 1.0.${GITHUB_RUN_NUMBER} (versionCode ${GITHUB_RUN_NUMBER})"
             echo "- size: ${SIZE} bytes"
             echo "- sha256: ${SUM}"
-            echo "- signing: fixed repository key, so this installs over the previous build"
+            echo "- signing: persistent development key in the Actions cache; stable across builds while that cache is retained"
             echo ""
             echo "Engineering build for on-device testing."
-            echo "Signed with the same key, so it installs over the previous build."
+            echo "Signed with the persistent development key. Earlier CI builds used throwaway signatures, so the initial migration may require one final reinstall; subsequent builds reuse this key."
           } > build/release-notes.md
           # Recreate instead of upload --clobber: GitHub keeps the ORIGINAL created_at on
           # upload, so the page would keep saying "7 hours ago" while the APK inside is

@@ -486,7 +486,7 @@ Qnn_Tensor_t makeTensorN(const char* name,Qnn_TensorType_t type,Qnn_DataType_t d
 // process over the safety line is rejected before its resources are retained.
 static const int MAX_CACHED_GRAPHS = 32;
 
-static bool resetContextLocked(){
+static bool resetContextLocked(const char* reason = "graph_budget"){
     if(!g.api) return false;
     const auto& f=g.api->QNN_INTERFACE_VER_NAME;
     g.addGraphs.clear();
@@ -497,8 +497,8 @@ static bool resetContextLocked(){
     // Log why this happened. A silent teardown looks exactly like a slow call:
     // the caller sees one 800 ms submit and no indication that every cached graph
     // (and its calibration) was just thrown away.
-    I("CONTEXT RESET: graph budget %d/%d exhausted, dropping every cached graph",
-      g.graphCount, MAX_CACHED_GRAPHS);
+    I("CONTEXT RESET: reason=%s graph cache %d/%d, dropping every cached graph",
+      reason ? reason : "unspecified", g.graphCount, MAX_CACHED_GRAPHS);
     if(!f.contextCreate) { g.ready=false; g.err="contextCreate missing"; return false; }
     Qnn_ErrorHandle_t rc=f.contextCreate(g.backend,g.device,nullptr,&g.context);
     if(rc!=QNN_SUCCESS || !g.context){
@@ -1620,15 +1620,10 @@ std::string runMatMulInt8Buf(const int8_t* Ain,const int8_t* Bin,int8_t* Cout,ui
     I("MM8BUF EXEC queue_lock_wait_us=%lld qnn_execute_us=%lld graph_cached=%s bucket=%ux%ux%u",
       lockWaitUs,execUs,graphCached?"true":"false",(unsigned)Mb,(unsigned)Kb,(unsigned)Nb);
     if(rc!=QNN_SUCCESS){
-        // Enough context to tell "our tensors are wrong" from "the DSP link dropped".
-        //
-        // rc=1007 is QNN_COMMON_ERROR_SYSTEM_COMMUNICATION (QNN_MIN_ERROR_COMMON(1000)+7):
-        // communication with the platform/OS service failed, service recoverable. It is a
-        // COMMON error, not a GRAPH error - QNN never rejected the graph. So a 1007 here
-        // cannot be a shape, dtype or buffer-size mistake; it means the FastRPC link to the
-        // DSP is down, which matches rc=14001 (device not reachable) from the in-process
-        // probe. Reporting it as a bare code sent us looking at tensor shapes for three
-        // rounds instead of at the transport.
+        // The returned status is a QNN common/system error, not automatically a tensor
+        // shape problem. Preserve the SDK's own verbose message because 1003 commonly
+        // indicates a platform/OS system failure while 1007 is recoverable communication.
+        const std::string qnnVerbose = verbose(rc);
         std::string ctx="ERR BUF_EXECUTE rc="+std::to_string((int)rc)
             +" bucket="+std::to_string((unsigned)Mb)+"x"+std::to_string((unsigned)Kb)
             +"x"+std::to_string((unsigned)Nb)
@@ -1641,9 +1636,32 @@ std::string runMatMulInt8Buf(const int8_t* Ain,const int8_t* Bin,int8_t* Cout,ui
             +" cached="+(graphCached?std::string("true"):std::string("false"))
             +" qnn_execute_us="+std::to_string((long long)execUs)
             +" graphs="+std::to_string(g.graphCount)+"/"+std::to_string(MAX_CACHED_GRAPHS);
-        if((int)rc==1007) ctx += " (SYSTEM_COMMUNICATION: DSP link lost, not a graph/tensor problem)";
+        if((int)rc==1003) ctx += " qnn_class=QNN_COMMON_ERROR_SYSTEM";
+        if((int)rc==1007) ctx += " qnn_class=QNN_COMMON_ERROR_SYSTEM_COMMUNICATION";
+        if((int)rc==1011) ctx += " qnn_class=QNN_COMMON_ERROR_SYSTEM_COMMUNICATION_FATAL";
+        if(!qnnVerbose.empty()) ctx += " " + qnnVerbose;
         E("MM8BUF EXEC FAIL %s",ctx.c_str());
         noteTransportFaultLocked((int)rc);
+
+        // A failed first submit can leave the HTP context unusable while g.ready still
+        // remains true. For the common SYSTEM error (1003), rebuild the graph context and
+        // retry this small operation once. Never recurse again after a second failure.
+        static thread_local bool retryingAfterSystemError = false;
+        if((int)rc == 1003 && !retryingAfterSystemError){
+            const bool recovered = resetContextLocked("qnn_execute_rc_1003");
+            if(recovered){
+                g_dspFaults = 0;
+                retryingAfterSystemError = true;
+                lock.unlock();
+                const std::string retry = runMatMulInt8Buf(Ain, Bin, Cout, m, k, n, scaleCOut);
+                retryingAfterSystemError = false;
+                if(retry.rfind("OK", 0) == 0)
+                    return retry + " recovered_after_initial_rc=1003";
+                return "ERR BUF_EXECUTE initial_rc=1003 recovery=retry_failed initial={" + ctx
+                    + "} retry={" + retry + "}";
+            }
+            ctx += " context_recovery=failed recovery_error=" + g.err;
+        }
         return ctx;
     }
 
