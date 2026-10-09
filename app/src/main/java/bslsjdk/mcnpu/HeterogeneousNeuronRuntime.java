@@ -1,6 +1,14 @@
 package bslsjdk.ornithnpu;
 
 import java.util.Arrays;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Locale;
 import java.util.Random;
 
@@ -184,6 +192,65 @@ public final class HeterogeneousNeuronRuntime {
     private static void swap(float[] scores, int[] indices, int a, int b) {
         float sv = scores[a]; scores[a] = scores[b]; scores[b] = sv;
         int iv = indices[a]; indices[a] = indices[b]; indices[b] = iv;
+    }
+
+    /** Writes a versioned binary checkpoint through a temporary file then atomic-ish rename. */
+    public synchronized void save(File destination) throws IOException {
+        if (destination == null) throw new IllegalArgumentException("destination is null");
+        File parent = destination.getParentFile();
+        if (parent != null && !parent.isDirectory() && !parent.mkdirs())
+            throw new IOException("cannot create checkpoint directory");
+        File temp = new File(destination.getAbsolutePath() + ".tmp");
+        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(temp)))) {
+            out.writeInt(0x414D4E50); // AMNP
+            out.writeInt(1);
+            out.writeInt(poolSize);
+            out.writeInt(MAX_INPUTS);
+            for (float value : weights) out.writeFloat(value);
+            for (float value : bias) out.writeFloat(value);
+            out.flush();
+        } catch (Throwable error) {
+            temp.delete();
+            if (error instanceof IOException) throw (IOException) error;
+            throw new IOException("checkpoint write failed", error);
+        }
+        if (destination.exists() && !destination.delete()) {
+            temp.delete();
+            throw new IOException("cannot replace existing checkpoint");
+        }
+        if (!temp.renameTo(destination)) {
+            temp.delete();
+            throw new IOException("cannot activate checkpoint");
+        }
+    }
+
+    /** Validates header, dimensions, file length and budget before allocating pool arrays. */
+    public static HeterogeneousNeuronRuntime load(File source, long budgetBytes) throws IOException {
+        if (source == null || !source.isFile()) throw new IOException("checkpoint not found");
+        if (source.length() < 16L) throw new IOException("checkpoint too short");
+        try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(source)))) {
+            if (in.readInt() != 0x414D4E50) throw new IOException("checkpoint magic mismatch");
+            if (in.readInt() != 1) throw new IOException("unsupported checkpoint version");
+            int count = in.readInt();
+            int inputs = in.readInt();
+            if (inputs != MAX_INPUTS || count < 2 || count > MAX_POOL_UNITS)
+                throw new IOException("checkpoint dimensions invalid");
+            long expected = 16L + (long) count * (MAX_INPUTS + 1L) * Float.BYTES;
+            if (source.length() != expected) throw new IOException("checkpoint length mismatch");
+            if (estimateBytes(count) > budgetBytes) throw new IOException("checkpoint exceeds memory budget");
+            HeterogeneousNeuronRuntime runtime = new HeterogeneousNeuronRuntime(count, budgetBytes, 1L);
+            for (int i = 0; i < runtime.weights.length; i++) runtime.weights[i] = finite(in.readFloat());
+            for (int i = 0; i < runtime.bias.length; i++) runtime.bias[i] = finite(in.readFloat());
+            if (in.read() != -1) throw new IOException("checkpoint trailing bytes");
+            return runtime;
+        } catch (IllegalArgumentException error) {
+            throw new IOException("checkpoint validation failed", error);
+        }
+    }
+
+    private static float finite(float value) throws IOException {
+        if (!Float.isFinite(value)) throw new IOException("checkpoint contains non-finite parameter");
+        return value;
     }
 
     public int size() { return poolSize; }
