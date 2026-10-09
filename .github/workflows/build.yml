@@ -1,4 +1,4 @@
-name: OrnithNPU Android
+name: AIMENG Mobile Neuron Lab Android
 # CI smoke check: keep native compiler validation before Gradle packaging.
 concurrency:
   group: ornithnpu-build-${{ github.ref }}
@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [main, bonsai2-pq2-baseline]
+    branches: [main, bonsai2-pq2-baseline, feat/mobile-neuron-unit-runtime]
   workflow_dispatch:
 permissions:
   contents: write
@@ -76,29 +76,8 @@ jobs:
           test -f qnn_probe/app/src/main/assets/qnnlibs/libQnnHtp.so
           test -f qnn_probe/app/src/main/jniLibs/arm64-v8a/libQnnHtpV73Skel.so
 
-      - name: Fetch pinned llama.cpp for Ornith runtime
-        run: |
-          set -eux
-          rm -rf llama.cpp
-          git clone --depth 1 https://github.com/ggml-org/llama.cpp.git llama.cpp
-          cd llama.cpp
-          git fetch --depth 1 origin 42c787e8c191d49c01c757f4b7029d69ec0bf2c8
-          git checkout --detach 42c787e8c191d49c01c757f4b7029d69ec0bf2c8
-          test "$(git rev-parse HEAD)" = "42c787e8c191d49c01c757f4b7029d69ec0bf2c8"
-          cd ..
-          test -f llama.cpp/include/llama.h
-          grep -q 'QWEN35' llama.cpp/src/llama.cpp llama.cpp/src/models/qwen35.cpp
+      # The retired 9B chat/model path is not required by the mobile neuron lab.
 
-      - name: Bundle official Ornith tokenizer
-        run: |
-          set -eux
-          mkdir -p app/src/main/assets
-          curl -fL --retry 3 --retry-delay 2 \
-            https://huggingface.co/ornith-ai/Ornith-1.5-9B-MLX-4bit/resolve/main/tokenizer.json \
-            -o /tmp/ornith-tokenizer.json
-          python3 tools/build_ornith_tokenizer.py /tmp/ornith-tokenizer.json app/src/main/assets/ornith15.tokenizer
-          test -s app/src/main/assets/ornith15.tokenizer
-          ls -lh app/src/main/assets/ornith15.tokenizer
       - name: Stage QNN HTP V73 libraries
         run: |
           set -eux
@@ -142,7 +121,7 @@ jobs:
         run: |
           set -eux
           mkdir -p build/native
-          cmake -S app/src/main/cpp -B build/native -G Ninja             -DCMAKE_TOOLCHAIN_FILE="$ANDROID_SDK_ROOT/ndk/27.0.12077973/build/cmake/android.toolchain.cmake"             -DANDROID_ABI=arm64-v8a             -DANDROID_PLATFORM=android-35             -DCMAKE_BUILD_TYPE=Release             -DANDROID_STL=c++_static             -DQNN_INC="$GITHUB_WORKSPACE/qnn_probe/app/src/main/cpp/qnn_inc"             -DLLAMA_CPP_SRC="$GITHUB_WORKSPACE/llama.cpp"
+          cmake -S app/src/main/cpp -B build/native -G Ninja             -DCMAKE_TOOLCHAIN_FILE="$ANDROID_SDK_ROOT/ndk/27.0.12077973/build/cmake/android.toolchain.cmake"             -DANDROID_ABI=arm64-v8a             -DANDROID_PLATFORM=android-35             -DCMAKE_BUILD_TYPE=Release             -DANDROID_STL=c++_static             -DQNN_INC="$GITHUB_WORKSPACE/qnn_probe/app/src/main/cpp/qnn_inc"
           mkdir -p build
           cmake --build build/native --config Release --parallel 2 2>&1 | tee build/native.log
           test -f build/native/libornithnpu.so
@@ -215,7 +194,7 @@ jobs:
           KEY_PASS=changeit
           keytool -list -keystore "$KEYSTORE" -alias ornithnpu -storepass "$KEY_PASS" >/dev/null
           "$ZIPALIGN" -f 4 app/build/outputs/apk/release/app-release-unsigned.apk build/signing/ornithnpu-aligned.apk
-          "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias ornithnpu --ks-pass pass:"$KEY_PASS" --key-pass pass:"$KEY_PASS" --out app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk build/signing/ornithnpu-aligned.apk
+          "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias ornithnpu --ks-pass pass:"$KEY_PASS" --key-pass pass:"$KEY_PASS" --out app/build/outputs/apk/release/AIMENG-NeuronLab-arm64-signed.apk build/signing/ornithnpu-aligned.apk
           "$APKSIGNER" verify --verbose app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk
           sha256sum app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk
           keytool -list -v -keystore "$KEYSTORE" -alias ornithnpu -storepass "$KEY_PASS" 2>/dev/null | grep -i 'SHA256:' || echo "(signer digest unavailable)"
@@ -225,12 +204,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -eux
-          APK=app/build/outputs/apk/release/OrnithNPU-arm64-signed.apk
+          APK=app/build/outputs/apk/release/AIMENG-NeuronLab-arm64-signed.apk
           test -f "$APK"
           SUM=$(sha256sum "$APK" | cut -d' ' -f1)
           SIZE=$(stat -c %s "$APK")
           TAG=latest-apk
-          TITLE="OrnithNPU arm64 signed (${GITHUB_SHA::11})"
+          TITLE="AIMENG Neuron Lab arm64 signed (${GITHUB_SHA::11})"
           {
             echo "Automatic prerelease build of ${GITHUB_SHA}."
             echo ""
