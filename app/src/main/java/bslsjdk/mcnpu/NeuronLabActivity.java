@@ -485,6 +485,10 @@ public final class NeuronLabActivity extends Activity {
                 () -> exportContent(workspace.exportDatasetCsv(), "text/csv", "aimeng-dataset.csv"),
                 () -> startImport("dataset")
         });
+        Button importAndTrain = primaryButton("导入训练自测包，并自动开始训练");
+        importAndTrain.setOnClickListener(v -> startImport("bundle"));
+        files.addView(importAndTrain, params(-1, 50, 0, 8, 0, 0));
+        addText(files, "训练自测包包含数值样本和训练参数。导入后会先检查格式；若输入/输出维度不同，会先备份当前工作区并询问是否重建，然后自动开始训练。", 11, false);
         addActionRow(files, new String[]{"导出训练结果 CSV", "导出训练任务 JSON", "导入训练任务"}, new Runnable[]{
                 () -> exportContent(workspace.exportTrainingResultsCsv(), "text/csv", "aimeng-training-results.csv"),
                 () -> exportContent(safeTaskJson(), "application/json", "aimeng-training-task.json"),
@@ -860,7 +864,23 @@ public final class NeuronLabActivity extends Activity {
                 runOnUiThread(() -> { showPage("home"); toast("完整工作区已导入并保存。"); });
                 return;
             }
-            if (importType.equals("dataset")) {
+            if (importType.equals("bundle")) {
+                try {
+                    importTrainingBundle(content, fileName, false);
+                } catch (IllegalArgumentException mismatch) {
+                    String message = mismatch.getMessage();
+                    if (message != null && message.startsWith("DATA_DIMENSION_MISMATCH:")) {
+                        String[] p = message.split(":");
+                        int inputs = Integer.parseInt(p[1]), outputs = Integer.parseInt(p[2]);
+                        runOnUiThread(() -> confirmImportDimensions(content, fileName, importType,
+                                "自测包需要 " + inputs + " 输入 / " + outputs + " 输出；当前网络是 "
+                                        + workspace.inputCount + " 输入 / " + workspace.outputCount
+                                        + " 输出。确认后会先备份当前工作区、重建网络并自动开始训练。"));
+                        return;
+                    }
+                    throw mismatch;
+                }
+            } else if (importType.equals("dataset")) {
                 try {
                     workspace.importDatasetContent(content, fileName, false);
                 } catch (IllegalArgumentException mismatch) {
@@ -900,12 +920,40 @@ public final class NeuronLabActivity extends Activity {
             persistWorkspaceNow();
             String report = workspace.lastReport;
             runOnUiThread(() -> {
-                showPage(importType.equals("dataset") ? "train" : "data");
-                toast(report == null || report.isEmpty() ? "导入完成并已保存。" : report);
+                if (importType.equals("bundle")) {
+                    showPage("train");
+                    toast("训练包已导入；正在自动启动训练。");
+                    startTraining();
+                } else {
+                    showPage(importType.equals("dataset") ? "train" : "data");
+                    toast(report == null || report.isEmpty() ? "导入完成并已保存。" : report);
+                }
             });
         } catch (Throwable e) {
             runOnUiThread(() -> dialog("文件格式或内容无效", shortError(e)));
         }
+    }
+
+    private void importTrainingBundle(String content, String fileName, boolean allowRebuild) throws JSONException {
+        JSONObject root = new JSONObject(content);
+        if (!"aimeng-training-bundle/v1".equals(root.optString("format", "")))
+            throw new IllegalArgumentException("不是 AIMENG 训练自测包（aimeng-training-bundle/v1）");
+        JSONObject trainingConfig = root.optJSONObject("training");
+        if (trainingConfig == null) throw new IllegalArgumentException("训练包缺少 training 参数对象");
+        int epochs = trainingConfig.optInt("epochs", 240);
+        double rate = trainingConfig.optDouble("learningRate", 0.01);
+        String name = trainingConfig.optString("name", "手机神经元训练链路自测");
+        if (epochs < 1 || epochs > NeuronWorkspace.MAX_EPOCHS)
+            throw new IllegalArgumentException("训练包 epochs 超出允许范围");
+        if (!Double.isFinite(rate) || rate < 0.00001 || rate > 0.1)
+            throw new IllegalArgumentException("训练包 learningRate 超出允许范围");
+        // The bundle shares the normal dataset schema, with training settings alongside samples.
+        root.put("format", NeuronWorkspace.DATA_FORMAT);
+        workspace.importDatasetContent(root.toString(), fileName, allowRebuild);
+        workspace.taskName = name;
+        workspace.preferredEpochs = epochs;
+        workspace.learningRate = rate;
+        workspace.lastReport = "训练自测包已载入：" + workspace.sampleCount() + " 条样本；准备自动训练。";
     }
 
     private void confirmImportDimensions(String content, String fileName, String importType, String message) {
@@ -920,6 +968,8 @@ public final class NeuronLabActivity extends Activity {
                         workspace.saveInternal(backup);
                         if (importType.equals("dataset"))
                             workspace.importDatasetContent(content, fileName, true);
+                        else if (importType.equals("bundle"))
+                            importTrainingBundle(content, fileName, true);
                         else workspace.importNeuronContent(content, true);
                         persistWorkspaceNow();
                         runOnUiThread(() -> { showPage("data"); toast("已重建并导入；旧工作区有本地备份。"); });
