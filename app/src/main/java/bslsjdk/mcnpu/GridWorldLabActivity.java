@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -36,7 +37,9 @@ import java.util.concurrent.Executors;
 public final class GridWorldLabActivity extends Activity {
     private static final int SIZE = 12;
     private static final int CELLS = SIZE * SIZE;
-    private static final int HIDDEN = 32;
+    private static final int DEFAULT_HIDDEN = 32;
+    private static final int MIN_HIDDEN = 8;
+    private static final int MAX_HIDDEN = 256;
     private static final int[] DX = {0, 1, 0, -1};
     private static final int[] DY = {-1, 0, 1, 0};
     private static final String[] ACTIONS = {"上", "右", "下", "左"};
@@ -48,9 +51,10 @@ public final class GridWorldLabActivity extends Activity {
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final Random rng = new Random(20261009L);
-    private final QNet net = new QNet(20261009L);
+    private QNet net = new QNet(20261009L, DEFAULT_HIDDEN);
     private final List<Integer> path = new ArrayList<>();
     private TextView status, metrics, activationText, qText, log;
+    private EditText hiddenSizeInput;
     private Board board;
     private volatile boolean training;
     private volatile boolean cancelTraining;
@@ -63,7 +67,7 @@ public final class GridWorldLabActivity extends Activity {
     private volatile int fastWinStreak;
     private volatile int lastEpisodeSteps = -1;
     private volatile boolean stoppedByMastery;
-    private double[] lastHidden = new double[HIDDEN];
+    private double[] lastHidden = new double[DEFAULT_HIDDEN];
     private double[] lastQ = new double[4];
 
     private final Runnable watchTick = new Runnable() {
@@ -96,7 +100,15 @@ public final class GridWorldLabActivity extends Activity {
         root.setBackgroundColor(0xFFF3F5F8);
         scroll.addView(root);
         root.addView(text("迷宫强化学习实验 · 随机地图", 22, true));
-        root.addView(text("地图 12×12 · 网络 8→32→4 · 每局随机起点/终点/障碍。先构造一条保证可达的路径，再放置障碍，并用 BFS 二次验证。测试地图与训练地图独立生成。", 13, false));
+        root.addView(text("地图 12×12 · 网络 8→隐藏层→4 · 隐藏层神经元数量可自定义。每局随机起点/终点/障碍，保证起终点可达。", 13, false));
+        root.addView(text("隐藏层神经元数量（8～256）", 14, true), spaced());
+        hiddenSizeInput = new EditText(this);
+        hiddenSizeInput.setSingleLine(true);
+        hiddenSizeInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        hiddenSizeInput.setText(Integer.toString(net.hiddenSize));
+        hiddenSizeInput.setHint("例如 32、64、128、256");
+        root.addView(hiddenSizeInput, spaced());
+        addButton(root, "应用神经元数量（重建网络）", this::applyHiddenSize);
         board = new Board();
         LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(-1, dp(330));
         bp.topMargin = dp(10);
@@ -120,7 +132,7 @@ public final class GridWorldLabActivity extends Activity {
         log = text("日志：尚未开始训练。", 11, false);
         root.addView(status, spaced());
         root.addView(metrics, spaced());
-        root.addView(text("隐藏神经元激活（32 个）", 15, true), spaced());
+        root.addView(text("隐藏神经元激活（" + net.hiddenSize + " 个）", 15, true), spaced());
         root.addView(activationText, spaced());
         root.addView(text("动作 Q 值", 15, true), spaced());
         root.addView(qText, spaced());
@@ -212,6 +224,28 @@ public final class GridWorldLabActivity extends Activity {
 
     private volatile int lastCompletedEpisode;
 
+
+    private void applyHiddenSize() {
+        if (training) { toast("请先停止训练，再调整神经元数量。"); return; }
+        String raw = hiddenSizeInput == null ? "" : hiddenSizeInput.getText().toString().trim();
+        final int requested;
+        try { requested = Integer.parseInt(raw); }
+        catch (NumberFormatException e) { toast("请输入 8～256 的整数。"); return; }
+        if (requested < MIN_HIDDEN || requested > MAX_HIDDEN) { toast("神经元数量范围是 8～256。"); return; }
+        if (requested == net.hiddenSize) { toast("当前网络已经是 " + requested + " 个隐藏神经元。"); return; }
+        net = new QNet(System.nanoTime(), requested);
+        lastHidden = new double[requested];
+        lastQ = new double[4];
+        fastWinStreak = 0;
+        lastEpisodeSteps = -1;
+        stoppedByMastery = false;
+        evalEpisodes = 0;
+        evalSuccesses = 0;
+        resetEpisode();
+        status.setText("网络已重建：8→" + requested + "→4。新网络权重随机初始化，旧网络文件保留到下次保存。请重新训练并比较独立测试成功率。");
+        log.setText("已调整隐藏层大小。更换网络规模会重置当前权重，不会把旧网络的权重错误套到新结构上。");
+        refreshReadout();
+    }
 
     private void stopTraining() {
         if (!training) { toast("当前没有正在运行的训练。"); return; }
@@ -391,7 +425,7 @@ public final class GridWorldLabActivity extends Activity {
         if (board != null) board.invalidate();
         if (metrics != null) metrics.setText(String.format(Locale.US,
                 "训练局数：%d\n地图：%d×%d · 隐藏层：%d · 当前步数：%d/%d\n连续快速通关：%d/%d\n独立随机地图测试：%d/%d（%.1f%%）\n本局奖励：%.3f",
-                episodesDone, SIZE, SIZE, HIDDEN, moves, MAX_STEPS, fastWinStreak, FAST_STREAK_REQUIRED,
+                episodesDone, SIZE, SIZE, net.hiddenSize, moves, MAX_STEPS, fastWinStreak, FAST_STREAK_REQUIRED,
                 evalSuccesses, evalEpisodes, 100.0 * evalSuccesses / Math.max(1, evalEpisodes), episodeReward));
         if (activationText != null) {
             StringBuilder b = new StringBuilder();
@@ -416,7 +450,7 @@ public final class GridWorldLabActivity extends Activity {
             JSONObject report = new JSONObject();
             report.put("format", "aimeng-android-random-gridworld-report/v2");
             report.put("mapSize", SIZE);
-            report.put("hiddenSize", HIDDEN);
+            report.put("hiddenSize", net.hiddenSize);
             report.put("episodesTrained", episodesDone);
             report.put("evaluationType", "fresh_random_maps");
             report.put("evaluationEpisodes", evalEpisodes);
@@ -441,7 +475,15 @@ public final class GridWorldLabActivity extends Activity {
             byte[] bytes = new byte[(int)Math.min(f.length(), 256 * 1024)];
             try (java.io.FileInputStream in = new java.io.FileInputStream(f)) {
                 int n = in.read(bytes);
-                if (n > 0) net.load(new JSONObject(new String(bytes, 0, n, StandardCharsets.UTF_8)));
+                if (n > 0) {
+                    JSONObject saved = new JSONObject(new String(bytes, 0, n, StandardCharsets.UTF_8));
+                    int savedHidden = saved.optInt("hiddenSize", DEFAULT_HIDDEN);
+                    if (saved.optInt("inputSize", -1) == 8 && savedHidden >= MIN_HIDDEN && savedHidden <= MAX_HIDDEN) {
+                        net = new QNet(20261009L, savedHidden);
+                        lastHidden = new double[savedHidden];
+                        net.load(saved);
+                    }
+                }
             }
         } catch (Exception ignored) { }
     }
@@ -492,26 +534,34 @@ public final class GridWorldLabActivity extends Activity {
         }
     }
     private static final class QNet {
-        final double[][] w1 = new double[HIDDEN][8], w2 = new double[4][HIDDEN];
-        final double[] b1 = new double[HIDDEN], b2 = new double[4];
-        QNet(long seed) { Random r=new Random(seed); for(int j=0;j<HIDDEN;j++)for(int i=0;i<8;i++)w1[j][i]=r.nextDouble()*0.5-0.25; for(int a=0;a<4;a++)for(int j=0;j<HIDDEN;j++)w2[a][j]=r.nextDouble()*0.5-0.25; }
+        final int hiddenSize;
+        final double[][] w1, w2;
+        final double[] b1, b2;
+        QNet(long seed, int hiddenSize) {
+            this.hiddenSize = hiddenSize;
+            w1 = new double[hiddenSize][8]; w2 = new double[4][hiddenSize];
+            b1 = new double[hiddenSize]; b2 = new double[4];
+            Random r=new Random(seed);
+            for(int j=0;j<hiddenSize;j++)for(int i=0;i<8;i++)w1[j][i]=r.nextDouble()*0.5-0.25;
+            for(int a=0;a<4;a++)for(int j=0;j<hiddenSize;j++)w2[a][j]=r.nextDouble()*0.5-0.25;
+        }
         Forward forward(double[] x) {
-            double[] h=new double[HIDDEN], pre=new double[HIDDEN], q=new double[4];
-            for(int j=0;j<HIDDEN;j++){double v=b1[j];for(int i=0;i<8;i++)v+=w1[j][i]*x[i];pre[j]=v;h[j]=Math.max(0,v);}
-            for(int a=0;a<4;a++){q[a]=b2[a];for(int j=0;j<HIDDEN;j++)q[a]+=w2[a][j]*h[j];}
+            double[] h=new double[hiddenSize], pre=new double[hiddenSize], q=new double[4];
+            for(int j=0;j<hiddenSize;j++){double v=b1[j];for(int i=0;i<8;i++)v+=w1[j][i]*x[i];pre[j]=v;h[j]=Math.max(0,v);}
+            for(int a=0;a<4;a++){q[a]=b2[a];for(int j=0;j<hiddenSize;j++)q[a]+=w2[a][j]*h[j];}
             return new Forward(q,h,pre);
         }
         int choose(double[] s,double eps,Random r){if(r.nextDouble()<eps)return r.nextInt(4);return argmax(forward(s).q);}
         void update(double[] x,int action,double target){
             Forward f=forward(x);double grad=Math.max(-1,Math.min(1,f.q[action]-target));double[] old=w2[action].clone();
-            for(int j=0;j<HIDDEN;j++)w2[action][j]-=0.003*grad*f.h[j];b2[action]-=0.003*grad;
-            for(int j=0;j<HIDDEN;j++)if(f.pre[j]>0){double back=grad*old[j];for(int i=0;i<8;i++)w1[j][i]-=0.003*back*x[i];b1[j]-=0.003*back;}
+            for(int j=0;j<hiddenSize;j++)w2[action][j]-=0.003*grad*f.h[j];b2[action]-=0.003*grad;
+            for(int j=0;j<hiddenSize;j++)if(f.pre[j]>0){double back=grad*old[j];for(int i=0;i<8;i++)w1[j][i]-=0.003*back*x[i];b1[j]-=0.003*back;}
         }
         JSONObject toJson() throws Exception {
-            JSONObject o=new JSONObject();o.put("format","aimeng-android-random-gridworld-qnet/v2");o.put("inputSize",8);o.put("hiddenSize",HIDDEN);o.put("outputSize",4);
+            JSONObject o=new JSONObject();o.put("format","aimeng-android-random-gridworld-qnet/v3");o.put("inputSize",8);o.put("hiddenSize",hiddenSize);o.put("outputSize",4);
             o.put("w1",matrix(w1));o.put("w2",matrix(w2));o.put("b1",array(b1));o.put("b2",array(b2));return o;
         }
-        void load(JSONObject o)throws Exception{if(o.optInt("inputSize")!=8||o.optInt("hiddenSize")!=HIDDEN||o.optInt("outputSize")!=4)return;readMatrix(o.getJSONArray("w1"),w1);readMatrix(o.getJSONArray("w2"),w2);readArray(o.getJSONArray("b1"),b1);readArray(o.getJSONArray("b2"),b2);}
+        void load(JSONObject o)throws Exception{if(o.optInt("inputSize")!=8||o.optInt("hiddenSize")!=hiddenSize||o.optInt("outputSize")!=4)return;readMatrix(o.getJSONArray("w1"),w1);readMatrix(o.getJSONArray("w2"),w2);readArray(o.getJSONArray("b1"),b1);readArray(o.getJSONArray("b2"),b2);}
         static JSONArray array(double[] a)throws Exception{JSONArray j=new JSONArray();for(double v:a)j.put(v);return j;}
         static JSONArray matrix(double[][] a)throws Exception{JSONArray j=new JSONArray();for(double[] r:a)j.put(array(r));return j;}
         static void readArray(JSONArray j,double[] a)throws Exception{if(j.length()!=a.length)throw new Exception("维度不匹配");for(int i=0;i<a.length;i++)a[i]=j.getDouble(i);}
