@@ -43,7 +43,7 @@ public final class NeuronLabActivity extends Activity {
                 setNpuState(ok ? "NPU 已初始化：真实 QNN/HTP 路径可用，尚待前向实测" : detail);
                 npuButton.setEnabled(ok);
                 appendReport(ok
-                        ? "运行时已初始化。训练/评分目前在 CPU 执行，NPU 按钮会执行真实 INT8 MatMul 前向并与 CPU 对照。"
+                        ? "运行时已初始化。当前采用异构分工：CPU 负责参数更新、评分与进退场；NPU 只执行成批 INT8 矩阵前向验证，不让每个小单元频繁跨设备。当前小规模测试主要验证正确性，不代表 NPU 比 CPU 更快。"
                         : "NPU 初始化失败，仍可运行 CPU 学习实验。详情：" + detail);
             });
         });
@@ -61,7 +61,7 @@ public final class NeuronLabActivity extends Activity {
 
         TextView title = text("AIMENG · 神经元实验", 26, true);
         root.addView(title);
-        TextView subtitle = text("小规模可训练单元 / 评分进退场 / Qualcomm QNN HTP V73", 14, false);
+        TextView subtitle = text("CPU 控制与学习 + NPU 批量矩阵运算 / Qualcomm QNN HTP V73", 14, false);
         subtitle.setTextColor(Color.rgb(91, 101, 116));
         root.addView(subtitle);
 
@@ -96,7 +96,7 @@ public final class NeuronLabActivity extends Activity {
         root.addView(runButton, params(-1, dp(52)));
         runButton.setOnClickListener(v -> startExperiment(false));
 
-        npuButton = button("执行 NPU 前向并与 CPU 对照");
+        npuButton = button("批量 NPU 矩阵验证（与 CPU 对照）");
         npuButton.setEnabled(false);
         LinearLayout.LayoutParams npuLp = params(-1, dp(52));
         npuLp.topMargin = dp(8);
