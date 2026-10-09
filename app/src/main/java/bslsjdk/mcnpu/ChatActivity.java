@@ -10,13 +10,17 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.net.Uri;
 import android.content.Intent;
+import android.database.Cursor;
+import android.provider.OpenableColumns;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.Locale;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -38,6 +42,10 @@ public final class ChatActivity extends Activity {
     private TextView runtimeState;
     private TextView modelState;
     private TextView statusLine;
+    private ProgressBar importProgress;
+    private TextView importStage;
+    private LinearLayout emptyState;
+    private TextView emptyHint;
     private final Handler main = new Handler(Looper.getMainLooper());
 
     private final AgentToolRegistry toolRegistry = new AgentToolRegistry();
@@ -55,8 +63,14 @@ public final class ChatActivity extends Activity {
         runtimeState = findViewById(R.id.runtimeState);
         modelState = findViewById(R.id.modelState);
         statusLine = findViewById(R.id.statusLine);
+        importProgress = findViewById(R.id.importProgress);
+        importStage = findViewById(R.id.importStage);
+        emptyState = findViewById(R.id.emptyState);
+        emptyHint = findViewById(R.id.emptyHint);
 
         findViewById(R.id.send).setOnClickListener(v -> sendMessage());
+        findViewById(R.id.importModel).setOnClickListener(v -> importOrnithModel());
+        findViewById(R.id.emptyImport).setOnClickListener(v -> importOrnithModel());
         input.setOnEditorActionListener((v, actionId, event) -> {
             if (event != null && event.getKeyCode() == android.view.KeyEvent.KEYCODE_ENTER
                     && event.isShiftPressed()) return false;
@@ -69,7 +83,6 @@ public final class ChatActivity extends Activity {
 
         loadHistory();
         updateRuntimeState();
-        findViewById(R.id.importModel).setOnClickListener(v -> importOrnithModel());
         initLocalRuntime();
     }
 
@@ -85,16 +98,26 @@ public final class ChatActivity extends Activity {
             }
             main.post(() -> {
                 updateRuntimeState();
-                if (ok && Ornith15Runtime.isLoaded())
-                    statusLine.setText("本地 NPU 在线 · Ornith-1.5-9B");
-                else if (ok)
-                    statusLine.setText("本地 NPU 在线 · 等待 Ornith-1.5-9B");
+                showEmptyStateIfNeeded();
             });
         }, "mcnpu-init").start();
     }
+
     @Override protected void onResume() {
         super.onResume();
         updateRuntimeState();
+        showEmptyStateIfNeeded();
+    }
+
+    private void showEmptyStateIfNeeded() {
+        boolean empty = messages.getChildCount() == 0;
+        emptyState.setVisibility(empty ? View.VISIBLE : View.GONE);
+        scroll.setVisibility(empty ? View.GONE : View.VISIBLE);
+        if (empty) {
+            emptyHint.setText(NpuRuntime.isReady()
+                    ? "本地 NPU 已在线，等待模型文件。"
+                    : "本地 NPU 尚未启动，请先启动 NPU 服务。");
+        }
     }
 
     private void updateRuntimeState() {
@@ -170,10 +193,11 @@ public final class ChatActivity extends Activity {
         addBubble("user", text);
         input.setText("");
         saveHistory();
+        showEmptyStateIfNeeded();
 
         if (!NpuRuntime.isReady()) {
             addBubble("system",
-                    "本地 NPU 尚未启动。先点顶部模型名称导入唯一的 Ornith-1.5-9B-MLX-4bit 模型文件。");
+                    "本地 NPU 尚未启动。先点右上角“导入模型”载入唯一的 Ornith-1.5-9B-MLX-4bit 模型文件。");
             saveHistory();
             return;
         }
@@ -181,7 +205,7 @@ public final class ChatActivity extends Activity {
         String modelPath = getSharedPreferences(PREFS, MODE_PRIVATE).getString(MODEL_PATH, "");
         if (modelPath.isEmpty() || !Ornith15Runtime.isLoaded()) {
             addBubble("system",
-                    "MCNPU 已在线，但尚未加载 Ornith-1.5-9B。点击顶部“Ornith AI”导入唯一的本地模型文件。");
+                    "MCNPU 已在线，但尚未加载 Ornith-1.5-9B。点右上角“导入模型”载入本地模型文件。");
             saveHistory();
             return;
         }
@@ -192,7 +216,8 @@ public final class ChatActivity extends Activity {
         final String prompt = buildAgentPrompt(text);
 
         generating = true;
-        statusLine.setText("Ornith-1.5-9B · 思考中 · MCNPU");
+        setSendEnabled(false);
+        statusLine.setText("Ornith-1.5-9B · 生成中 · MCNPU");
         new Thread(() -> {
             String reply = null;
             try {
@@ -212,9 +237,19 @@ public final class ChatActivity extends Activity {
                 addBubble("assistant", shown == null ? "推理失败" : shown);
                 saveHistory();
                 generating = false;
+                setSendEnabled(true);
                 updateRuntimeState();
             });
         }, "ornith-agent").start();
+    }
+
+    private void setSendEnabled(boolean on) {
+        View send = findViewById(R.id.send);
+        if (send == null) return;
+        send.setEnabled(on);
+        if (send instanceof android.widget.Button) {
+            ((android.widget.Button) send).setText(on ? "发送" : "…");
+        }
     }
 
     private String buildAgentPrompt(String current) {
@@ -234,12 +269,93 @@ public final class ChatActivity extends Activity {
         try {
             Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             i.addCategory(Intent.CATEGORY_OPENABLE);
+            // Deliberately permissive: EXTRA_MIME_TYPES with "*/*" is illegal and makes some
+            // pickers filter everything out. The real format check is the header probe below.
             i.setType("*/*");
-            i.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/octet-stream", "application/x-safetensors", "*/*"});
+            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             startActivityForResult(i, PICK_MODEL);
         } catch (Throwable t) {
             Toast.makeText(this, "无法打开模型选择器: " + t.getClass().getSimpleName(), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    /** SAF gives a document id in getLastPathSegment(), not a file name. Query the real one. */
+    private String resolveDisplayName(Uri uri) {
+        String name = null;
+        try (Cursor c = getContentResolver().query(uri, null, null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+                int idx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                if (idx >= 0) name = c.getString(idx);
+            }
+        } catch (Throwable ignored) {}
+        if (name == null) {
+            String seg = uri.getLastPathSegment();
+            if (seg != null) {
+                int slash = seg.lastIndexOf('/');
+                int colon = seg.lastIndexOf(':');
+                int cut = Math.max(slash, colon);
+                name = cut >= 0 ? seg.substring(cut + 1) : seg;
+            }
+        }
+        return name == null ? "" : name;
+    }
+
+    private long querySize(Uri uri) {
+        try (Cursor c = getContentResolver().query(uri, null, null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+                int idx = c.getColumnIndex(OpenableColumns.SIZE);
+                if (idx >= 0 && !c.isNull(idx)) return c.getLong(idx);
+            }
+        } catch (Throwable ignored) {}
+        return -1L;
+    }
+
+    /**
+     * Real safetensors check: 8-byte little-endian header length followed by the JSON '{'.
+     * Extension names are not reliable on Android content URIs, so we never trust them.
+     */
+    private static boolean looksLikeSafetensors(InputStream in) throws java.io.IOException {
+        byte[] head = new byte[9];
+        int got = 0;
+        while (got < head.length) {
+            int r = in.read(head, got, head.length - got);
+            if (r < 0) break;
+            got += r;
+        }
+        if (got < 9) return false;
+        long headerLen = 0;
+        for (int i = 7; i >= 0; i--) headerLen = (headerLen << 8) | (head[i] & 0xFFL);
+        return headerLen > 0 && headerLen < (200L * 1024 * 1024) && head[8] == '{';
+    }
+
+    private void stage(String text, int progress) {
+        main.post(() -> {
+            importStage.setVisibility(View.VISIBLE);
+            importStage.setText(text);
+            importProgress.setVisibility(View.VISIBLE);
+            if (progress >= 0) {
+                importProgress.setIndeterminate(false);
+                importProgress.setProgress(progress);
+            } else {
+                importProgress.setIndeterminate(true);
+            }
+        });
+    }
+
+    private void clearStage() {
+        main.post(() -> {
+            importStage.setVisibility(View.GONE);
+            importProgress.setVisibility(View.GONE);
+        });
+    }
+
+    private static String humanBytes(long bytes) {
+        if (bytes <= 0) return "未知大小";
+        double gb = bytes / 1073741824.0;
+        if (gb >= 1.0) return String.format(Locale.US, "%.2f GB", gb);
+        double mb = bytes / 1048576.0;
+        if (mb >= 1.0) return String.format(Locale.US, "%.1f MB", mb);
+        return String.format(Locale.US, "%.0f KB", bytes / 1024.0);
     }
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -248,40 +364,75 @@ public final class ChatActivity extends Activity {
         Uri uri = data.getData();
         new Thread(() -> {
             try {
+                String displayName = resolveDisplayName(uri);
+                long sourceBytes = querySize(uri);
+
                 File dir = new File(getFilesDir(), "models");
                 if (!dir.exists() && !dir.mkdirs()) throw new java.io.IOException("无法创建模型目录");
-                String sourceName = uri.getLastPathSegment();
-                String lower = sourceName == null ? "" : sourceName.toLowerCase(java.util.Locale.ROOT);
-                if (!lower.endsWith(".safetensors"))
-                    throw new java.io.IOException("这里只接受 Ornith-1.5-9B-MLX-4bit.safetensors");
-                String dstName = MODEL_FILENAME;
-                File dst = new File(dir, dstName);
+
+                stage("正在校验 " + displayName + " (" + humanBytes(sourceBytes) + ")…", 0);
+
+                // Header probe first: it is the only trustworthy format signal here.
+                try (InputStream probe = getContentResolver().openInputStream(uri)) {
+                    if (probe == null) throw new java.io.IOException("无法打开所选文件");
+                    if (!looksLikeSafetensors(probe))
+                        throw new java.io.IOException(
+                                "这不是 safetensors 文件（文件头不符合格式）。请选择 Ornith-1.5-9B-MLX-4bit 的 .safetensors");
+                }
+
+                File dst = new File(dir, MODEL_FILENAME);
                 File tokenizer = new File(dir, MODEL_FILENAME + ".tokenizer");
-                try (java.io.InputStream asset = getAssets().open("ornith15.tokenizer");
+                try (InputStream asset = getAssets().open("ornith15.tokenizer");
                      FileOutputStream tokenOut = new FileOutputStream(tokenizer)) {
                     byte[] tokenBuf = new byte[64 * 1024];
                     int tokenN;
                     while ((tokenN = asset.read(tokenBuf)) != -1) tokenOut.write(tokenBuf, 0, tokenN);
+                } catch (Throwable t) {
+                    throw new java.io.IOException("词表资源缺失（ornith15.tokenizer）: " + t.getClass().getSimpleName());
                 }
-                try (java.io.InputStream in = getContentResolver().openInputStream(uri);
+
+                long copied = 0;
+                long lastPost = 0;
+                try (InputStream in = getContentResolver().openInputStream(uri);
                      FileOutputStream out = new FileOutputStream(dst)) {
                     if (in == null) throw new java.io.IOException("无法打开模型文件");
                     byte[] buf = new byte[1024 * 1024];
                     int n;
-                    while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+                    while ((n = in.read(buf)) != -1) {
+                        out.write(buf, 0, n);
+                        copied += n;
+                        if (sourceBytes > 0 && copied - lastPost > (8L * 1024 * 1024)) {
+                            lastPost = copied;
+                            final int pct = (int) Math.min(100, copied * 100 / sourceBytes);
+                            final String done = humanBytes(copied);
+                            final String total = humanBytes(sourceBytes);
+                            stage("正在复制 " + done + " / " + total, pct);
+                        }
+                    }
                 }
+                stage("已复制 " + humanBytes(copied) + "，正在加载模型…", -1);
+
                 String r = Ornith15Runtime.load(dst.getAbsolutePath(), 65536);
-                if (!r.startsWith("OK ORNITH15_RUNTIME/1")) throw new java.io.IOException(r);
+                if (!r.startsWith("OK ORNITH15_RUNTIME/1")) {
+                    // Surface the native reason verbatim: it carries npu_probe / arch / memory detail.
+                    throw new java.io.IOException(r.length() > 400 ? r.substring(0, 400) + "…" : r);
+                }
                 getSharedPreferences(PREFS, MODE_PRIVATE).edit()
                         .putString(MODEL_PATH, dst.getAbsolutePath()).apply();
                 main.post(() -> {
-                    statusLine.setText("Ornith-1.5-9B · 本地模型已识别 · MCNPU");
+                    clearStage();
                     updateRuntimeState();
-                    Toast.makeText(this, "Ornith-1.5-9B-MLX-4bit 已加载", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Ornith-1.5-9B-MLX-4bit 已加载", Toast.LENGTH_LONG).show();
                 });
             } catch (Throwable t) {
-                main.post(() -> Toast.makeText(
-                        this, "模型导入失败: " + t.getMessage(), Toast.LENGTH_LONG).show());
+                final String msg = t.getMessage() == null ? t.getClass().getSimpleName() : t.getMessage();
+                main.post(() -> {
+                    clearStage();
+                    updateRuntimeState();
+                    addBubble("system", "模型导入失败：" + msg);
+                    saveHistory();
+                    Toast.makeText(this, "模型导入失败: " + msg, Toast.LENGTH_LONG).show();
+                });
             }
         }, "ornith-model-load").start();
     }
