@@ -249,6 +249,11 @@ public final class NeuronLabActivity extends Activity {
         addActionRow(quick, new String[]{"管理神经元", "保存工作区", "NPU 诊断"}, new Runnable[]{
                 () -> showPage("neurons"), this::persistWorkspaceWithToast, this::runNpuDiagnostic
         });
+
+        Button gridWorld = primaryButton("打开迷宫实验 · 观看神经网络学习");
+        gridWorld.setOnClickListener(v -> startActivity(
+                new Intent(NeuronLabActivity.this, GridWorldLabActivity.class)));
+        quick.addView(gridWorld, params(-1, 50, 0, 8, 0, 0));
         Button evolve = primaryButton("资源竞争 · 安全进化一代");
         evolve.setOnClickListener(v -> runEvolution());
         quick.addView(evolve, params(-1, 48, 0, 8, 0, 0));
