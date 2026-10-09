@@ -101,7 +101,11 @@ public final class NeuronLabEngine {
             double[] seed = seeds[i];
             units.add(new Unit("unit-" + i, seed[0], seed[1], 0.03));
         }
-        trace("experiment_start", new JSONObject().put("units", unitCount).put("target", "y=2*x+1"));
+        try {
+            trace("experiment_start", new JSONObject().put("units", unitCount).put("target", "y=2*x+1"));
+        } catch (org.json.JSONException ignored) {
+            // A trace metadata failure must not prevent the small experiment from starting.
+        }
     }
 
     public synchronized Result trainAndScore(int epochs, ForwardBackend backend, File traceFile) throws org.json.JSONException {
