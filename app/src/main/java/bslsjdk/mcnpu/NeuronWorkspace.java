@@ -529,7 +529,7 @@ public final class NeuronWorkspace {
         // evaluation, but never initiate GPU calibration from a metric call. Calibration
         // belongs to the training epoch so tiny validation subsets cannot select a backend.
         double[][] hiddenBatch = skippedNeuron < 0 && trainingHybridDecisionMade && useHybridTraining
-                && data.size() >= 64 ? buildEpochHiddenActivations(data) : null;
+                && data.size() >= 256 ? buildEpochHiddenActivations(data) : null;
         double sum = 0;
         long count = 0;
         for (int i = 0; i < data.size(); i++) {
@@ -750,6 +750,12 @@ public final class NeuronWorkspace {
             throw new IllegalArgumentException("为保护手机运行内存与响应，当前网络/数据估算最多运行 "
                     + safeLimit + " 轮。请减少数据、神经元数量或训练轮数。");
 
+        // Recalibrate once per training job: weights may have been imported or edited
+        // since the previous run, so the old numerical check is not sufficient.
+        trainingHybridDecisionMade = false;
+        useHybridTraining = false;
+        trainingHybridValidated = false;
+        lastTrainingBackend = "CPU (GPU calibration pending)";
         long start = System.currentTimeMillis();
         ArrayList<Sample> training = new ArrayList<>();
         ArrayList<Sample> validation = new ArrayList<>();
