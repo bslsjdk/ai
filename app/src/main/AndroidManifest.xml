@@ -11,9 +11,11 @@
     <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"
                      android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
     <queries>
         <package android:name="com.oplus.aiunit" />
         <package android:name="com.aiunit.aon" />
+        <package android:name="com.termux" />
         <intent><action android:name="oplus.intent.action.AIUNIT_SERVICE" /></intent>
     </queries>
     <application android:allowBackup="false" android:label="AIMENG 神经元实验" android:supportsRtl="true">
@@ -30,6 +32,7 @@
         <activity android:name=".MainActivity" android:exported="false" />
         <activity android:name=".ChatActivity" android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+        <receiver android:name=".TermuxCommandResultReceiver" android:exported="false" />
         <activity android:name=".CommandTerminalActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".GridWorldLabActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".NeuronLabActivity" android:exported="true"
