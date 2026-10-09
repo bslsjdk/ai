@@ -85,6 +85,7 @@ public final class HeterogeneousNeuronRuntime {
     private final float[] weights;
     private final float[] bias;
     private final float[] score;
+    private final float[] topScores;
     private final int[] topIndices;
     private final long estimatedBytes;
 
@@ -101,6 +102,7 @@ public final class HeterogeneousNeuronRuntime {
         this.weights = new float[Math.multiplyExact(requestedPoolSize, MAX_INPUTS)];
         this.bias = new float[requestedPoolSize];
         this.score = new float[requestedPoolSize];
+        this.topScores = new float[Math.min(MAX_ACTIVE_UNITS, requestedPoolSize)];
         this.topIndices = new int[Math.min(4096, requestedPoolSize)];
         Random random = new Random(seed);
         float scale = (float) (1.0 / Math.sqrt(MAX_INPUTS));
@@ -155,7 +157,9 @@ public final class HeterogeneousNeuronRuntime {
         }
         // Partial selection avoids sorting the entire pool when only a small
         // fraction is active. O(pool * active), bounded by 4096 selected units.
-        float[] bestScores = new float[requestedActive];
+        // Reuse the bounded scratch buffer. Allocating a new top-k array on every
+        // routing call caused avoidable GC pressure on mobile devices.
+        float[] bestScores = topScores;
         int heapSize = 0;
         for (int u = 0; u < poolSize; u++) {
             float s = score[u];
