@@ -16,7 +16,10 @@ android {
         // monotonic per repo, so it is strictly increasing already: no need to keep a
         // counter anywhere in the tree. Local builds (no env) fall back to the same
         // values as before so nothing else has to know about this.
-        versionCode ((System.getenv("GITHUB_RUN_NUMBER") ?: "3") as Integer)
+        // MCNPU's previous release stream reached versionCode 477. This repo has its own
+        // smaller Actions counter, so add a 500 offset to guarantee upgrades are not
+        // rejected as downgrades when keeping the original applicationId.
+        versionCode (500 + ((System.getenv("GITHUB_RUN_NUMBER") ?: "3") as Integer))
         versionName "1.0.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
         externalNativeBuild {
             cmake {
