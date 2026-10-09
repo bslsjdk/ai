@@ -318,7 +318,7 @@ public final class NeuronLabActivity extends Activity {
                                 + " best_ms=" + String.format(Locale.US, "%.3f", times[0] / 1_000_000.0)
                                 + " estimated_pool_mib=" + String.format(Locale.US, "%.3f", runtime.estimatedBytes() / (1024.0 * 1024.0));
                     });
-                    log.append(benchmark.get()).append('\n');
+                    log.append(awaitScheduledResult(benchmark, "CPU 路由基准 " + poolSize)).append('\n');
                     log.append("scheduler_state_after_pool_").append(poolSize).append("=\n")
                             .append(computeScheduler.snapshot().toReport()).append('\n');
                 }
@@ -351,7 +351,7 @@ public final class NeuronLabActivity extends Activity {
                             + "\nshape=32x32x32\nmatmul_ms=" + String.format(Locale.US, "%.3f", ms)
                             + "\nmeaning=standalone NPU operator only; not neural-training acceleration evidence\n";
                 });
-                log.append(npuProbe.get());
+                log.append(awaitScheduledResult(npuProbe, "NPU 矩阵诊断"));
             } catch (Throwable error) {
                 log.append("npu_probe=FAIL_OR_DEFERRED\nreason=").append(shortError(error)).append('\n')
                         .append("scheduler_state=\n").append(computeScheduler.snapshot().toReport()).append('\n')
@@ -380,6 +380,23 @@ public final class NeuronLabActivity extends Activity {
                         .setNegativeButton("稍后", null).show();
             });
         });
+    }
+
+    private String awaitScheduledResult(Future<String> future, String jobName) throws Exception {
+        while (!future.isDone()) {
+            if (isFinishing() || isDestroyed()) {
+                future.cancel(false);
+                throw new InterruptedException("activity closing while waiting for " + jobName);
+            }
+            MemoryAwareComputeScheduler.Snapshot snapshot = computeScheduler.snapshot();
+            String status = "正在等待计算任务完成：" + jobName + "\n\n" + snapshot.toReport()
+                    + "\n\n如果内存预算暂时不够，任务会留在队列中，等待内存下降后再运行。";
+            runOnUiThread(() -> {
+                if (automaticTestRunning && automaticTestReport != null) automaticTestReport.setText(status);
+            });
+            Thread.sleep(500L);
+        }
+        return future.get();
     }
 
     private void copyAutomaticTestLog() {
