@@ -62,9 +62,11 @@ public final class HeterogeneousNeuronRuntime {
         public final double topScore;
         public final double meanAbsoluteScore;
         public final long estimatedBytes;
+        public final String backend;
+        public final String backendDecision;
 
         RouteResult(int poolSize, int activeCount, long elapsedNanos, double topScore,
-                    double meanAbsoluteScore, long estimatedBytes) {
+                    double meanAbsoluteScore, long estimatedBytes, String backend, String backendDecision) {
             this.poolSize = poolSize;
             this.activeCount = activeCount;
             this.elapsedNanos = elapsedNanos;
@@ -88,6 +90,10 @@ public final class HeterogeneousNeuronRuntime {
     private final float[] topScores;
     private final int[] topIndices;
     private final long estimatedBytes;
+    private boolean gpuRouteDecisionMade;
+    private boolean useGpuRoute;
+    private String routeBackend = "CPU";
+    private String routeBackendDecision = "CPU_REFERENCE_DEFAULT";
 
     public HeterogeneousNeuronRuntime(int requestedPoolSize, long budgetBytes, long seed) {
         if (requestedPoolSize < 2 || requestedPoolSize > MAX_POOL_UNITS)
@@ -143,18 +149,56 @@ public final class HeterogeneousNeuronRuntime {
             throw new IllegalArgumentException("激活数量必须在 1.." + topIndices.length + " 之间");
         for (float v : input)
             if (!Float.isFinite(v)) throw new IllegalArgumentException("输入包含非有限数值");
-        Arrays.fill(score, 0f);
         long start = System.nanoTime();
         double absSum = 0;
         int dims = input.length;
-        for (int u = 0; u < poolSize; u++) {
-            int offset = u * MAX_INPUTS;
-            double value = bias[u];
-            for (int j = 0; j < dims; j++) value += weights[offset + j] * input[j];
-            float s = (float) Math.tanh(value);
-            score[u] = s;
-            absSum += Math.abs(s);
+        // For sufficiently large pools, calibrate the real GLES compute path against
+        // the CPU reference once. GPU is retained only if it is numerically sound and
+        // at least 10% faster INCLUDING transpose/copy/dispatch costs.
+        if (!gpuRouteDecisionMade && poolSize >= 4096 && poolSize <= 50000 && dims >= 4) {
+            long cpuStart = System.nanoTime();
+            computeCpuScores(input, dims);
+            long cpuNanos = System.nanoTime() - cpuStart;
+            float[] cpuSnapshot = score.clone();
+            long gpuStart = System.nanoTime();
+            boolean gpuOk = computeGpuScores(input, dims);
+            long gpuNanos = System.nanoTime() - gpuStart;
+            double maxDiff = 0.0;
+            if (gpuOk) {
+                for (int u = 0; u < poolSize; u++) {
+                    double diff = Math.abs((double) score[u] - cpuSnapshot[u]);
+                    if (diff > maxDiff) maxDiff = diff;
+                }
+            }
+            useGpuRoute = gpuOk && maxDiff <= 0.001 && gpuNanos * 10L < cpuNanos * 9L;
+            gpuRouteDecisionMade = true;
+            if (useGpuRoute) {
+                routeBackend = "GLES31_GPU";
+                routeBackendDecision = "measured_gpu_faster cpu_ms=" + (cpuNanos / 1e6)
+                        + " gpu_ms=" + (gpuNanos / 1e6) + " max_abs=" + maxDiff;
+            } else {
+                System.arraycopy(cpuSnapshot, 0, score, 0, poolSize);
+                routeBackend = "CPU";
+                routeBackendDecision = gpuOk
+                        ? "cpu_kept gpu_not_10_percent_faster_or_error_too_large cpu_ms="
+                            + (cpuNanos / 1e6) + " gpu_ms=" + (gpuNanos / 1e6) + " max_abs=" + maxDiff
+                        : "cpu_kept_gpu_unavailable " + GpuComputeRuntime.getLastError();
+            }
+        } else if (useGpuRoute) {
+            if (!computeGpuScores(input, dims)) {
+                useGpuRoute = false;
+                routeBackend = "CPU";
+                routeBackendDecision = "runtime_gpu_failure_fallback " + GpuComputeRuntime.getLastError();
+                computeCpuScores(input, dims);
+            }
+        } else {
+            computeCpuScores(input, dims);
+            if (!gpuRouteDecisionMade && poolSize >= 4096 && (poolSize > 50000 || dims < 4)) {
+                gpuRouteDecisionMade = true;
+                routeBackendDecision = "cpu_kept_gpu_probe_outside_safe_workset";
+            }
         }
+        for (int u = 0; u < poolSize; u++) absSum += Math.abs(score[u]);
         // Partial selection avoids sorting the entire pool when only a small
         // fraction is active. O(pool * active), bounded by 4096 selected units.
         // Reuse the bounded scratch buffer. Allocating a new top-k array on every
@@ -192,7 +236,33 @@ public final class HeterogeneousNeuronRuntime {
         for (float value : bestScores) if (value > highest) highest = value;
         long elapsed = System.nanoTime() - start;
         return new RouteResult(poolSize, requestedActive, elapsed, highest,
-                absSum / poolSize, estimatedBytes);
+                absSum / poolSize, estimatedBytes, routeBackend, routeBackendDecision);
+    }
+
+    private void computeCpuScores(float[] input, int dims) {
+        for (int u = 0; u < poolSize; u++) {
+            int offset = u * MAX_INPUTS;
+            double value = bias[u];
+            for (int j = 0; j < dims; j++) value += weights[offset + j] * input[j];
+            score[u] = (float) Math.tanh(value);
+        }
+    }
+
+    /** Uses a real GLES 3.1 FP32 matrix multiply for the pool's affine score. */
+    private boolean computeGpuScores(float[] input, int dims) {
+        // Bound the temporary transposed matrix and native copies; very large pools
+        // stay on CPU until a streaming/tiled GPU path is implemented.
+        long workBytes = ((long) dims * poolSize + poolSize + dims) * Float.BYTES;
+        if (workBytes > 32L * 1024L * 1024L) return false;
+        float[] transposed = new float[dims * poolSize];
+        for (int u = 0; u < poolSize; u++) {
+            int offset = u * MAX_INPUTS;
+            for (int j = 0; j < dims; j++) transposed[j * poolSize + u] = weights[offset + j];
+        }
+        float[] raw = GpuComputeRuntime.matMul(input, transposed, 1, dims, poolSize);
+        if (raw == null || raw.length != poolSize) return false;
+        for (int u = 0; u < poolSize; u++) score[u] = (float) Math.tanh(raw[u] + bias[u]);
+        return true;
     }
 
     private static void swap(float[] scores, int[] indices, int a, int b) {
