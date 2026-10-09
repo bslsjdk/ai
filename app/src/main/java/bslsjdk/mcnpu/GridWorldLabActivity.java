@@ -45,6 +45,9 @@ public final class GridWorldLabActivity extends Activity {
     private static final int MAP_FEATURES = CELLS;
     private static final int HISTORY_LENGTH = 8;
     private static final int INPUT_SIZE = BASE_FEATURES + MAP_FEATURES + HISTORY_LENGTH * 2;
+    // Each decision performs two shared-weight thought cycles. Cycle 2 receives
+    // cycle 1 activations through a trainable hidden-to-hidden communication matrix.
+    private static final int THOUGHT_CYCLES = 2;
     private static final int DEFAULT_HIDDEN = 32;
     private static final int MIN_HIDDEN = 8;
     private static final int MAX_HIDDEN = 256;
@@ -598,6 +601,10 @@ public final class GridWorldLabActivity extends Activity {
             for (int i = Math.max(0, path.size() - HISTORY_LENGTH); i < path.size(); i++) recentPath.put(path.get(i));
             report.put("recentPathCellIds", recentPath);
             report.put("hiddenSize", net.hiddenSize);
+            report.put("thoughtCycles", THOUGHT_CYCLES);
+            report.put("neuronCommunication", "dense recurrent hidden-to-hidden messages");
+            report.put("recurrentTraining", "truncated BPTT across internal thought cycles");
+            report.put("executionBackend", "CPU Java recurrent forward/backprop; NPU/GPU not yet wired into this QNet");
             report.put("rewardVersion", REWARD_VERSION);
             report.put("rewardShaping", "BFS shortest-distance delta; base rewards retained; repeated-visit penalty remains -0.08");
             int[] goalProbe = evaluateGoalAdjacent(100);
@@ -768,58 +775,174 @@ public final class GridWorldLabActivity extends Activity {
     private static final class QNet {
         final int hiddenSize;
         final int inputSize = INPUT_SIZE;
-        final double[][] w1, w2;
+        final double[][] w1, w2, recurrent;
         final double[] b1, b2;
+
         QNet(long seed, int hiddenSize) {
             this.hiddenSize = hiddenSize;
-            w1 = new double[hiddenSize][INPUT_SIZE]; w2 = new double[4][hiddenSize];
-            b1 = new double[hiddenSize]; b2 = new double[4];
-            Random r=new Random(seed);
-            for(int j=0;j<hiddenSize;j++)for(int i=0;i<INPUT_SIZE;i++)w1[j][i]=r.nextDouble()*0.5-0.25;
-            for(int a=0;a<4;a++)for(int j=0;j<hiddenSize;j++)w2[a][j]=r.nextDouble()*0.5-0.25;
+            w1 = new double[hiddenSize][INPUT_SIZE];
+            w2 = new double[4][hiddenSize];
+            recurrent = new double[hiddenSize][hiddenSize];
+            b1 = new double[hiddenSize];
+            b2 = new double[4];
+            Random r = new Random(seed);
+            double inputScale = 0.5 / Math.sqrt(Math.max(1, INPUT_SIZE));
+            double recurrentScale = 0.10 / Math.sqrt(Math.max(1, hiddenSize));
+            for (int j = 0; j < hiddenSize; j++) {
+                for (int i = 0; i < INPUT_SIZE; i++) w1[j][i] = (r.nextDouble() * 2.0 - 1.0) * inputScale;
+                for (int k = 0; k < hiddenSize; k++) recurrent[j][k] = (r.nextDouble() * 2.0 - 1.0) * recurrentScale;
+            }
+            for (int a = 0; a < 4; a++) {
+                for (int j = 0; j < hiddenSize; j++) w2[a][j] = (r.nextDouble() * 2.0 - 1.0) * 0.1;
+            }
         }
+
         Forward forward(double[] x) {
-            double[] h=new double[hiddenSize], pre=new double[hiddenSize], q=new double[4];
-            for(int j=0;j<hiddenSize;j++){double v=b1[j];for(int i=0;i<inputSize;i++)if(x[i]!=0.0)v+=w1[j][i]*x[i];pre[j]=v;h[j]=Math.max(0,v);}
-            for(int a=0;a<4;a++){q[a]=b2[a];for(int j=0;j<hiddenSize;j++)q[a]+=w2[a][j]*h[j];}
-            return new Forward(q,h,pre);
+            double[][] h = new double[THOUGHT_CYCLES][hiddenSize];
+            double[][] pre = new double[THOUGHT_CYCLES][hiddenSize];
+            double[] inputProjection = new double[hiddenSize];
+            double[] q = new double[4];
+            for (int j = 0; j < hiddenSize; j++) {
+                double v = b1[j];
+                for (int i = 0; i < inputSize; i++) if (x[i] != 0.0) v += w1[j][i] * x[i];
+                inputProjection[j] = v;
+            }
+            for (int t = 0; t < THOUGHT_CYCLES; t++) {
+                for (int j = 0; j < hiddenSize; j++) {
+                    double v = inputProjection[j];
+                    if (t > 0) {
+                        for (int k = 0; k < hiddenSize; k++) v += recurrent[j][k] * h[t - 1][k];
+                    }
+                    pre[t][j] = v;
+                    h[t][j] = Math.max(0.0, v);
+                }
+            }
+            double[] last = h[THOUGHT_CYCLES - 1];
+            for (int a = 0; a < 4; a++) {
+                double v = b2[a];
+                for (int j = 0; j < hiddenSize; j++) v += w2[a][j] * last[j];
+                q[a] = v;
+            }
+            return new Forward(q, h[THOUGHT_CYCLES - 1], pre[THOUGHT_CYCLES - 1], h, pre);
         }
-        int choose(double[] s,double eps,Random r){if(r.nextDouble()<eps)return r.nextInt(4);return argmax(forward(s).q);}
-        void update(double[] x,Forward f,int action,double target){
+
+        int choose(double[] s, double eps, Random r) {
+            if (r.nextDouble() < eps) return r.nextInt(4);
+            return argmax(forward(s).q);
+        }
+
+        void update(double[] x, Forward f, int action, double target) {
             if (f == null) f = forward(x);
-            double grad=Math.max(-1,Math.min(1,f.q[action]-target));
-            // Backpropagate before changing output weights, so no clone is needed.
-            for(int j=0;j<hiddenSize;j++)if(f.pre[j]>0){
-                double back=grad*w2[action][j];
-                for(int i=0;i<inputSize;i++)if(x[i]!=0.0)w1[j][i]-=0.003*back*x[i];
-                b1[j]-=0.003*back;
+            double grad = Math.max(-1.0, Math.min(1.0, f.q[action] - target));
+            double[][] h = f.thoughtH;
+            double[][] pre = f.thoughtPre;
+            double[][] deltaPre = new double[THOUGHT_CYCLES][hiddenSize];
+            double[] deltaH = new double[hiddenSize];
+            double[][] gradW1 = new double[hiddenSize][inputSize];
+            double[][] gradRecurrent = new double[hiddenSize][hiddenSize];
+            double[] gradB1 = new double[hiddenSize];
+
+            // Output gradient starts at the final thought cycle.
+            for (int j = 0; j < hiddenSize; j++) deltaH[j] = grad * w2[action][j];
+            for (int t = THOUGHT_CYCLES - 1; t >= 0; t--) {
+                for (int j = 0; j < hiddenSize; j++) {
+                    deltaPre[t][j] = pre[t][j] > 0.0 ? deltaH[j] : 0.0;
+                    double d = deltaPre[t][j];
+                    if (d == 0.0) continue;
+                    gradB1[j] += d;
+                    for (int i = 0; i < inputSize; i++) if (x[i] != 0.0) gradW1[j][i] += d * x[i];
+                    if (t > 0) {
+                        for (int k = 0; k < hiddenSize; k++) gradRecurrent[j][k] += d * h[t - 1][k];
+                    }
+                }
+                if (t > 0) {
+                    double[] previousDelta = new double[hiddenSize];
+                    for (int k = 0; k < hiddenSize; k++) {
+                        double d = 0.0;
+                        for (int j = 0; j < hiddenSize; j++) d += deltaPre[t][j] * recurrent[j][k];
+                        previousDelta[k] = d;
+                    }
+                    deltaH = previousDelta;
+                }
             }
-            for(int j=0;j<hiddenSize;j++)w2[action][j]-=0.003*grad*f.h[j];
-            b2[action]-=0.003*grad;
+
+            final double lr = 0.0015;
+            // Apply accumulated BPTT gradients only after propagation is complete.
+            for (int j = 0; j < hiddenSize; j++) {
+                b1[j] -= lr * gradB1[j];
+                for (int i = 0; i < inputSize; i++) w1[j][i] -= lr * gradW1[j][i];
+                for (int k = 0; k < hiddenSize; k++) recurrent[j][k] -= lr * gradRecurrent[j][k];
+            }
+            for (int j = 0; j < hiddenSize; j++) w2[action][j] -= lr * grad * h[THOUGHT_CYCLES - 1][j];
+            b2[action] -= lr * grad;
         }
+
         JSONObject toJson() throws Exception {
-            JSONObject o=new JSONObject();o.put("format","aimeng-android-random-gridworld-qnet/v4");o.put("inputSize",inputSize);o.put("hiddenSize",hiddenSize);o.put("outputSize",4);
-            o.put("w1",matrix(w1));o.put("w2",matrix(w2));o.put("b1",array(b1));o.put("b2",array(b2));return o;
+            JSONObject o = new JSONObject();
+            o.put("format", "aimeng-android-random-gridworld-qnet/v5-recurrent");
+            o.put("inputSize", inputSize);
+            o.put("hiddenSize", hiddenSize);
+            o.put("outputSize", 4);
+            o.put("thoughtCycles", THOUGHT_CYCLES);
+            o.put("communication", "dense_hidden_recurrent_bptt");
+            o.put("w1", matrix(w1));
+            o.put("w2", matrix(w2));
+            o.put("recurrent", matrix(recurrent));
+            o.put("b1", array(b1));
+            o.put("b2", array(b2));
+            return o;
         }
-        void load(JSONObject o)throws Exception{
-            int savedInputs=o.optInt("inputSize",-1);
-            if((savedInputs!=8&&savedInputs!=inputSize)||o.optInt("hiddenSize")!=hiddenSize||o.optInt("outputSize")!=4)return;
-            JSONArray savedW1=o.getJSONArray("w1");
-            if(savedW1.length()!=hiddenSize)throw new Exception("隐藏层维度不匹配");
-            for(int j=0;j<hiddenSize;j++){
-                JSONArray row=savedW1.getJSONArray(j);
-                if(row.length()!=savedInputs)throw new Exception("输入维度不匹配");
-                for(int i=0;i<savedInputs;i++)w1[j][i]=row.getDouble(i);
-                // Preserve the old policy at migration time; new map/history features
-                // start with zero weights and are learned through subsequent updates.
-                for(int i=savedInputs;i<inputSize;i++)w1[j][i]=0.0;
+
+        void load(JSONObject o) throws Exception {
+            int savedInputs = o.optInt("inputSize", -1);
+            if ((savedInputs != 8 && savedInputs != inputSize)
+                    || o.optInt("hiddenSize") != hiddenSize || o.optInt("outputSize") != 4) return;
+            JSONArray savedW1 = o.getJSONArray("w1");
+            if (savedW1.length() != hiddenSize) throw new Exception("隐藏层维度不匹配");
+            for (int j = 0; j < hiddenSize; j++) {
+                JSONArray row = savedW1.getJSONArray(j);
+                if (row.length() != savedInputs) throw new Exception("输入维度不匹配");
+                for (int i = 0; i < savedInputs; i++) w1[j][i] = row.getDouble(i);
+                for (int i = savedInputs; i < inputSize; i++) w1[j][i] = 0.0;
             }
-            readMatrix(o.getJSONArray("w2"),w2);readArray(o.getJSONArray("b1"),b1);readArray(o.getJSONArray("b2"),b2);
+            readMatrix(o.getJSONArray("w2"), w2);
+            readArray(o.getJSONArray("b1"), b1);
+            readArray(o.getJSONArray("b2"), b2);
+            JSONArray savedRecurrent = o.optJSONArray("recurrent");
+            if (savedRecurrent != null) {
+                readMatrix(savedRecurrent, recurrent);
+            } else {
+                // Legacy checkpoints keep their old feed-forward policy until recurrent
+                // weights are learned during fine-tuning.
+                for (double[] row : recurrent) java.util.Arrays.fill(row, 0.0);
+            }
         }
-        static JSONArray array(double[] a)throws Exception{JSONArray j=new JSONArray();for(double v:a)j.put(v);return j;}
-        static JSONArray matrix(double[][] a)throws Exception{JSONArray j=new JSONArray();for(double[] r:a)j.put(array(r));return j;}
-        static void readArray(JSONArray j,double[] a)throws Exception{if(j.length()!=a.length)throw new Exception("维度不匹配");for(int i=0;i<a.length;i++)a[i]=j.getDouble(i);}
-        static void readMatrix(JSONArray j,double[][] a)throws Exception{if(j.length()!=a.length)throw new Exception("维度不匹配");for(int i=0;i<a.length;i++)readArray(j.getJSONArray(i),a[i]);}
+
+        static JSONArray array(double[] a) throws Exception {
+            JSONArray j = new JSONArray();
+            for (double v : a) j.put(v);
+            return j;
+        }
+        static JSONArray matrix(double[][] a) throws Exception {
+            JSONArray j = new JSONArray();
+            for (double[] r : a) j.put(array(r));
+            return j;
+        }
+        static void readArray(JSONArray j, double[] a) throws Exception {
+            if (j.length() != a.length) throw new Exception("维度不匹配");
+            for (int i = 0; i < a.length; i++) a[i] = j.getDouble(i);
+        }
+        static void readMatrix(JSONArray j, double[][] a) throws Exception {
+            if (j.length() != a.length) throw new Exception("维度不匹配");
+            for (int i = 0; i < a.length; i++) readArray(j.getJSONArray(i), a[i]);
+        }
     }
-    private static final class Forward { final double[] q,h,pre; Forward(double[] q,double[] h,double[] p){this.q=q;this.h=h;pre=p;} }
+    private static final class Forward {
+        final double[] q, h, pre;
+        final double[][] thoughtH, thoughtPre;
+        Forward(double[] q, double[] h, double[] pre, double[][] thoughtH, double[][] thoughtPre) {
+            this.q = q; this.h = h; this.pre = pre;
+            this.thoughtH = thoughtH; this.thoughtPre = thoughtPre;
+        }
+    }
 }
