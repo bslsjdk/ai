@@ -52,7 +52,10 @@ public final class GridWorldLabActivity extends Activity {
     private static final int[] DY = {-1, 0, 1, 0};
     private static final String[] ACTIONS = {"上", "右", "下", "左"};
     private static final int MAX_STEPS = 120;
-    private static final int FAST_STREAK_REQUIRED = 100;
+    private static final int FAST_STREAK_REQUIRED = 5;
+    private static final int MASTERY_CHECK_INTERVAL = 100;
+    private static final int MASTERY_EVAL_EPISODES = 20;
+    private static final double MASTERY_FAST_RATE_REQUIRED = 0.90;
     private static final double FAST_STEP_FACTOR = 1.6;
     private static final int FAST_STEP_ALLOWANCE = 2;
     // Reward schema v2 adds bounded BFS shortest-distance shaping.
@@ -166,8 +169,8 @@ public final class GridWorldLabActivity extends Activity {
         lastEpisodeSteps = -1;
         stoppedByMastery = false;
         training = true;
-        status.setText("开始随机地图训练：最多 " + count + " 局；连续 " + FAST_STREAK_REQUIRED + " 局快速通关即提前停止。");
-        log.setText("每局更换随机地图；每局结束立即检查快速通关条件。");
+        status.setText("开始随机地图训练：最多 " + count + " 局；每 " + MASTERY_CHECK_INTERVAL + " 局评估 " + MASTERY_EVAL_EPISODES + " 张独立地图，连续 " + FAST_STREAK_REQUIRED + " 次达标才提前停止。");
+        log.setText("性能优化：不再每局额外跑一张完整策略测试地图；每 " + MASTERY_CHECK_INTERVAL + " 局批量评估 " + MASTERY_EVAL_EPISODES + " 张独立地图。训练和评估地图分开。");
         worker.execute(() -> {
             long wins = 0, totalSteps = 0;
             int reportEvery = count >= 100000 ? 5000 : 500;
@@ -183,7 +186,15 @@ public final class GridWorldLabActivity extends Activity {
                 for (; steps < MAX_STEPS && !cancelTraining; steps++) {
                     double[] s = observe(pos, map.goal, map.walls, history);
                     double epsilon = Math.max(0.05, 1.0 - 0.95 * (ep / (double) Math.min(count, 10000)));
-                    int action = net.choose(s, epsilon, rng);
+                    // Avoid duplicate forwards: only compute Q values when greedy action selection needs them.
+                    Forward currentForward = null;
+                    int action;
+                    if (rng.nextDouble() < epsilon) {
+                        action = rng.nextInt(4);
+                    } else {
+                        currentForward = net.forward(s);
+                        action = argmax(currentForward.q);
+                    }
                     Transition tr = transition(pos, action, map);
                     List<Integer> nextHistory = appendHistory(history, tr.next);
                     double reward = tr.reward;
@@ -196,7 +207,7 @@ public final class GridWorldLabActivity extends Activity {
                     }
                     double[] next = observe(tr.next, map.goal, map.walls, nextHistory);
                     double target = tr.done ? reward : reward + 0.92 * max(net.forward(next).q);
-                    net.update(s, action, target);
+                    net.update(s, currentForward, action, target);
                     pos = tr.next;
                     history = nextHistory;
                     if (tr.done) { wins++; reachedGoal = true; break; }
@@ -204,17 +215,25 @@ public final class GridWorldLabActivity extends Activity {
                 int episodeSteps = Math.min(steps + 1, MAX_STEPS);
                 totalSteps += episodeSteps;
                 lastCompletedEpisode = ep;
-                // Test the current greedy policy on a separate, newly generated map after every episode.
-                MapData masteryMap = generateMap(rng);
-                int masterySteps = greedyTestSteps(masteryMap);
-                int shortestSteps = shortestDistance(masteryMap);
-                lastEpisodeSteps = masterySteps;
-                boolean fastWin = masterySteps > 0
-                        && masterySteps <= shortestSteps * FAST_STEP_FACTOR + FAST_STEP_ALLOWANCE;
-                fastWinStreak = fastWin ? fastWinStreak + 1 : 0;
-                if (fastWinStreak >= FAST_STREAK_REQUIRED) {
-                    stoppedByMastery = true;
-                    break;
+                // Periodic held-out evaluation avoids paying for another full episode every update.
+                if (ep % MASTERY_CHECK_INTERVAL == 0) {
+                    int fastWins = 0;
+                    int lastSteps = -1;
+                    for (int test = 0; test < MASTERY_EVAL_EPISODES; test++) {
+                        MapData masteryMap = generateMap(rng);
+                        int masterySteps = greedyTestSteps(masteryMap);
+                        int shortestSteps = shortestDistance(masteryMap);
+                        lastSteps = masterySteps;
+                        if (masterySteps > 0
+                                && masterySteps <= shortestSteps * FAST_STEP_FACTOR + FAST_STEP_ALLOWANCE) fastWins++;
+                    }
+                    lastEpisodeSteps = lastSteps;
+                    boolean masteryPass = fastWins >= Math.ceil(MASTERY_EVAL_EPISODES * MASTERY_FAST_RATE_REQUIRED);
+                    fastWinStreak = masteryPass ? fastWinStreak + 1 : 0;
+                    if (fastWinStreak >= FAST_STREAK_REQUIRED) {
+                        stoppedByMastery = true;
+                        break;
+                    }
                 }
                 if (ep % reportEvery == 0 || ep == count) {
                     final int finished = ep;
@@ -241,8 +260,9 @@ public final class GridWorldLabActivity extends Activity {
                         : "本次训练局数上限已达到。");
                 int[] finalGoalProbe = evaluateGoalAdjacent(100);
                 log.setText(String.format(Locale.US,
-                        "本次训练局数：%d\n连续快速通关：%d/%d\n上一局步数：%s\n快速通关判定：成功且步数≤最短路×%.1f+%d\n独立随机地图测试：%d/100（%.1f%%）\n终点相邻贪心决策：%d/%d（%.1f%%）",
-                        lastCompletedEpisode, fastWinStreak, FAST_STREAK_REQUIRED,
+                        "本次训练局数：%d\n连续达标评估批次：%d/%d（每批 %d 张地图，快速通关率≥%.0f%%）\n最近评估地图步数：%s\n快速通关判定：成功且步数≤最短路×%.1f+%d\n独立随机地图测试：%d/100（%.1f%%）\n终点相邻贪心决策：%d/%d（%.1f%%）",
+                        lastCompletedEpisode, fastWinStreak, FAST_STREAK_REQUIRED, MASTERY_EVAL_EPISODES,
+                        MASTERY_FAST_RATE_REQUIRED * 100.0,
                         lastEpisodeSteps < 0 ? "未成功" : Integer.toString(lastEpisodeSteps),
                         FAST_STEP_FACTOR, FAST_STEP_ALLOWANCE, evalSuccesses,
                         100.0 * evalSuccesses / Math.max(1, evalEpisodes), finalGoalProbe[0],
@@ -557,7 +577,9 @@ public final class GridWorldLabActivity extends Activity {
             report.put("executionBackend", "CPU Java forward/backprop; NPU/GPU not yet wired into this QNet");
             report.put("shortTermMemory", "last 8 positions per episode; repeated-visit penalty=-0.08 during training");
             report.put("longTermMemory", "trained Q-network weights saved in q_network.json");
-            report.put("shortTermMemoryLength", Math.min(HISTORY_LENGTH, path.size()));
+            // Report configured per-episode history, not the unrelated current UI path length.
+            report.put("shortTermMemoryLength", HISTORY_LENGTH);
+            report.put("reportPathLength", Math.min(HISTORY_LENGTH, path.size()));
             JSONArray recentPath = new JSONArray();
             for (int i = Math.max(0, path.size() - HISTORY_LENGTH); i < path.size(); i++) recentPath.put(path.get(i));
             report.put("recentPathCellIds", recentPath);
@@ -575,6 +597,10 @@ public final class GridWorldLabActivity extends Activity {
             report.put("successRate", evalSuccesses / (double)Math.max(1, evalEpisodes));
             report.put("fastWinStreak", fastWinStreak);
             report.put("fastWinStreakRequired", FAST_STREAK_REQUIRED);
+            report.put("masteryCheckIntervalEpisodes", MASTERY_CHECK_INTERVAL);
+            report.put("masteryEvaluationEpisodes", MASTERY_EVAL_EPISODES);
+            report.put("masteryFastRateRequired", MASTERY_FAST_RATE_REQUIRED);
+            report.put("masteryStreakMeaning", "consecutive evaluation batches, not consecutive training episodes");
             report.put("lastEpisodeSteps", lastEpisodeSteps);
             report.put("stoppedByMastery", stoppedByMastery);
             report.put("fastWinRule", "reaches goal and steps <= shortestPathSteps * 1.6 + 2");
@@ -698,10 +724,17 @@ public final class GridWorldLabActivity extends Activity {
             return new Forward(q,h,pre);
         }
         int choose(double[] s,double eps,Random r){if(r.nextDouble()<eps)return r.nextInt(4);return argmax(forward(s).q);}
-        void update(double[] x,int action,double target){
-            Forward f=forward(x);double grad=Math.max(-1,Math.min(1,f.q[action]-target));double[] old=w2[action].clone();
-            for(int j=0;j<hiddenSize;j++)w2[action][j]-=0.003*grad*f.h[j];b2[action]-=0.003*grad;
-            for(int j=0;j<hiddenSize;j++)if(f.pre[j]>0){double back=grad*old[j];for(int i=0;i<inputSize;i++)if(x[i]!=0.0)w1[j][i]-=0.003*back*x[i];b1[j]-=0.003*back;}
+        void update(double[] x,Forward f,int action,double target){
+            if (f == null) f = forward(x);
+            double grad=Math.max(-1,Math.min(1,f.q[action]-target));
+            // Backpropagate before changing output weights, so no clone is needed.
+            for(int j=0;j<hiddenSize;j++)if(f.pre[j]>0){
+                double back=grad*w2[action][j];
+                for(int i=0;i<inputSize;i++)if(x[i]!=0.0)w1[j][i]-=0.003*back*x[i];
+                b1[j]-=0.003*back;
+            }
+            for(int j=0;j<hiddenSize;j++)w2[action][j]-=0.003*grad*f.h[j];
+            b2[action]-=0.003*grad;
         }
         JSONObject toJson() throws Exception {
             JSONObject o=new JSONObject();o.put("format","aimeng-android-random-gridworld-qnet/v4");o.put("inputSize",inputSize);o.put("hiddenSize",hiddenSize);o.put("outputSize",4);
