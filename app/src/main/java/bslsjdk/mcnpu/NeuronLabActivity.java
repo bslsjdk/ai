@@ -3,6 +3,8 @@ package bslsjdk.ornithnpu;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.ClipboardManager;
+import android.content.ClipData;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -80,6 +82,10 @@ public final class NeuronLabActivity extends Activity {
     private EditText poolInputField;
     private TextView poolReport;
     private HeterogeneousNeuronRuntime poolRuntime;
+    private TextView automaticTestReport;
+    private Button automaticTestButton;
+    private volatile boolean automaticTestRunning;
+    private volatile String lastAutomaticTestLog = "尚未执行自动测试。";
 
     private volatile NeuronWorkspace workspace;
     private String currentPage = "home";
@@ -173,8 +179,9 @@ public final class NeuronLabActivity extends Activity {
         navRow = new LinearLayout(this);
         navRow.setOrientation(LinearLayout.HORIZONTAL);
         String[][] pages = {
-                {"home", "总览"}, {"neurons", "神经元"}, {"runtime", "群体运行时"},
-                {"network", "网络图"}, {"train", "训练任务"}, {"run", "运行"}, {"data", "数据/保存"}
+                {"home", "总览"}, {"autotest", "全自动测试"}, {"neurons", "神经元"},
+                {"runtime", "群体运行时"}, {"network", "网络图"}, {"train", "训练任务"},
+                {"run", "运行"}, {"data", "数据/保存"}
         };
         for (String[] entry : pages) {
             Button b = new Button(this);
