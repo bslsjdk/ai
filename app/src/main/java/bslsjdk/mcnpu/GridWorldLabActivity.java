@@ -211,7 +211,7 @@ public final class GridWorldLabActivity extends Activity {
     private void stepGame() {
         if (training) return;
         Forward f = net.forward(observe(player));
-        lastHidden = f.hidden;
+        lastHidden = f.h;
         lastQ = f.q;
         int action = argmax(f.q);
         Transition tr = transition(player, action);
@@ -240,7 +240,7 @@ public final class GridWorldLabActivity extends Activity {
         path.add(player);
         board.invalidate();
         Forward f = net.forward(observe(player));
-        lastHidden = f.hidden;
+        lastHidden = f.h;
         lastQ = f.q;
         refreshReadout();
     }
