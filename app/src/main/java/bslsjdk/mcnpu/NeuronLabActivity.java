@@ -571,8 +571,24 @@ public final class NeuronLabActivity extends Activity {
     private void buildRunPage(LinearLayout content) {
         LinearLayout input = card(content, "输入与输出");
         addText(input, "输入维度：" + workspace.inputCount + "；输出维度：" + workspace.outputCount
-                + "。按顺序输入逗号分隔的数值。这里运行的是当前网络，不是文本聊天模型。", 12, false);
-        inputVectorField = editText(lastInputText, "例如：0.25 或 0.25,-0.1,0.8", InputType.TYPE_CLASS_TEXT);
+                + "。网络实际接收的是数字向量，下面的概念名用来定义每一列数字的含义；概念名本身不会被当作自然语言理解。", 12, false);
+        EditText inputConceptsField = editText(joinConcepts(workspace.inputConceptNames()),
+                "输入概念名，逗号分隔", InputType.TYPE_CLASS_TEXT);
+        EditText outputConceptsField = editText(joinConcepts(workspace.outputConceptNames()),
+                "输出概念名，逗号分隔", InputType.TYPE_CLASS_TEXT);
+        input.addView(inputConceptsField, params(-1, 48, 0, 4, 0, 0));
+        input.addView(outputConceptsField, params(-1, 48, 0, 4, 0, 0));
+        Button saveConcepts = secondaryButton("保存输入/输出概念定义");
+        saveConcepts.setOnClickListener(v -> {
+            try {
+                workspace.setConceptNames(inputConceptsField.getText().toString(),
+                        outputConceptsField.getText().toString());
+                persistWorkspace();
+                toast("概念标签已保存。网络仍通过对应位置的数值学习。");
+            } catch (Throwable error) { dialog("概念定义无效", shortError(error)); }
+        });
+        input.addView(saveConcepts, params(-1, 44, 0, 4, 0, 0));
+        inputVectorField = editText(lastInputText, "按上面概念顺序输入数值，例如：0.25,0.8", InputType.TYPE_CLASS_TEXT);
         input.addView(inputVectorField, params(-1, 52, 0, 0, 0, 0));
         inputVectorField.setSingleLine(true);
         inputVectorField.setImeOptions(EditorInfo.IME_ACTION_DONE);
@@ -858,6 +874,15 @@ public final class NeuronLabActivity extends Activity {
                 }).show();
     }
 
+    private static String joinConcepts(String[] names) {
+        StringBuilder out = new StringBuilder();
+        if (names != null) for (int i = 0; i < names.length; i++) {
+            if (i > 0) out.append(", ");
+            out.append(names[i]);
+        }
+        return out.toString();
+    }
+
     private void runPrediction() {
         try {
             String text = inputVectorField == null ? lastInputText : inputVectorField.getText().toString().trim();
@@ -870,10 +895,15 @@ public final class NeuronLabActivity extends Activity {
                 if (!Double.isFinite(values[i])) throw new IllegalArgumentException("输入必须是有限数值");
             }
             NeuronWorkspace.ForwardResult result = workspace.predict(values);
-            StringBuilder out = new StringBuilder("输入：").append(vector(values)).append("\n输出：");
+            String[] inputNames = workspace.inputConceptNames();
+            String[] outputNames = workspace.outputConceptNames();
+            StringBuilder out = new StringBuilder("输入概念：\n");
+            for (int i = 0; i < values.length; i++) {
+                out.append(inputNames[i]).append(" = ").append(format(values[i])).append("\n");
+            }
+            out.append("\n输出概念：\n");
             for (int i = 0; i < result.output.length; i++) {
-                if (i > 0) out.append("  |  ");
-                out.append("y").append(i).append(" = ").append(format(result.output[i]));
+                out.append(outputNames[i]).append(" = ").append(format(result.output[i])).append("\n");
             }
             out.append("\n\n隐藏单元激活与输出贡献：\n");
             List<NeuronWorkspace.Neuron> units = workspace.neuronsSnapshot();
@@ -884,7 +914,7 @@ public final class NeuronLabActivity extends Activity {
                         .append("  ·  ");
                 for (int o = 0; o < workspace.outputCount; o++) {
                     if (o > 0) out.append(", ");
-                    out.append("y").append(o).append(" += ")
+                    out.append(outputNames[o]).append(" += ")
                             .append(format(result.hiddenToOutputContribution[i][o]));
                 }
                 out.append("\n");
