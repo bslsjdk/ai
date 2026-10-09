@@ -48,13 +48,17 @@ public final class GridWorldLabActivity extends Activity {
     // Each decision performs two shared-weight thought cycles. Cycle 2 receives
     // cycle 1 activations through a trainable hidden-to-hidden communication matrix.
     private static final int THOUGHT_CYCLES = 2;
-    private static final int DEFAULT_HIDDEN = 32;
+    private static final int DEFAULT_HIDDEN = 64;
     private static final int MIN_HIDDEN = 8;
     private static final int MAX_HIDDEN = 256;
     private static final int[] DX = {0, 1, 0, -1};
     private static final int[] DY = {-1, 0, 1, 0};
     private static final String[] ACTIONS = {"上", "右", "下", "左"};
     private static final int MAX_STEPS = 120;
+    // Bounded episodic replay: ~5.5 MiB of state vectors at capacity 2048.
+    private static final int REPLAY_CAPACITY = 2048;
+    private static final int REPLAY_WARMUP = 64;
+    private static final int REPLAY_UPDATE_INTERVAL = 4;
     private static final int FAST_STREAK_REQUIRED = 5;
     private static final int MASTERY_CHECK_INTERVAL = 100;
     private static final int MASTERY_EVAL_EPISODES = 20;
@@ -175,7 +179,9 @@ public final class GridWorldLabActivity extends Activity {
         status.setText("开始循环思考训练：每次决策进行 " + THOUGHT_CYCLES + " 轮神经元信息传递；最多 " + count + " 局。");
         log.setText("隐藏神经元通过可训练的循环连接互相传递激活，并用 BPTT 学习连接权重。每 " + MASTERY_CHECK_INTERVAL + " 局评估 " + MASTERY_EVAL_EPISODES + " 张独立地图；连续 " + FAST_STREAK_REQUIRED + " 批达标才提前停止。");
         worker.execute(() -> {
-            long wins = 0, totalSteps = 0;
+            long wins = 0, totalSteps = 0, replayUpdates = 0;
+            long globalEnvironmentSteps = 0;
+            ReplayMemory replay = new ReplayMemory();
             int reportEvery = count >= 100000 ? 5000 : 500;
             long started = System.currentTimeMillis();
             for (int ep = 1; ep <= count && !cancelTraining; ep++) {
@@ -219,6 +225,19 @@ public final class GridWorldLabActivity extends Activity {
                     // TD target needs only max(Q), not a retained Forward/BPTT cache.
                     double target = tr.done ? reward : reward + 0.92 * net.maxQ(nextBuffer);
                     net.update(s, currentForward, action, target);
+                    replay.add(s, action, reward, nextBuffer, tr.done);
+                    globalEnvironmentSteps++;
+                    // Revisit a random past transition every four environment steps.
+                    // This reuses experience without multiplying compute by a large factor.
+                    if (replay.size >= REPLAY_WARMUP
+                            && globalEnvironmentSteps % REPLAY_UPDATE_INTERVAL == 0) {
+                        int ri = replay.sample(rng);
+                        double replayTarget = replay.dones[ri] ? replay.rewards[ri]
+                                : replay.rewards[ri] + 0.92 * net.maxQ(replay.nextStates[ri]);
+                        Forward replayForward = net.forward(replay.states[ri]);
+                        net.update(replay.states[ri], replayForward, replay.actions[ri], replayTarget);
+                        replayUpdates++;
+                    }
                     pos = tr.next;
                     history = nextHistory;
                     if (tr.done) { wins++; reachedGoal = true; break; }
@@ -609,7 +628,7 @@ public final class GridWorldLabActivity extends Activity {
             report.put("inputFeatures", "8 local features + 144 wall-map cells + last 8 positions (x,y)");
             report.put("executionBackend", "CPU Java forward/backprop; NPU/GPU not yet wired into this QNet");
             report.put("shortTermMemory", "last 8 positions per episode; repeated-visit penalty=-0.08 during training");
-            report.put("longTermMemory", "trained Q-network weights saved in q_network.json");
+            report.put("longTermMemory", "trained Q-network weights saved in q_network.json; sampled experience replay is session-local");
             // Report configured per-episode history, not the unrelated current UI path length.
             report.put("shortTermMemoryLength", HISTORY_LENGTH);
             report.put("reportPathLength", Math.min(HISTORY_LENGTH, path.size()));
@@ -619,6 +638,12 @@ public final class GridWorldLabActivity extends Activity {
             report.put("hiddenSize", net.hiddenSize);
             report.put("thoughtCycles", THOUGHT_CYCLES);
             report.put("neuronCommunication", "dense recurrent hidden-to-hidden messages");
+            report.put("experienceReplay", "bounded random replay buffer; sampled one transition per four environment steps after warmup");
+            report.put("experienceReplayCapacity", REPLAY_CAPACITY);
+            report.put("experienceReplayWarmup", REPLAY_WARMUP);
+            report.put("experienceReplayUpdates", replayUpdates);
+            report.put("experienceReplayFinalSize", replay.size);
+            report.put("memoryModel", "last 8 positions are episode-local short-term memory; replay is training-session episodic memory; q_network.json stores persistent learned weights");
             report.put("recurrentTraining", "truncated BPTT across internal thought cycles");
             report.put("executionBackend", "CPU Java recurrent forward/backprop; NPU/GPU not yet wired into this QNet");
             report.put("rewardVersion", REWARD_VERSION);
@@ -788,6 +813,30 @@ public final class GridWorldLabActivity extends Activity {
             }
         }
     }
+    private static final class ReplayMemory {
+        final double[][] states = new double[REPLAY_CAPACITY][INPUT_SIZE];
+        final double[][] nextStates = new double[REPLAY_CAPACITY][INPUT_SIZE];
+        final int[] actions = new int[REPLAY_CAPACITY];
+        final double[] rewards = new double[REPLAY_CAPACITY];
+        final boolean[] dones = new boolean[REPLAY_CAPACITY];
+        int size;
+        int cursor;
+
+        void add(double[] state, int action, double reward, double[] nextState, boolean done) {
+            System.arraycopy(state, 0, states[cursor], 0, INPUT_SIZE);
+            System.arraycopy(nextState, 0, nextStates[cursor], 0, INPUT_SIZE);
+            actions[cursor] = action;
+            rewards[cursor] = reward;
+            dones[cursor] = done;
+            cursor = (cursor + 1) % REPLAY_CAPACITY;
+            if (size < REPLAY_CAPACITY) size++;
+        }
+
+        int sample(Random random) {
+            return random.nextInt(size);
+        }
+    }
+
     private static final class QNet {
         final int hiddenSize;
         final int inputSize = INPUT_SIZE;
