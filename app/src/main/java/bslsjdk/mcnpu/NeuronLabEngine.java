@@ -132,7 +132,7 @@ public final class NeuronLabEngine {
         if (backend != null) {
             try {
                 double npuMse = evaluate(validation, backend);
-                npuUsed = true;
+                npuUsed = backend.name().startsWith("QNN_HTP");
                 double delta = Math.abs(npuMse - finalCpu);
                 backendReport = "forward_backend=" + backend.name()
                         + " validation_mse=" + format(npuMse)
@@ -159,7 +159,8 @@ public final class NeuronLabEngine {
                 + " improved=" + (finalCpu < initial) + "\n"
                 + backendReport + "\n"
                 + "trace=" + traceFile.getAbsolutePath() + "\n"
-                + "NOTE: toy regression only; not a language model. Parameter learning/scoring run on CPU.";
+                + "NOTE: toy regression only; not a language model. Parameter learning/scoring run on CPU."
+                + "\nRouting policy: small workloads stay on CPU; NPU is used only when dispatch and padding cost can be amortized.";
         return new Result(report, activeCount(), initial, finalCpu, npuUsed);
     }
 
