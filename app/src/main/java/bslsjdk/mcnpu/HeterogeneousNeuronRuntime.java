@@ -73,12 +73,14 @@ public final class HeterogeneousNeuronRuntime {
             this.topScore = topScore;
             this.meanAbsoluteScore = meanAbsoluteScore;
             this.estimatedBytes = estimatedBytes;
+            this.backend = backend;
+            this.backendDecision = backendDecision;
         }
 
         public String toReport() {
             return String.format(Locale.US,
-                    "路由测试完成（CPU 参考实现）\n池大小：%,d\n激活候选：%d\n耗时：%.3f ms\n最高匹配分：%.6f\n平均绝对分：%.6f\n参数估算：%.2f MiB\n评分说明：当前权重是未训练的可复现初始化值；分数只验证计算管线，不代表已学会任务。",
-                    poolSize, activeCount, elapsedNanos / 1_000_000.0, topScore,
+                    "路由测试完成\\n后端：%s\\n后端决策：%s\\n池大小：%,d\\n激活候选：%d\\n耗时：%.3f ms\\n最高匹配分：%.6f\\n平均绝对分：%.6f\\n参数估算：%.2f MiB\\n评分说明：当前权重是未训练的可复现初始化值；分数只验证计算管线，不代表已学会任务。",
+                    backend, backendDecision, poolSize, activeCount, elapsedNanos / 1_000_000.0, topScore,
                     meanAbsoluteScore, estimatedBytes / (1024.0 * 1024.0));
         }
     }
