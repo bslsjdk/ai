@@ -55,6 +55,9 @@ public final class GridWorldLabActivity extends Activity {
     private static final int FAST_STREAK_REQUIRED = 100;
     private static final double FAST_STEP_FACTOR = 1.6;
     private static final int FAST_STEP_ALLOWANCE = 2;
+    // Reward schema v2 adds bounded BFS shortest-distance shaping.
+    private static final int REWARD_VERSION = 2;
+    private static final double DISTANCE_REWARD_PER_STEP = 0.10;
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -98,7 +101,8 @@ public final class GridWorldLabActivity extends Activity {
         loadCheckpoint();
         buildUi();
         resetEpisode();
-        status.setText("随机地图实验已就绪。每张地图都先构造通路并经 BFS 验证。");
+        status.setText("随机地图实验已就绪。每张地图都经 BFS 验证；训练奖励 v2 已加入真实最短路距离反馈。");
+        log.setText("奖励版本 v2：每靠近终点一步 +0.10，每远离一步 -0.10（按 BFS 可达距离）；原有到达奖励、碰墙惩罚和重复访问惩罚保留。旧奖励版本权重会自动备份，不会混合训练。");
     }
 
     private void buildUi() {
@@ -171,6 +175,7 @@ public final class GridWorldLabActivity extends Activity {
             for (int ep = 1; ep <= count && !cancelTraining; ep++) {
                 MapData map = generateMap(rng);
                 int pos = map.start;
+                int[] mapDistances = distanceMap(map);
                 List<Integer> history = new ArrayList<>();
                 history.add(pos);
                 int steps = 0;
@@ -183,6 +188,12 @@ public final class GridWorldLabActivity extends Activity {
                     List<Integer> nextHistory = appendHistory(history, tr.next);
                     double reward = tr.reward;
                     if (!tr.done && history.contains(tr.next)) reward -= 0.08;
+                    // Dense feedback uses the actual shortest path through walls, not Manhattan distance.
+                    int oldDistance = mapDistances[pos];
+                    int nextDistance = mapDistances[tr.next];
+                    if (oldDistance >= 0 && nextDistance >= 0) {
+                        reward += DISTANCE_REWARD_PER_STEP * (oldDistance - nextDistance);
+                    }
                     double[] next = observe(tr.next, map.goal, map.walls, nextHistory);
                     double target = tr.done ? reward : reward + 0.92 * max(net.forward(next).q);
                     net.update(s, action, target);
@@ -228,12 +239,14 @@ public final class GridWorldLabActivity extends Activity {
                 status.setText(cancelTraining ? "训练已手动停止并保存。"
                         : stoppedByMastery ? "提前停止：已连续 " + FAST_STREAK_REQUIRED + " 局快速通关。"
                         : "本次训练局数上限已达到。");
+                int[] finalGoalProbe = evaluateGoalAdjacent(100);
                 log.setText(String.format(Locale.US,
-                        "本次训练局数：%d\n连续快速通关：%d/%d\n上一局步数：%s\n快速通关判定：成功且步数≤最短路×%.1f+%d\n独立随机地图测试：%d/100（%.1f%%）",
+                        "本次训练局数：%d\n连续快速通关：%d/%d\n上一局步数：%s\n快速通关判定：成功且步数≤最短路×%.1f+%d\n独立随机地图测试：%d/100（%.1f%%）\n终点相邻贪心决策：%d/%d（%.1f%%）",
                         lastCompletedEpisode, fastWinStreak, FAST_STREAK_REQUIRED,
                         lastEpisodeSteps < 0 ? "未成功" : Integer.toString(lastEpisodeSteps),
                         FAST_STEP_FACTOR, FAST_STEP_ALLOWANCE, evalSuccesses,
-                        100.0 * evalSuccesses / Math.max(1, evalEpisodes)));
+                        100.0 * evalSuccesses / Math.max(1, evalEpisodes), finalGoalProbe[0],
+                        finalGoalProbe[1], 100.0 * finalGoalProbe[0] / Math.max(1, finalGoalProbe[1])));
                 refreshReadout();
             });
         });
@@ -406,6 +419,48 @@ public final class GridWorldLabActivity extends Activity {
         return MAX_STEPS;
     }
 
+    private int[] distanceMap(MapData map) {
+        int[] distance = new int[CELLS];
+        java.util.Arrays.fill(distance, -1);
+        ArrayDeque<Integer> queue = new ArrayDeque<>();
+        queue.add(map.goal);
+        distance[map.goal] = 0;
+        while (!queue.isEmpty()) {
+            int p = queue.removeFirst();
+            for (int a = 0; a < 4; a++) {
+                int x = p % SIZE + DX[a], y = p / SIZE + DY[a];
+                if (x < 0 || x >= SIZE || y < 0 || y >= SIZE) continue;
+                int n = y * SIZE + x;
+                if (!map.walls.contains(n) && distance[n] < 0) {
+                    distance[n] = distance[p] + 1;
+                    queue.addLast(n);
+                }
+            }
+        }
+        return distance;
+    }
+
+    private int[] evaluateGoalAdjacent(int mapCount) {
+        int correct = 0, total = 0;
+        Random probeRng = new Random(0x51A7E5L);
+        for (int m = 0; m < mapCount; m++) {
+            MapData map = generateMap(probeRng);
+            for (int a = 0; a < 4; a++) {
+                int x = map.goal % SIZE - DX[a];
+                int y = map.goal / SIZE - DY[a];
+                if (x < 0 || x >= SIZE || y < 0 || y >= SIZE) continue;
+                int pos = y * SIZE + x;
+                if (map.walls.contains(pos)) continue;
+                List<Integer> history = new ArrayList<>();
+                history.add(pos);
+                int selected = argmax(net.forward(observe(pos, map.goal, map.walls, history)).q);
+                total++;
+                if (selected == a) correct++;
+            }
+        }
+        return new int[]{correct, total};
+    }
+
     private boolean reachable(MapData map) {
         boolean[] seen = new boolean[CELLS];
         ArrayDeque<Integer> queue = new ArrayDeque<>();
@@ -490,10 +545,12 @@ public final class GridWorldLabActivity extends Activity {
             if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("无法创建实验目录");
             JSONObject checkpoint = net.toJson();
             checkpoint.put("episodesTrained", episodesDone);
+            checkpoint.put("rewardVersion", REWARD_VERSION);
+            checkpoint.put("rewardShaping", "BFS shortest-distance delta: +0.10 closer, -0.10 farther; base rewards retained");
             checkpoint.put("savedAt", System.currentTimeMillis());
             write(new File(dir, "q_network.json"), checkpoint.toString(2));
             JSONObject report = new JSONObject();
-            report.put("format", "aimeng-android-random-gridworld-report/v2");
+            report.put("format", "aimeng-android-random-gridworld-report/v3");
             report.put("mapSize", SIZE);
             report.put("inputSize", INPUT_SIZE);
             report.put("inputFeatures", "8 local features + 144 wall-map cells + last 8 positions (x,y)");
@@ -505,6 +562,12 @@ public final class GridWorldLabActivity extends Activity {
             for (int i = Math.max(0, path.size() - HISTORY_LENGTH); i < path.size(); i++) recentPath.put(path.get(i));
             report.put("recentPathCellIds", recentPath);
             report.put("hiddenSize", net.hiddenSize);
+            report.put("rewardVersion", REWARD_VERSION);
+            report.put("rewardShaping", "BFS shortest-distance delta; base rewards retained; repeated-visit penalty remains -0.08");
+            int[] goalProbe = evaluateGoalAdjacent(100);
+            report.put("goalAdjacentGreedyCorrect", goalProbe[0]);
+            report.put("goalAdjacentGreedyTests", goalProbe[1]);
+            report.put("goalAdjacentGreedyAccuracy", goalProbe[0] / (double)Math.max(1, goalProbe[1]));
             report.put("episodesTrained", episodesDone);
             report.put("evaluationType", "fresh_random_maps");
             report.put("evaluationEpisodes", evalEpisodes);
@@ -551,8 +614,16 @@ public final class GridWorldLabActivity extends Activity {
                     JSONObject saved = new JSONObject(new String(bytes, 0, n, StandardCharsets.UTF_8));
                     int savedHidden = saved.optInt("hiddenSize", DEFAULT_HIDDEN);
                     int oldInputSize = saved.optInt("inputSize", -1);
-                    episodesDone = Math.max(0L, saved.optLong("episodesTrained", 0L));
-                    if ((oldInputSize == 8 || oldInputSize == INPUT_SIZE) && savedHidden >= MIN_HIDDEN && savedHidden <= MAX_HIDDEN) {
+                    int savedRewardVersion = saved.optInt("rewardVersion", 1);
+                    if (savedHidden < MIN_HIDDEN || savedHidden > MAX_HIDDEN) savedHidden = DEFAULT_HIDDEN;
+                    if (savedRewardVersion != REWARD_VERSION) {
+                        File backup = new File(f.getParentFile(), "q_network_reward_v" + savedRewardVersion + "_backup_" + System.currentTimeMillis() + ".json");
+                        if (!f.renameTo(backup)) return; // Never overwrite weights if backup failed.
+                        net = new QNet(System.nanoTime(), savedHidden);
+                        lastHidden = new double[savedHidden];
+                        episodesDone = 0L;
+                    } else if (oldInputSize == 8 || oldInputSize == INPUT_SIZE) {
+                        episodesDone = Math.max(0L, saved.optLong("episodesTrained", 0L));
                         net = new QNet(20261009L, savedHidden);
                         lastHidden = new double[savedHidden];
                         net.load(saved);
