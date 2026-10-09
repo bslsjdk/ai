@@ -148,7 +148,7 @@ public final class CommandTerminalActivity extends Activity {
         boolean truncated = false;
         int exitCode = -1;
         try {
-            String script = "cd /sdcard 2>/dev/null || cd /; eval \"$1\"";
+            String script = "cd /sdcard 2>/dev/null || cd /; eval \"$1\" 2>&1";
             if (ShizukuHelper.granted()) {
                 process = Shizuku.newProcess(new String[]{"/system/bin/sh", "-c", script, "aimeng", command}, null, "/sdcard");
             } else {
@@ -225,7 +225,9 @@ public final class CommandTerminalActivity extends Activity {
     }
 
     private void publishOutput(String text) {
-        runOnUiThread(() -> output.setText(text));
+        final String prefix;
+        synchronized (transcript) { prefix = transcript.toString(); }
+        runOnUiThread(() -> output.setText(prefix + text));
     }
 
     private void append(String text) {
