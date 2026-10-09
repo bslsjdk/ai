@@ -216,6 +216,8 @@ public final class NeuronWorkspace {
     public double learningRate = 0.01;
     public int preferredEpochs = 120;
     public String taskName = "示例回归任务";
+    public String[] inputConcepts;
+    public String[] outputConcepts;
     public long totalTrainingRuns;
     public String lastReport = "尚未训练。先运行内置示例，或导入自己的 CSV/JSON 数据。";
     public double lastValidationMse = Double.NaN;
@@ -233,6 +235,8 @@ public final class NeuronWorkspace {
         inputCount = inputs;
         outputCount = outputs;
         outputBias = new double[outputs];
+        inputConcepts = defaultConcepts("输入", inputs);
+        outputConcepts = defaultConcepts("输出", outputs);
         initializeNeurons(hidden);
         createDemoSamples(48);
     }
@@ -240,6 +244,54 @@ public final class NeuronWorkspace {
     public static NeuronWorkspace createDefault() {
         return new NeuronWorkspace(1, 8, 1);
     }
+
+    private static String[] defaultConcepts(String prefix, int count) {
+        String[] names = new String[count];
+        for (int i = 0; i < count; i++) names[i] = prefix + "_" + i;
+        return names;
+    }
+
+    private static JSONArray toJsonStrings(String[] values) {
+        JSONArray out = new JSONArray();
+        if (values != null) for (String value : values) out.put(value == null ? "" : value);
+        return out;
+    }
+
+    private static String[] readConcepts(JSONArray values, int count, String prefix) {
+        String[] out = defaultConcepts(prefix, count);
+        if (values == null) return out;
+        if (values.length() != count) throw new IllegalArgumentException(prefix + "概念名称数量与网络维度不匹配");
+        for (int i = 0; i < count; i++) {
+            String value = values.optString(i, "").trim();
+            if (!value.isEmpty()) out[i] = value;
+        }
+        return out;
+    }
+
+    public synchronized void setConceptNames(String inputNames, String outputNames) {
+        String[] in = parseConceptNames(inputNames, inputCount, "输入");
+        String[] out = parseConceptNames(outputNames, outputCount, "输出");
+        inputConcepts = in;
+        outputConcepts = out;
+        recordEvent("concept_names_updated", safeObject("inputs", in.length, "outputs", out.length));
+    }
+
+    private static String[] parseConceptNames(String text, int count, String prefix) {
+        if (text == null || text.trim().isEmpty()) return defaultConcepts(prefix, count);
+        String[] parts = text.split("[,，]");
+        if (parts.length != count)
+            throw new IllegalArgumentException(prefix + "概念名称需要 " + count + " 个，使用逗号分隔");
+        String[] out = new String[count];
+        for (int i = 0; i < count; i++) {
+            out[i] = parts[i].trim();
+            if (out[i].isEmpty()) throw new IllegalArgumentException(prefix + "概念名称不能留空");
+            if (out[i].length() > 48) throw new IllegalArgumentException(prefix + "概念名称不能超过 48 个字符");
+        }
+        return out;
+    }
+
+    public synchronized String[] inputConceptNames() { return inputConcepts.clone(); }
+    public synchronized String[] outputConceptNames() { return outputConcepts.clone(); }
 
     public synchronized int hiddenCount() { return neurons.size(); }
     public synchronized int sampleCount() { return samples.size(); }
@@ -914,6 +966,8 @@ public final class NeuronWorkspace {
         root.put("createdAt", System.currentTimeMillis());
         root.put("inputs", inputCount);
         root.put("outputs", outputCount);
+        root.put("inputConcepts", toJsonStrings(inputConcepts));
+        root.put("outputConcepts", toJsonStrings(outputConcepts));
         root.put("learningRate", learningRate);
         root.put("preferredEpochs", preferredEpochs);
         root.put("taskName", taskName);
@@ -989,6 +1043,8 @@ public final class NeuronWorkspace {
             for (int i = Math.max(0, events.length() - MAX_EVENTS); i < events.length(); i++)
                 w.recentEvents.add(new JSONObject(events.getJSONObject(i).toString()));
         }
+        w.inputConcepts = readConcepts(root.optJSONArray("inputConcepts"), inputs, "输入");
+        w.outputConcepts = readConcepts(root.optJSONArray("outputConcepts"), outputs, "输出");
         w.learningRate = clamp(root.optDouble("learningRate", 0.01), 0.00001, 0.1);
         w.preferredEpochs = Math.max(1, Math.min(MAX_EPOCHS, root.optInt("preferredEpochs", 120)));
         w.taskName = root.optString("taskName", "导入的训练任务");
@@ -1008,6 +1064,8 @@ public final class NeuronWorkspace {
         root.put("format", DATA_FORMAT);
         root.put("inputs", inputCount);
         root.put("outputs", outputCount);
+        root.put("inputConcepts", toJsonStrings(inputConcepts));
+        root.put("outputConcepts", toJsonStrings(outputConcepts));
         JSONArray data = new JSONArray();
         for (Sample s : samples) data.put(s.toJson());
         root.put("samples", data);
