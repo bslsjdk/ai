@@ -1,7 +1,7 @@
 plugins { id "com.android.application" }
 
 android {
-    buildFeatures { buildConfig true }
+    buildFeatures { buildConfig true; aidl true }
     namespace "bslsjdk.ornithnpu"
     compileSdk 35
     ndkVersion "27.0.12077973"
