@@ -53,6 +53,7 @@ public final class GridWorldLabActivity extends Activity {
     // Each decision performs two shared-weight thought cycles. Cycle 2 receives
     // cycle 1 activations through a trainable hidden-to-hidden communication matrix.
     private static final int THOUGHT_CYCLES = 2;
+    private static final int MAX_RECURRENT_FAN_IN = 32;
     private static final int DEFAULT_HIDDEN = 64;
     private static final int MIN_HIDDEN = 8;
     private static final int MAX_HIDDEN = 256;
@@ -63,7 +64,7 @@ public final class GridWorldLabActivity extends Activity {
     // Bounded episodic replay: ~5.5 MiB of state vectors at capacity 2048.
     private static final int REPLAY_CAPACITY = 2048;
     private static final int REPLAY_WARMUP = 64;
-    private static final int REPLAY_UPDATE_INTERVAL = 4;
+    private static final int REPLAY_UPDATE_INTERVAL = 8;
     private static final int FAST_STREAK_REQUIRED = 5;
     private static final int MASTERY_CHECK_INTERVAL = 100;
     private static final int MASTERY_EVAL_EPISODES = 20;
@@ -207,7 +208,8 @@ public final class GridWorldLabActivity extends Activity {
                 for (; steps < MAX_STEPS && !cancelTraining; steps++) {
                     observeInto(stateBuffer, pos, map.goal, map.walls, history, wallFeatures);
                     double[] s = stateBuffer;
-                    double epsilon = Math.max(0.05, 1.0 - 0.95 * (ep / (double) Math.min(count, 10000)));
+                    double trainingEpisode = Math.max(0L, episodesDone) + ep;
+                    double epsilon = Math.max(0.08, 1.0 - 0.92 * Math.min(1.0, trainingEpisode / 3000.0));
                     // Avoid duplicate forwards: only compute Q values when greedy action selection needs them.
                     Forward currentForward = null;
                     int action;
@@ -389,8 +391,8 @@ public final class GridWorldLabActivity extends Activity {
     private void stepGame() {
         if (training || player == goal || moves >= MAX_STEPS) return;
         Forward f = net.forward(observe(player, goal, walls, path));
-        lastHidden = f.h;
-        lastQ = f.q;
+        lastHidden = f.h.clone();
+        lastQ = f.q.clone();
         int action = argmax(f.q);
         Transition tr = transition(player, action, new MapData(start, goal, walls, null));
         player = tr.next;
@@ -421,8 +423,8 @@ public final class GridWorldLabActivity extends Activity {
         path.clear();
         path.add(player);
         Forward f = net.forward(observe(player, goal, walls, path));
-        lastHidden = f.h;
-        lastQ = f.q;
+        lastHidden = f.h.clone();
+        lastQ = f.q.clone();
         if (board != null) board.invalidate();
         refreshReadout();
     }
@@ -651,8 +653,11 @@ public final class GridWorldLabActivity extends Activity {
             report.put("recentPathCellIds", recentPath);
             report.put("hiddenSize", net.hiddenSize);
             report.put("thoughtCycles", THOUGHT_CYCLES);
-            report.put("neuronCommunication", "dense recurrent hidden-to-hidden messages");
-            report.put("experienceReplay", "bounded random replay buffer; sampled one transition per four environment steps after warmup");
+            report.put("neuronCommunication", net.recurrentFanIn == net.hiddenSize
+                    ? "dense recurrent hidden-to-hidden messages"
+                    : "sparse trainable recurrent messages; fixed fan-in per hidden unit");
+            report.put("recurrentFanIn", net.recurrentFanIn);
+            report.put("experienceReplay", "bounded random replay buffer; sampled one transition per eight environment steps after warmup");
             report.put("experienceReplayCapacity", REPLAY_CAPACITY);
             report.put("experienceReplayWarmup", REPLAY_WARMUP);
             report.put("experienceReplayUpdates", lastReplayUpdates);
@@ -931,17 +936,28 @@ public final class GridWorldLabActivity extends Activity {
         final int hiddenSize;
         final int inputSize = INPUT_SIZE;
         final double[][] w1, w2, recurrent;
+        final int recurrentFanIn;
+        final int[][] recurrentSources;
         final double[] b1, b2;
+        private final double[][] thoughtHCache, thoughtPreCache;
+        private final double[] qCache, deltaLastScratch, deltaFirstScratch;
         // Reused scratch for allocation-free TD-target inference on the training worker.
         private final double[] maxQProjection, maxQFirst, maxQLast;
 
         QNet(long seed, int hiddenSize) {
             this.hiddenSize = hiddenSize;
+            recurrentFanIn = hiddenSize <= 64 ? hiddenSize : Math.min(MAX_RECURRENT_FAN_IN, hiddenSize);
             w1 = new double[hiddenSize][INPUT_SIZE];
             w2 = new double[4][hiddenSize];
             recurrent = new double[hiddenSize][hiddenSize];
+            recurrentSources = new int[hiddenSize][recurrentFanIn];
             b1 = new double[hiddenSize];
             b2 = new double[4];
+            thoughtHCache = new double[THOUGHT_CYCLES][hiddenSize];
+            thoughtPreCache = new double[THOUGHT_CYCLES][hiddenSize];
+            qCache = new double[4];
+            deltaLastScratch = new double[hiddenSize];
+            deltaFirstScratch = new double[hiddenSize];
             maxQProjection = new double[hiddenSize];
             maxQFirst = new double[hiddenSize];
             maxQLast = new double[hiddenSize];
@@ -950,7 +966,11 @@ public final class GridWorldLabActivity extends Activity {
             double recurrentScale = 0.10 / Math.sqrt(Math.max(1, hiddenSize));
             for (int j = 0; j < hiddenSize; j++) {
                 for (int i = 0; i < INPUT_SIZE; i++) w1[j][i] = (r.nextDouble() * 2.0 - 1.0) * inputScale;
-                for (int k = 0; k < hiddenSize; k++) recurrent[j][k] = (r.nextDouble() * 2.0 - 1.0) * recurrentScale;
+                for (int e = 0; e < recurrentFanIn; e++) {
+                    int k = (j + e) % hiddenSize;
+                    recurrentSources[j][e] = k;
+                    recurrent[j][k] = (r.nextDouble() * 2.0 - 1.0) * recurrentScale;
+                }
             }
             for (int a = 0; a < 4; a++) {
                 for (int j = 0; j < hiddenSize; j++) w2[a][j] = (r.nextDouble() * 2.0 - 1.0) * 0.1;
@@ -958,9 +978,9 @@ public final class GridWorldLabActivity extends Activity {
         }
 
         Forward forward(double[] x) {
-            double[][] h = new double[THOUGHT_CYCLES][hiddenSize];
-            double[][] pre = new double[THOUGHT_CYCLES][hiddenSize];
-            double[] q = new double[4];
+            double[][] h = thoughtHCache;
+            double[][] pre = thoughtPreCache;
+            double[] q = qCache;
             // Store the shared input projection in pre[0], avoiding another vector allocation.
             for (int j = 0; j < hiddenSize; j++) {
                 double v = b1[j];
@@ -971,7 +991,11 @@ public final class GridWorldLabActivity extends Activity {
             for (int t = 1; t < THOUGHT_CYCLES; t++) {
                 for (int j = 0; j < hiddenSize; j++) {
                     double v = pre[0][j];
-                    for (int k = 0; k < hiddenSize; k++) v += recurrent[j][k] * h[t - 1][k];
+                    int[] sources = recurrentSources[j];
+                    for (int e = 0; e < recurrentFanIn; e++) {
+                        int k = sources[e];
+                        v += recurrent[j][k] * h[t - 1][k];
+                    }
                     pre[t][j] = v;
                     h[t][j] = Math.max(0.0, v);
                 }
@@ -995,7 +1019,11 @@ public final class GridWorldLabActivity extends Activity {
             }
             for (int j = 0; j < hiddenSize; j++) {
                 double v = maxQProjection[j];
-                for (int k = 0; k < hiddenSize; k++) v += recurrent[j][k] * maxQFirst[k];
+                int[] sources = recurrentSources[j];
+                for (int e = 0; e < recurrentFanIn; e++) {
+                    int k = sources[e];
+                    v += recurrent[j][k] * maxQFirst[k];
+                }
                 maxQLast[j] = Math.max(0.0, v);
             }
             double best = Double.NEGATIVE_INFINITY;
@@ -1020,18 +1048,22 @@ public final class GridWorldLabActivity extends Activity {
             // Only two thought cycles are currently configured. Keep backprop scratch
             // one-dimensional: allocating [hidden][input] gradient matrices per step
             // caused avoidable GC pressure on Android.
-            double[] deltaLast = new double[hiddenSize];
-            double[] deltaFirst = new double[hiddenSize];
+            double[] deltaLast = deltaLastScratch;
+            double[] deltaFirst = deltaFirstScratch;
+            java.util.Arrays.fill(deltaFirst, 0.0);
             for (int j = 0; j < hiddenSize; j++) {
                 double d = grad * w2[action][j];
                 deltaLast[j] = pre[THOUGHT_CYCLES - 1][j] > 0.0 ? d : 0.0;
             }
             if (THOUGHT_CYCLES > 1) {
-                for (int k = 0; k < hiddenSize; k++) {
-                    double d = 0.0;
-                    for (int j = 0; j < hiddenSize; j++) d += deltaLast[j] * recurrent[j][k];
-                    deltaFirst[k] = pre[0][k] > 0.0 ? d : 0.0;
+                for (int j = 0; j < hiddenSize; j++) {
+                    int[] sources = recurrentSources[j];
+                    for (int e = 0; e < recurrentFanIn; e++) {
+                        int k = sources[e];
+                        deltaFirst[k] += deltaLast[j] * recurrent[j][k];
+                    }
                 }
+                for (int k = 0; k < hiddenSize; k++) if (pre[0][k] <= 0.0) deltaFirst[k] = 0.0;
             }
 
             final double lr = 0.0015;
@@ -1044,7 +1076,11 @@ public final class GridWorldLabActivity extends Activity {
                     for (int i = 0; i < inputSize; i++) if (x[i] != 0.0) w1[j][i] -= lr * combined * x[i];
                 }
                 if (THOUGHT_CYCLES > 1 && last != 0.0) {
-                    for (int k = 0; k < hiddenSize; k++) recurrent[j][k] -= lr * last * h[0][k];
+                    int[] sources = recurrentSources[j];
+                    for (int e = 0; e < recurrentFanIn; e++) {
+                        int k = sources[e];
+                        recurrent[j][k] -= lr * last * h[0][k];
+                    }
                 }
             }
             for (int j = 0; j < hiddenSize; j++) w2[action][j] -= lr * grad * h[THOUGHT_CYCLES - 1][j];
@@ -1053,7 +1089,9 @@ public final class GridWorldLabActivity extends Activity {
 
         JSONObject toJson() throws Exception {
             JSONObject o = new JSONObject();
-            o.put("format", "aimeng-android-random-gridworld-qnet/v5-recurrent");
+            o.put("format", "aimeng-android-random-gridworld-qnet/v6-sparse-recurrent");
+            o.put("recurrentFanIn", recurrentFanIn);
+            o.put("recurrentSources", intMatrix(recurrentSources));
             o.put("inputSize", inputSize);
             o.put("hiddenSize", hiddenSize);
             o.put("outputSize", 4);
@@ -1085,11 +1123,60 @@ public final class GridWorldLabActivity extends Activity {
             JSONArray savedRecurrent = o.optJSONArray("recurrent");
             if (savedRecurrent != null) {
                 readMatrix(savedRecurrent, recurrent);
+                if (!loadSavedSources(o.optJSONArray("recurrentSources"))) pruneToStrongestSources();
             } else {
                 // Legacy checkpoints keep their old feed-forward policy until recurrent
                 // weights are learned during fine-tuning.
                 for (double[] row : recurrent) java.util.Arrays.fill(row, 0.0);
             }
+        }
+
+        private boolean loadSavedSources(JSONArray saved) {
+            if (saved == null || saved.length() != hiddenSize) return false;
+            for (int j = 0; j < hiddenSize; j++) {
+                JSONArray row = saved.optJSONArray(j);
+                if (row == null || row.length() != recurrentFanIn) return false;
+                boolean[] used = new boolean[hiddenSize];
+                for (int e = 0; e < recurrentFanIn; e++) {
+                    int k = row.optInt(e, -1);
+                    if (k < 0 || k >= hiddenSize || used[k]) return false;
+                    used[k] = true;
+                    recurrentSources[j][e] = k;
+                }
+            }
+            zeroInactiveEdges();
+            return true;
+        }
+
+        private void pruneToStrongestSources() {
+            for (int j = 0; j < hiddenSize; j++) {
+                boolean[] used = new boolean[hiddenSize];
+                for (int e = 0; e < recurrentFanIn; e++) {
+                    int best = -1;
+                    double bestAbs = -1.0;
+                    for (int k = 0; k < hiddenSize; k++) {
+                        double v = Math.abs(recurrent[j][k]);
+                        if (!used[k] && v > bestAbs) { bestAbs = v; best = k; }
+                    }
+                    recurrentSources[j][e] = best;
+                    used[best] = true;
+                }
+            }
+            zeroInactiveEdges();
+        }
+
+        private void zeroInactiveEdges() {
+            for (int j = 0; j < hiddenSize; j++) {
+                boolean[] active = new boolean[hiddenSize];
+                for (int e = 0; e < recurrentFanIn; e++) active[recurrentSources[j][e]] = true;
+                for (int k = 0; k < hiddenSize; k++) if (!active[k]) recurrent[j][k] = 0.0;
+            }
+        }
+
+        static JSONArray intMatrix(int[][] a) throws Exception {
+            JSONArray out = new JSONArray();
+            for (int[] row : a) { JSONArray r = new JSONArray(); for (int v : row) r.put(v); out.put(r); }
+            return out;
         }
 
         static JSONArray array(double[] a) throws Exception {
