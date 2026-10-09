@@ -128,6 +128,7 @@ public final class GridWorldLabActivity extends Activity {
         if (training) { toast("训练已经在运行。"); return; }
         watching = false;
         cancelTraining = false;
+        lastCompletedEpisode = 0;
         training = true;
         status.setText("开始随机地图训练：" + count + " 局。可以用“停止训练”安全终止。");
         log.setText("每局更换起点、终点和障碍；地图保证有解。正在后台训练。");
@@ -151,6 +152,7 @@ public final class GridWorldLabActivity extends Activity {
                     if (tr.done) { wins++; break; }
                 }
                 totalSteps += Math.min(steps + 1, MAX_STEPS);
+                lastCompletedEpisode = ep;
                 if (ep % reportEvery == 0 || ep == count) {
                     final int finished = ep;
                     final long winCount = wins;
@@ -166,10 +168,8 @@ public final class GridWorldLabActivity extends Activity {
                 }
             }
             training = false;
-            long finalEpisodes = episodesDone + countCompleted(count, reportEvery, cancelTraining);
-            // Count actual completed training episodes, including a partial run stopped by the user.
-            finalEpisodes = episodesDone + lastCompletedEpisode;
-            episodesDone = finalEpisodes;
+            // Count completed episodes, including a partial run stopped by the user.
+            episodesDone += lastCompletedEpisode;
             main.post(() -> {
                 evaluatePolicy(100);
                 saveCheckpoint();
@@ -184,9 +184,6 @@ public final class GridWorldLabActivity extends Activity {
 
     private volatile int lastCompletedEpisode;
 
-    private int countCompleted(int count, int interval, boolean stopped) {
-        return stopped ? lastCompletedEpisode : count;
-    }
 
     private void stopTraining() {
         if (!training) { toast("当前没有正在运行的训练。"); return; }
