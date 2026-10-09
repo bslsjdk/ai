@@ -172,8 +172,8 @@ public final class GridWorldLabActivity extends Activity {
         lastEpisodeSteps = -1;
         stoppedByMastery = false;
         training = true;
-        status.setText("开始随机地图训练：最多 " + count + " 局；每 " + MASTERY_CHECK_INTERVAL + " 局评估 " + MASTERY_EVAL_EPISODES + " 张独立地图，连续 " + FAST_STREAK_REQUIRED + " 次达标才提前停止。");
-        log.setText("性能优化：不再每局额外跑一张完整策略测试地图；每 " + MASTERY_CHECK_INTERVAL + " 局批量评估 " + MASTERY_EVAL_EPISODES + " 张独立地图。训练和评估地图分开。");
+        status.setText("开始循环思考训练：每次决策进行 " + THOUGHT_CYCLES + " 轮神经元信息传递；最多 " + count + " 局。");
+        log.setText("隐藏神经元通过可训练的循环连接互相传递激活，并用 BPTT 学习连接权重。每 " + MASTERY_CHECK_INTERVAL + " 局评估 " + MASTERY_EVAL_EPISODES + " 张独立地图；连续 " + FAST_STREAK_REQUIRED + " 批达标才提前停止。");
         worker.execute(() -> {
             long wins = 0, totalSteps = 0;
             int reportEvery = count >= 100000 ? 5000 : 500;
@@ -557,8 +557,8 @@ public final class GridWorldLabActivity extends Activity {
     private void refreshReadout() {
         if (board != null) board.invalidate();
         if (metrics != null) metrics.setText(String.format(Locale.US,
-                "训练局数：%d\n地图：%d×%d · 隐藏层：%d · 当前步数：%d/%d\n连续快速通关：%d/%d\n独立随机地图测试：%d/%d（%.1f%%）\n本局奖励：%.3f",
-                episodesDone, SIZE, SIZE, net.hiddenSize, moves, MAX_STEPS, fastWinStreak, FAST_STREAK_REQUIRED,
+                "训练局数：%d\n地图：%d×%d · 隐藏层：%d · 内部思考：%d 轮\n当前步数：%d/%d\n连续达标评估：%d/%d\n独立随机地图测试：%d/%d（%.1f%%）\n本局奖励：%.3f",
+                episodesDone, SIZE, SIZE, net.hiddenSize, THOUGHT_CYCLES, moves, MAX_STEPS, fastWinStreak, FAST_STREAK_REQUIRED,
                 evalSuccesses, evalEpisodes, 100.0 * evalSuccesses / Math.max(1, evalEpisodes), episodeReward));
         if (activationText != null) {
             StringBuilder b = new StringBuilder();
