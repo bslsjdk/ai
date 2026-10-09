@@ -20,7 +20,7 @@ public final class TerminalShellUserService extends ITerminalShellService.Stub {
         try {
             File dir = new File(workingDirectory == null ? "/sdcard" : workingDirectory);
             if (!dir.isDirectory()) dir = new File("/");
-            String script = "cd /sdcard 2>/dev/null || cd /; eval \"$1\" 2>&1";
+            String script = "ulimit -v 3145728 || { echo MEMORY_LIMIT_UNAVAILABLE; exit 125; }; cd /sdcard 2>/dev/null || cd /; eval \"$1\" 2>&1";
             p = new ProcessBuilder("/system/bin/sh", "-c", script, "aimeng", command)
                     .directory(dir).redirectErrorStream(true).start();
             current = p;
