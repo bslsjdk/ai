@@ -7,6 +7,10 @@ package bslsjdk.ornithnpu;
  */
 public final class GpuComputeRuntime {
     private static volatile String lastError = "not initialized";
+    static {
+        try { System.loadLibrary("ornithnpu"); }
+        catch (Throwable t) { lastError = "ERR_LOAD_LIBRARY " + t.getClass().getSimpleName() + ": " + t.getMessage(); }
+    }
     private GpuComputeRuntime() {}
 
     public static String getLastError() { return lastError; }
