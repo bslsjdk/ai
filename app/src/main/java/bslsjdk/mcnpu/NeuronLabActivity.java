@@ -336,22 +336,26 @@ public final class NeuronLabActivity extends Activity {
             }
             log.append("\n[3] QNN / HTP INDEPENDENT MATMUL PROBE\n");
             try {
-                if (!NpuRuntime.isReady() && !NpuRuntime.init(getApplicationContext()))
-                    throw new IllegalStateException("NPU init failed: " + NpuRuntime.getLastError());
-                int m = 32, k = 32, n = 32;
-                byte[] a = new byte[m * k], b = new byte[k * n];
-                for (int i = 0; i < 8; i++) { a[i * k] = 10; b[i] = 10; b[n + i] = 10; }
-                long t0 = System.nanoTime();
-                byte[] out = NpuRuntime.matMulInt8Buf(a, b, m, k, n);
-                double ms = (System.nanoTime() - t0) / 1_000_000.0;
-                if (out == null || out.length < 4 + m * n)
-                    throw new IllegalStateException("invalid output length; native=" + NpuRuntime.getLastNativeError());
-                log.append("npu_probe=PASS\nbackend=").append(NpuRuntime.status())
-                        .append("\nshape=32x32x32\nmatmul_ms=").append(String.format(Locale.US, "%.3f", ms))
-                        .append("\nmeaning=standalone NPU operator only; not neural-training acceleration evidence\n");
+                Future<String> npuProbe = computeScheduler.submit("npu-matmul-probe", 8L * 1024L * 1024L, () -> {
+                    if (!NpuRuntime.isReady() && !NpuRuntime.init(getApplicationContext()))
+                        throw new IllegalStateException("NPU init failed: " + NpuRuntime.getLastError());
+                    int m = 32, k = 32, n = 32;
+                    byte[] a = new byte[m * k], b = new byte[k * n];
+                    for (int i = 0; i < 8; i++) { a[i * k] = 10; b[i] = 10; b[n + i] = 10; }
+                    long t0 = System.nanoTime();
+                    byte[] out = NpuRuntime.matMulInt8Buf(a, b, m, k, n);
+                    double ms = (System.nanoTime() - t0) / 1_000_000.0;
+                    if (out == null || out.length < 4 + m * n)
+                        throw new IllegalStateException("invalid output length; native=" + NpuRuntime.getLastNativeError());
+                    return "npu_probe=PASS\nbackend=" + NpuRuntime.status()
+                            + "\nshape=32x32x32\nmatmul_ms=" + String.format(Locale.US, "%.3f", ms)
+                            + "\nmeaning=standalone NPU operator only; not neural-training acceleration evidence\n";
+                });
+                log.append(npuProbe.get());
             } catch (Throwable error) {
-                log.append("npu_probe=FAIL_OR_UNAVAILABLE\nreason=").append(shortError(error)).append('\n')
-                        .append("fallback=CPU_REFERENCE\n");
+                log.append("npu_probe=FAIL_OR_DEFERRED\nreason=").append(shortError(error)).append('\n')
+                        .append("scheduler_state=\n").append(computeScheduler.snapshot().toReport()).append('\n')
+                        .append("note=high memory pressure keeps this job queued instead of launching it\n");
             }
             double finalRss = currentRssMiB();
             log.append("\n[4] MEMORY / SAFETY\n")
