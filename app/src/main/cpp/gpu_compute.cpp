@@ -118,7 +118,7 @@ Java_bslsjdk_ornithnpu_GpuComputeRuntime_nativeStatus(JNIEnv* env,jclass){
     const char* renderer=reinterpret_cast<const char*>(glGetString(GL_RENDERER));
     const char* vendor=reinterpret_cast<const char*>(glGetString(GL_VENDOR));
     GLint major=0,minor=0;glGetIntegerv(GL_MAJOR_VERSION,&major);glGetIntegerv(GL_MINOR_VERSION,&minor);
-    std::string result="GPU_GLES_COMPUTE_READY version="+std::to_string(major)+"."+std::to_string(minor)
+    std::string result="GPU_GLES_CONTEXT_READY version="+std::to_string(major)+"."+std::to_string(minor)
       +" vendor="+(vendor?vendor:"unknown")+" renderer="+(renderer?renderer:"unknown")
       +" gl_version="+(version?version:"unknown");
     return env->NewStringUTF(result.c_str());
