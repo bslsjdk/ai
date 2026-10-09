@@ -332,6 +332,7 @@ public final class HeterogeneousNeuronRuntime {
     private volatile double lastHybridCpuMs, lastHybridGpuMs, lastHybridGpuComputeMs,
             lastHybridCpuOnlyMs, lastHybridTotalMs, lastHybridMaxDiff = Double.NaN;
     private boolean hybridValidated;
+    private boolean hybridGpuWarmed;
 
     private float[] cpuGpuHybridBatch(float[][] inputs, int dims) {
         final int batch = inputs.length;
@@ -341,9 +342,12 @@ public final class HeterogeneousNeuronRuntime {
         for (int r=0;r<batch;r++) System.arraycopy(inputs[r], 0, flat, r*dims, dims);
         final float[] gpuWeights = transposeRange(dims, cpuEnd, poolSize);
 
-        // Warm up shader compilation outside the measured concurrent run.
-        float[] warm = GpuComputeRuntime.matMul(flat, gpuWeights, batch, dims, gpuCount);
-        if (warm == null || warm.length != batch * gpuCount) return null;
+        // Shader compilation is a one-time cost, not repeated work on every batch.
+        if (!hybridGpuWarmed) {
+            float[] warm = GpuComputeRuntime.matMul(flat, gpuWeights, batch, dims, gpuCount);
+            if (warm == null || warm.length != batch * gpuCount) return null;
+            hybridGpuWarmed = true;
+        }
 
         // Full CPU reference is a one-time correctness check only. Never repeat it
         // on steady-state calls, otherwise CPU would do extra work instead of less.
