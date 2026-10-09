@@ -1426,6 +1426,11 @@ public final class NeuronLabActivity extends Activity {
         return rss < 0 ? 0 : rss / 1024.0;
     }
 
+    private long currentRssBytes() {
+        long rss = readProcKb("VmRSS:");
+        return rss < 0 ? -1L : rss * 1024L;
+    }
+
     private long readProcKb(String key) {
         try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader("/proc/self/status"))) {
             String line;
@@ -1615,6 +1620,7 @@ public final class NeuronLabActivity extends Activity {
         if (!training) persistWorkspaceNow();
         worker.shutdown();
         npuWorker.shutdown();
+        if (computeScheduler != null) computeScheduler.close();
         super.onDestroy();
     }
 }
