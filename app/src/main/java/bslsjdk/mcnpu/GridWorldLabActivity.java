@@ -893,6 +893,7 @@ public final class GridWorldLabActivity extends Activity {
         void writeTo(DataOutputStream out) throws Exception {
             out.writeInt(0x41494D52); // "AIMR"
             out.writeInt(1);
+            out.writeInt(REWARD_VERSION);
             out.writeInt(size);
             int start = (cursor - size + REPLAY_CAPACITY) % REPLAY_CAPACITY;
             for (int n = 0; n < size; n++) {
@@ -908,6 +909,7 @@ public final class GridWorldLabActivity extends Activity {
         void readFrom(DataInputStream in) throws Exception {
             clear();
             if (in.readInt() != 0x41494D52 || in.readInt() != 1) throw new IllegalStateException("经验记忆文件格式不匹配");
+            if (in.readInt() != REWARD_VERSION) throw new IllegalStateException("奖励版本不匹配，拒绝混合旧经验");
             int count = in.readInt();
             if (count < 0 || count > REPLAY_CAPACITY) throw new IllegalStateException("经验记忆数量越界");
             for (int n = 0; n < count; n++) {
