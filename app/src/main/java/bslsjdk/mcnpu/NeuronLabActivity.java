@@ -383,7 +383,7 @@ public final class NeuronLabActivity extends Activity {
         });
     }
 
-    private String awaitScheduledResult(Future<String> future, String jobName) throws Exception {
+    private <T> T awaitScheduledResult(Future<T> future, String jobName) throws Exception {
         while (!future.isDone()) {
             if (isFinishing() || isDestroyed()) {
                 future.cancel(false);
@@ -858,7 +858,6 @@ public final class NeuronLabActivity extends Activity {
 
     private void startTraining() {
         if (training) { toast("训练已经在运行。"); return; }
-        if (!runtimeMemoryAllowsWork()) return;
         final String taskName = taskNameField == null || taskNameField.getText().toString().trim().isEmpty()
                 ? "数值任务" : taskNameField.getText().toString().trim();
         final int epochs;
@@ -885,7 +884,8 @@ public final class NeuronLabActivity extends Activity {
         showPage("train");
         worker.execute(() -> {
             try {
-                NeuronWorkspace.TrainingResult result = workspace.train(epochs,
+                Future<NeuronWorkspace.TrainingResult> scheduledTraining = computeScheduler.submit(
+                        "train-" + taskName, estimateTrainingWorkingSetBytes(), () -> workspace.train(epochs,
                         (epoch, max, trainMse, validationMse) -> runOnUiThread(() -> {
                             trainingStatus = "训练中 " + epoch + "/" + max
                                     + " · train MSE " + String.format(Locale.US, "%.6f", trainMse)
@@ -893,7 +893,8 @@ public final class NeuronLabActivity extends Activity {
                             if (activeTrainLabel != null) activeTrainLabel.setText(trainingStatus);
                             if (activeTrainProgress != null)
                                 activeTrainProgress.setProgress((int) (1000L * epoch / Math.max(1, max)));
-                        }), () -> cancelTraining);
+                        }), () -> cancelTraining));
+                NeuronWorkspace.TrainingResult result = awaitScheduledResult(scheduledTraining, "train-" + taskName);
                 trainingStatus = result.report;
                 persistWorkspaceNow();
                 runOnUiThread(() -> {
@@ -1446,6 +1447,16 @@ public final class NeuronLabActivity extends Activity {
     private double currentRssMiB() {
         long rss = readProcKb("VmRSS:");
         return rss < 0 ? 0 : rss / 1024.0;
+    }
+
+    private long estimateTrainingWorkingSetBytes() {
+        long parameters = (long) Math.max(1, workspace.hiddenCount())
+                * (Math.max(1, workspace.inputCount) + Math.max(1, workspace.outputCount) + 2L);
+        long dataset = (long) workspace.sampleCount()
+                * (Math.max(1, workspace.inputCount) + Math.max(1, workspace.outputCount)) * 16L;
+        // Adam state, gradients, activations, validation copies and temporary arrays.
+        long estimate = 4L * 1024L * 1024L + parameters * 64L + dataset;
+        return Math.min(64L * 1024L * 1024L, Math.max(4L * 1024L * 1024L, estimate));
     }
 
     private long currentRssBytes() {
