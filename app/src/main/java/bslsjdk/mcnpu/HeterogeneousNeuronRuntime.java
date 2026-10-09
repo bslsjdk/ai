@@ -20,6 +20,7 @@ import java.util.Random;
 public final class HeterogeneousNeuronRuntime {
     public static final int MAX_INPUTS = 16;
     public static final int MAX_POOL_UNITS = 200_000;
+    public static final int MAX_ACTIVE_UNITS = 4096;
     public static final long DEFAULT_POOL_BUDGET_BYTES = 64L * 1024L * 1024L;
     private static final long FIXED_OVERHEAD_BYTES = 4096L;
     private static final long BYTES_PER_UNIT = (long) (MAX_INPUTS + 3) * Float.BYTES;
@@ -116,7 +117,8 @@ public final class HeterogeneousNeuronRuntime {
                             boolean gpuBackendConnected, boolean npuBackendConnected) {
         if (units < 2 || units > MAX_POOL_UNITS) throw new IllegalArgumentException("神经元池数量超出范围");
         if (inputCount < 1 || inputCount > MAX_INPUTS) throw new IllegalArgumentException("输入维度必须是 1..16");
-        if (requestedActive < 1 || requestedActive > units) throw new IllegalArgumentException("激活数量超出池大小");
+        if (requestedActive < 1 || requestedActive > Math.min(MAX_ACTIVE_UNITS, units))
+            throw new IllegalArgumentException("每轮激活数量必须在 1..min(4096, 池大小) 之间");
         long bytes = estimateBytes(units);
         if (bytes > budgetBytes) throw new IllegalArgumentException("神经元池超过内存预算");
         long ops = (long) units * inputCount * 2L;
