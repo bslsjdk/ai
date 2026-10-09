@@ -80,6 +80,25 @@
             android:text="Ornith-1.5-9B · 等待本地模型"
             android:textColor="#475569"
             android:textSize="12sp" />
+
+        <ProgressBar
+            android:id="@+id/importProgress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:max="100"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/importStage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text=""
+            android:textColor="#64748B"
+            android:textSize="11sp"
+            android:visibility="gone" />
     </LinearLayout>
 
     <ScrollView
@@ -96,6 +115,56 @@
             android:layout_height="wrap_content"
             android:orientation="vertical" />
     </ScrollView>
+
+    <LinearLayout
+        android:id="@+id/emptyState"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingStart="28dp"
+        android:paddingEnd="28dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="尚未加载模型"
+            android:textColor="#111827"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:text="导入 Ornith-1.5-9B-MLX-4bit 的 .safetensors 文件后，即可完全离线对话，数据不出设备。"
+            android:textColor="#64748B"
+            android:textSize="13sp"
+            android:lineSpacingExtra="3dp" />
+
+        <Button
+            android:id="@+id/emptyImport"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_marginTop="20dp"
+            android:minWidth="160dp"
+            android:text="导入模型"
+            android:textSize="14sp"
+            android:textAllCaps="false" />
+
+        <TextView
+            android:id="@+id/emptyHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:gravity="center"
+            android:text=""
+            android:textColor="#94A3B8"
+            android:textSize="11sp" />
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
