@@ -111,6 +111,22 @@ public final class MemoryAwareComputeScheduler implements AutoCloseable {
         return job.future;
     }
 
+    public boolean cancelQueued(Future<?> future) {
+        if (future == null) return false;
+        synchronized (queue) {
+            for (Job<?> job : queue) {
+                if (job.future == future) {
+                    queue.remove(job);
+                    job.future.cancel(false);
+                    lastDecision = "CANCELLED_WHILE_QUEUED " + job.name;
+                    queue.notifyAll();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public Snapshot snapshot() {
         long rss = safeRssBytes();
         synchronized (queue) {
