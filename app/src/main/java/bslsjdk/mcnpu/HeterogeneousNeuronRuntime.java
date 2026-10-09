@@ -94,7 +94,7 @@ public final class HeterogeneousNeuronRuntime {
             poolSize=p; batchSize=b; activeCount=a; selectedIndices=s; elapsedMs=ms; backend=be; decision=d;
         }
         public String toReport() { return String.format(Locale.US,
-            "批量神经元路由\\n池大小：%,d\\n批量输入：%d\\n每个输入激活：%d\\n实际后端：%s\\n批量耗时：%.3f ms（%.3f ms/输入）\\n决策：%s",
+            "批量神经元路由\n池大小：%,d\n批量输入：%d\n每个输入激活：%d\n实际后端：%s\n批量耗时：%.3f ms（%.3f ms/输入）\n决策：%s",
             poolSize,batchSize,activeCount,backend,elapsedMs,elapsedMs/Math.max(1,batchSize),decision); }
     }
 
