@@ -645,6 +645,7 @@ public final class GridWorldLabActivity extends Activity {
             // Report configured per-episode history, not the unrelated current UI path length.
             report.put("shortTermMemoryLength", HISTORY_LENGTH);
             report.put("reportPathLength", Math.min(HISTORY_LENGTH, path.size()));
+            report.put("recentPathSource", "current UI episode path; not a sampled path from the training replay buffer");
             JSONArray recentPath = new JSONArray();
             for (int i = Math.max(0, path.size() - HISTORY_LENGTH); i < path.size(); i++) recentPath.put(path.get(i));
             report.put("recentPathCellIds", recentPath);
