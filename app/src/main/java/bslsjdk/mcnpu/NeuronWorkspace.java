@@ -472,7 +472,7 @@ public final class NeuronWorkspace {
         double sum = 0;
         long count = 0;
         for (Sample s : data) {
-            double[] out = forward(s.input, skippedNeuron).output;
+            double[] out = predictOutputOnly(s.input, skippedNeuron);
             for (int o = 0; o < outputCount; o++) {
                 double d = out[o] - s.output[o];
                 sum += d * d;
@@ -480,6 +480,22 @@ public final class NeuronWorkspace {
             }
         }
         return count == 0 ? Double.NaN : sum / count;
+    }
+
+    /** Minimal-allocation inference path for loss/evaluation loops. */
+    private double[] predictOutputOnly(double[] input, int skippedNeuron) {
+        double[] output = outputBias.clone();
+        for (int i = 0; i < neurons.size(); i++) {
+            if (i == skippedNeuron) continue;
+            Neuron n = neurons.get(i);
+            if (!n.enabled) continue;
+            double z = n.bias;
+            for (int j = 0; j < inputCount; j++) z += n.inputWeights[j] * input[j];
+            double activation = Math.tanh(z);
+            if (activation == 0.0) continue;
+            for (int o = 0; o < outputCount; o++) output[o] += activation * n.outputWeights[o];
+        }
+        return output;
     }
 
     public synchronized void scoreNeurons() {
@@ -765,7 +781,9 @@ public final class NeuronWorkspace {
         double[] gOutputBias = new double[outputCount];
 
         for (Sample s : training) {
-            ForwardResult f = forward(s.input, -1);
+            // Training needs activations and outputs, not the per-neuron contribution matrix.
+            // Avoiding that HxO allocation for every sample/epoch reduces mobile GC pauses.
+            ForwardResult f = forwardForTraining(s.input);
             double[] dOut = new double[outputCount];
             for (int o = 0; o < outputCount; o++) {
                 dOut[o] = 2.0 * (f.output[o] - s.output[o]) / outputCount;
@@ -821,6 +839,27 @@ public final class NeuronWorkspace {
     }
 
     private double[] outputBias;
+
+    /** Allocation-light forward pass for backpropagation; no contribution matrix or input clone. */
+    private ForwardResult forwardForTraining(double[] input) {
+        double[] hidden = new double[neurons.size()];
+        for (int i = 0; i < neurons.size(); i++) {
+            Neuron n = neurons.get(i);
+            if (!n.enabled) continue;
+            double z = n.bias;
+            double[] weights = n.inputWeights;
+            for (int j = 0; j < inputCount; j++) z += weights[j] * input[j];
+            hidden[i] = Math.tanh(z);
+        }
+        double[] output = outputBias.clone();
+        for (int i = 0; i < neurons.size(); i++) {
+            double activation = hidden[i];
+            if (activation == 0.0) continue;
+            double[] weights = neurons.get(i).outputWeights;
+            for (int o = 0; o < outputCount; o++) output[o] += activation * weights[o];
+        }
+        return new ForwardResult(input, hidden, output, null);
+    }
 
     private double[][] copyInputWeights() {
         double[][] out = new double[neurons.size()][];
