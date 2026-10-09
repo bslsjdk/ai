@@ -85,6 +85,19 @@ public final class HeterogeneousNeuronRuntime {
         }
     }
 
+    public static final class BatchRouteResult {
+        public final int poolSize, batchSize, activeCount;
+        public final int[][] selectedIndices;
+        public final double elapsedMs;
+        public final String backend, decision;
+        BatchRouteResult(int p,int b,int a,int[][] s,double ms,String be,String d) {
+            poolSize=p; batchSize=b; activeCount=a; selectedIndices=s; elapsedMs=ms; backend=be; decision=d;
+        }
+        public String toReport() { return String.format(Locale.US,
+            "批量神经元路由\\n池大小：%,d\\n批量输入：%d\\n每个输入激活：%d\\n实际后端：%s\\n批量耗时：%.3f ms（%.3f ms/输入）\\n决策：%s",
+            poolSize,batchSize,activeCount,backend,elapsedMs,elapsedMs/Math.max(1,batchSize),decision); }
+    }
+
     private final int poolSize;
     private final float[] weights;
     private final float[] bias;
@@ -96,6 +109,11 @@ public final class HeterogeneousNeuronRuntime {
     private boolean useGpuRoute;
     private String routeBackend = "CPU";
     private String routeBackendDecision = "CPU_REFERENCE_DEFAULT";
+    private boolean batchBackendDecisionMade;
+    private String batchBackend = "CPU";
+    private String batchBackendDecision = "not_benchmarked";
+    private int cachedTransposeDims = -1;
+    private float[] cachedTransposedWeights;
 
     public HeterogeneousNeuronRuntime(int requestedPoolSize, long budgetBytes, long seed) {
         if (requestedPoolSize < 2 || requestedPoolSize > MAX_POOL_UNITS)
@@ -242,6 +260,168 @@ public final class HeterogeneousNeuronRuntime {
         long elapsed = System.nanoTime() - start;
         return new RouteResult(poolSize, requestedActive, elapsed, highest,
                 absSum / poolSize, estimatedBytes, routeBackend, routeBackendDecision);
+    }
+
+    /** Batched route amortizes accelerator overhead across independent states. */
+    public synchronized BatchRouteResult routeBatch(float[][] inputs, int requestedActive) {
+        if (inputs == null || inputs.length < 2 || inputs.length > 32)
+            throw new IllegalArgumentException("batch must contain 2..32 rows");
+        if (requestedActive < 1 || requestedActive > Math.min(MAX_ACTIVE_UNITS, poolSize))
+            throw new IllegalArgumentException("active count out of range");
+        int dims = inputs[0] == null ? 0 : inputs[0].length;
+        if (dims < 1 || dims > MAX_INPUTS) throw new IllegalArgumentException("input dims must be 1..16");
+        for (float[] row : inputs) {
+            if (row == null || row.length != dims) throw new IllegalArgumentException("batch rows must share dimensions");
+            for (float v : row) if (!Float.isFinite(v)) throw new IllegalArgumentException("non-finite input");
+        }
+        int batch = inputs.length;
+        long workBytes = ((long)batch*dims + (long)dims*poolSize + (long)batch*poolSize)*4L;
+        if (workBytes > 32L*1024L*1024L)
+            throw new IllegalArgumentException("batch workset exceeds 32 MiB; reduce batch or pool");
+        long t0 = System.nanoTime();
+        float[] cpu = cpuBatch(inputs, dims);
+        long cpuNs = System.nanoTime()-t0;
+        float[] chosen = cpu;
+        String backend = "CPU";
+        String decision = "CPU_REFERENCE cpu_ms=" + cpuNs/1e6;
+        if (!batchBackendDecisionMade) {
+            float[] wt = transposeForDims(dims);
+            float[] flat = new float[batch*dims];
+            for (int r=0;r<batch;r++) System.arraycopy(inputs[r],0,flat,r*dims,dims);
+            long g0=System.nanoTime();
+            float[] raw=GpuComputeRuntime.matMul(flat,wt,batch,dims,poolSize);
+            long gpuNs=System.nanoTime()-g0;
+            float[] gpu=null;
+            double gpuDiff=Double.POSITIVE_INFINITY;
+            if(raw!=null && raw.length==batch*poolSize) {
+                gpu=activate(raw);
+                gpuDiff=maxDiff(cpu,gpu);
+            }
+            boolean gpuGood=gpu!=null && gpuDiff<=0.001 && gpuNs*10L<cpuNs*9L;
+
+            float[] npu=null;
+            long npuNs=Long.MAX_VALUE;
+            double npuDiff=Double.POSITIVE_INFINITY;
+            String npuInfo="NPU skipped: not ready or batch/pool too small";
+            if(NpuRuntime.isReady() && batch>=8 && poolSize>=4096
+                    && maxAbs(inputs)<=1.20 && maxAbs(weights)<=1.20) {
+                try {
+                    NpuRuntime.prewarmMatMulInt8(batch,dims,poolSize);
+                    byte[] a=new byte[batch*dims], b=new byte[dims*poolSize];
+                    for(int r=0;r<batch;r++) for(int j=0;j<dims;j++)
+                        a[r*dims+j]=q8(inputs[r][j]*0.1f);
+                    for(int j=0;j<dims;j++) for(int u=0;u<poolSize;u++)
+                        b[j*poolSize+u]=q8(weights[u*MAX_INPUTS+j]*0.1f);
+                    long n0=System.nanoTime();
+                    byte[] packed=NpuRuntime.matMulInt8Buf(a,b,batch,dims,poolSize);
+                    npuNs=System.nanoTime()-n0;
+                    if(packed!=null && packed.length>=4+batch*poolSize) {
+                        float scaleC=java.nio.ByteBuffer.wrap(packed,0,4)
+                            .order(java.nio.ByteOrder.LITTLE_ENDIAN).getFloat();
+                        if(Float.isFinite(scaleC)&&scaleC>0) {
+                            npu=new float[batch*poolSize];
+                            for(int r=0;r<batch;r++) for(int u=0;u<poolSize;u++)
+                                npu[r*poolSize+u]=(float)Math.tanh(
+                                    packed[4+r*poolSize+u]*scaleC/0.01f+bias[u]);
+                            npuDiff=maxDiff(cpu,npu);
+                            npuInfo="NPU candidate ms="+npuNs/1e6+" max_abs="+npuDiff;
+                        } else npuInfo="NPU invalid output scale";
+                    } else npuInfo="NPU failed: "+NpuRuntime.getLastNativeError();
+                } catch(Throwable e) { npuInfo="NPU exception: "+e.getClass().getSimpleName()+":"+e.getMessage(); }
+            }
+            boolean npuGood=npu!=null && npuDiff<=0.02 && npuNs*10L<cpuNs*9L;
+            if(npuGood && (!gpuGood || npuNs<gpuNs)) {
+                chosen=npu; backend="QNN_HTP_V73_INT8";
+                decision="measured NPU faster; cpu_ms="+cpuNs/1e6+" npu_ms="+npuNs/1e6+" max_abs="+npuDiff;
+            } else if(gpuGood) {
+                chosen=gpu; backend="GLES31_GPU";
+                decision="measured GPU faster; cpu_ms="+cpuNs/1e6+" gpu_ms="+gpuNs/1e6+" max_abs="+gpuDiff+"; "+npuInfo;
+            } else {
+                decision="CPU kept; cpu_ms="+cpuNs/1e6+" gpu_ms="+gpuNs/1e6+" gpu_max_abs="+gpuDiff+"; "+npuInfo;
+            }
+            batchBackendDecisionMade=true;
+            batchBackend=backend;
+            batchBackendDecision=decision;
+        } else if("GLES31_GPU".equals(batchBackend)) {
+            float[] flat=new float[batch*dims];
+            for(int r=0;r<batch;r++) System.arraycopy(inputs[r],0,flat,r*dims,dims);
+            float[] raw=GpuComputeRuntime.matMul(flat,transposeForDims(dims),batch,dims,poolSize);
+            if(raw!=null && raw.length==batch*poolSize) chosen=activate(raw);
+            else { chosen=cpu; batchBackend="CPU"; batchBackendDecision="GPU runtime failure fallback: "+GpuComputeRuntime.getLastError(); }
+        } else if("QNN_HTP_V73_INT8".equals(batchBackend)) {
+            try {
+                byte[] a=new byte[batch*dims],b=new byte[dims*poolSize];
+                for(int r=0;r<batch;r++) for(int j=0;j<dims;j++) a[r*dims+j]=q8(inputs[r][j]*0.1f);
+                for(int j=0;j<dims;j++) for(int u=0;u<poolSize;u++) b[j*poolSize+u]=q8(weights[u*MAX_INPUTS+j]*0.1f);
+                byte[] packed=NpuRuntime.matMulInt8Buf(a,b,batch,dims,poolSize);
+                if(packed==null||packed.length<4+batch*poolSize) throw new IllegalStateException(NpuRuntime.getLastNativeError());
+                float scaleC=java.nio.ByteBuffer.wrap(packed,0,4).order(java.nio.ByteOrder.LITTLE_ENDIAN).getFloat();
+                chosen=new float[batch*poolSize];
+                for(int r=0;r<batch;r++) for(int u=0;u<poolSize;u++)
+                    chosen[r*poolSize+u]=(float)Math.tanh(packed[4+r*poolSize+u]*scaleC/0.01f+bias[u]);
+            } catch(Throwable e) { chosen=cpu; batchBackend="CPU"; batchBackendDecision="NPU runtime failure fallback: "+e.getMessage(); }
+        }
+        int[][] selected=new int[batch][requestedActive];
+        for(int r=0;r<batch;r++) {
+            float[] row=new float[poolSize];
+            System.arraycopy(chosen,r*poolSize,row,0,poolSize);
+            selected[r]=topKIndices(row,requestedActive);
+        }
+        return new BatchRouteResult(poolSize,batch,requestedActive,selected,
+                (System.nanoTime()-t0)/1e6,batchBackend,batchBackendDecision);
+    }
+
+    private float[] cpuBatch(float[][] inputs,int dims) {
+        float[] out=new float[inputs.length*poolSize];
+        for(int r=0;r<inputs.length;r++) for(int u=0;u<poolSize;u++) {
+            int off=u*MAX_INPUTS; double sum=bias[u];
+            for(int j=0;j<dims;j++) sum+=weights[off+j]*inputs[r][j];
+            out[r*poolSize+u]=(float)Math.tanh(sum);
+        }
+        return out;
+    }
+    private float[] transposeForDims(int dims) {
+        if(cachedTransposeDims!=dims||cachedTransposedWeights==null) {
+            cachedTransposedWeights=new float[dims*poolSize];
+            for(int u=0;u<poolSize;u++) for(int j=0;j<dims;j++)
+                cachedTransposedWeights[j*poolSize+u]=weights[u*MAX_INPUTS+j];
+            cachedTransposeDims=dims;
+        }
+        return cachedTransposedWeights;
+    }
+    private float[] activate(float[] raw) {
+        float[] out=new float[raw.length];
+        for(int r=0;r<raw.length/poolSize;r++) for(int u=0;u<poolSize;u++)
+            out[r*poolSize+u]=(float)Math.tanh(raw[r*poolSize+u]+bias[u]);
+        return out;
+    }
+    private static double maxDiff(float[] a,float[] b) {
+        if(a==null||b==null||a.length!=b.length) return Double.POSITIVE_INFINITY;
+        double max=0; for(int i=0;i<a.length;i++) max=Math.max(max,Math.abs((double)a[i]-b[i])); return max;
+    }
+    private static double maxAbs(float[][] a) {
+        double max=0; for(float[] row:a) for(float v:row) max=Math.max(max,Math.abs(v)); return max;
+    }
+    private static double maxAbs(float[] a) {
+        double max=0; for(float v:a) max=Math.max(max,Math.abs(v)); return max;
+    }
+    private static byte q8(float v) {
+        long q=Math.round(v/0.001f); if(q>127)q=127; if(q< -128)q=-128; return (byte)q;
+    }
+    private int[] topKIndices(float[] values,int count) {
+        float[] best=new float[count]; int[] idx=new int[count]; int size=0;
+        for(int i=0;i<values.length;i++) {
+            float v=values[i];
+            if(size<count) { int child=size++; best[child]=v; idx[child]=i;
+                while(child>0) { int parent=(child-1)>>>1; if(best[parent]<=best[child])break;
+                    swap(best,idx,parent,child); child=parent; }
+            } else if(v>best[0]) { best[0]=v; idx[0]=i; int p=0;
+                while(true) { int l=p*2+1; if(l>=size)break; int r=l+1;
+                    int s=r<size&&best[r]<best[l]?r:l; if(best[p]<=best[s])break;
+                    swap(best,idx,p,s); p=s; }
+            }
+        }
+        return idx;
     }
 
     private void computeCpuScores(float[] input, int dims) {
