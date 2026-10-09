@@ -577,11 +577,14 @@ public final class NeuronLabActivity extends Activity {
                         float factor = 0.80f + (r % 9) * 0.05f;
                         for (int j = 0; j < base.length; j++) batch[r][j] = base[j] * factor;
                     }
-                    HeterogeneousNeuronRuntime.BatchRouteResult result = runtime.routeBatch(batch, active);
-                    return result.toReport() + "\nNPU_ready=" + npuReady
-                            + "\nNPU_status=" + NpuRuntime.status()
-                            + "\nCPU/GPU/NPU are compared on the same batch; accelerator output must pass numerical tolerance."
-                            + "\n" + computeScheduler.snapshot().toReport();
+                    HeterogeneousNeuronRuntime.BatchRouteResult calibration = runtime.routeBatch(batch, active);
+                    HeterogeneousNeuronRuntime.BatchRouteResult steady = runtime.routeBatch(batch, active);
+                    return "首次后端校准（包含 CPU/GPU/NPU 对照开销）\\n" + calibration.toReport()
+                            + "\\n\\n预热后的实际路由（更接近持续运行速度）\\n" + steady.toReport()
+                            + "\\nNPU_ready=" + npuReady
+                            + "\\nNPU_status=" + NpuRuntime.status()
+                            + "\\nCPU/GPU/NPU are compared on the same batch; accelerator output must pass numerical tolerance."
+                            + "\\n" + computeScheduler.snapshot().toReport();
                 });
                 String result = awaitScheduledResult(job, "批量 GPU/NPU 路由");
                 runOnUiThread(() -> { if (poolReport != null) poolReport.setText(result); });
