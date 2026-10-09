@@ -146,24 +146,44 @@ public final class HeterogeneousNeuronRuntime {
         // Partial selection avoids sorting the entire pool when only a small
         // fraction is active. O(pool * active), bounded by 4096 selected units.
         float[] bestScores = new float[requestedActive];
-        Arrays.fill(bestScores, -Float.MAX_VALUE);
+        int heapSize = 0;
         for (int u = 0; u < poolSize; u++) {
             float s = score[u];
-            for (int k = 0; k < requestedActive; k++) {
-                if (s > bestScores[k]) {
-                    for (int shift = requestedActive - 1; shift > k; shift--) {
-                        bestScores[shift] = bestScores[shift - 1];
-                        topIndices[shift] = topIndices[shift - 1];
-                    }
-                    bestScores[k] = s;
-                    topIndices[k] = u;
-                    break;
+            if (heapSize < requestedActive) {
+                int child = heapSize++;
+                bestScores[child] = s;
+                topIndices[child] = u;
+                while (child > 0) {
+                    int parent = (child - 1) >>> 1;
+                    if (bestScores[parent] <= bestScores[child]) break;
+                    swap(bestScores, topIndices, parent, child);
+                    child = parent;
+                }
+            } else if (s > bestScores[0]) {
+                bestScores[0] = s;
+                topIndices[0] = u;
+                int parent = 0;
+                while (true) {
+                    int left = parent * 2 + 1;
+                    if (left >= heapSize) break;
+                    int right = left + 1;
+                    int smallest = right < heapSize && bestScores[right] < bestScores[left] ? right : left;
+                    if (bestScores[parent] <= bestScores[smallest]) break;
+                    swap(bestScores, topIndices, parent, smallest);
+                    parent = smallest;
                 }
             }
         }
+        float highest = -Float.MAX_VALUE;
+        for (float value : bestScores) if (value > highest) highest = value;
         long elapsed = System.nanoTime() - start;
-        return new RouteResult(poolSize, requestedActive, elapsed, bestScores[0],
+        return new RouteResult(poolSize, requestedActive, elapsed, highest,
                 absSum / poolSize, estimatedBytes);
+    }
+
+    private static void swap(float[] scores, int[] indices, int a, int b) {
+        float sv = scores[a]; scores[a] = scores[b]; scores[b] = sv;
+        int iv = indices[a]; indices[a] = indices[b]; indices[b] = iv;
     }
 
     public int size() { return poolSize; }
