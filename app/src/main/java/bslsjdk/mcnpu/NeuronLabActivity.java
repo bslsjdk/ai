@@ -391,8 +391,8 @@ public final class NeuronLabActivity extends Activity {
             }
             MemoryAwareComputeScheduler.Snapshot snapshot = computeScheduler.snapshot();
             if (jobName.startsWith("train-") && cancelTraining && !jobName.equals(snapshot.activeJob)) {
-                computeScheduler.cancelQueued(future);
-                throw new InterruptedException("training cancelled while waiting in memory queue");
+                if (computeScheduler.cancelQueued(future))
+                    throw new InterruptedException("training cancelled while waiting in memory queue");
             }
             String status = "正在等待计算任务完成：" + jobName + "\n\n" + snapshot.toReport()
                     + "\n\n如果内存预算暂时不够，任务会留在队列中，等待内存下降后再运行。";
@@ -912,13 +912,17 @@ public final class NeuronLabActivity extends Activity {
                     toast(result.cancelled ? "训练已停止，已保存最佳权重" : "训练完成，工作区已保存");
                 });
             } catch (Throwable error) {
-                trainingStatus = "训练失败：" + shortError(error);
+                final boolean cancelledBeforeStart = cancelTraining && error instanceof InterruptedException;
+                trainingStatus = cancelledBeforeStart
+                        ? "训练已取消：任务仍在内存队列中，没有启动计算。"
+                        : "训练失败：" + shortError(error);
                 persistWorkspaceNow();
                 runOnUiThread(() -> {
                     training = false;
                     setNavigationEnabled(true);
                     showPage("train");
-                    dialog("训练失败", trainingStatus);
+                    if (cancelledBeforeStart) toast("排队训练已取消，未启动计算。");
+                    else dialog("训练失败", trainingStatus);
                 });
             }
         });
