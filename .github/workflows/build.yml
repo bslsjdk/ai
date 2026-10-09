@@ -114,7 +114,7 @@ jobs:
             app/.cxx
           key: ${{ runner.os }}-native-arm64-ndk27-cmake3316-v2
           restore-keys: |
-            ${{ runner.os }}-native-arm64-ndk27-cmake3316-
+            ${{ runner.os }}-native-arm64-ndk27-cmake3316-v2-
       # Gradle externalNativeBuild also compiles this library for the APK.
       # Keep this standalone native build as an early CMake/compiler smoke check.
       - name: Build native (early CMake check)
