@@ -370,6 +370,7 @@ public final class GridWorldLabActivity extends Activity {
     private int greedyTestSteps(MapData map) {
         int p = map.start;
         Set<Integer> seen = new HashSet<>();
+        List<Integer> history = new ArrayList<>(); history.add(p);
         for (int step = 1; step <= MAX_STEPS; step++) {
             int action = argmax(net.forward(observe(p, map.goal, map.walls, history)).q);
             Transition tr = transition(p, action, map);
@@ -536,7 +537,7 @@ public final class GridWorldLabActivity extends Activity {
         try {
             File f = new File(new File(getFilesDir(), "gridworld-lab"), "q_network.json");
             if (!f.isFile()) return;
-            byte[] bytes = new byte[(int)Math.min(f.length(), 256 * 1024)];
+            byte[] bytes = new byte[(int)Math.min(f.length(), 2 * 1024 * 1024)];
             try (java.io.FileInputStream in = new java.io.FileInputStream(f)) {
                 int n = in.read(bytes);
                 if (n > 0) {
