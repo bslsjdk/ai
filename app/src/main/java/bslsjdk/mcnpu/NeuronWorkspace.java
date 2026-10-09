@@ -209,6 +209,8 @@ public final class NeuronWorkspace {
         final ArrayList<Sample> samples = new ArrayList<>();
         int inputs;
         int outputs;
+        String[] inputConcepts;
+        String[] outputConcepts;
     }
 
     public int inputCount;
@@ -1078,9 +1080,9 @@ public final class NeuronWorkspace {
         StringBuilder out = new StringBuilder();
         for (int i = 0; i < inputCount; i++) {
             if (i > 0) out.append(',');
-            out.append("input_").append(i);
+            out.append(csv(inputConcepts[i]));
         }
-        for (int i = 0; i < outputCount; i++) out.append(",output_").append(i);
+        for (int i = 0; i < outputCount; i++) out.append(',').append(csv(outputConcepts[i]));
         out.append('\n');
         for (Sample s : samples) {
             for (double v : s.input) out.append(format(v)).append(',');
@@ -1194,6 +1196,10 @@ public final class NeuronWorkspace {
         }
         samples.clear();
         samples.addAll(parsed.samples);
+        if (parsed.inputConcepts != null && parsed.inputConcepts.length == inputCount)
+            inputConcepts = parsed.inputConcepts;
+        if (parsed.outputConcepts != null && parsed.outputConcepts.length == outputCount)
+            outputConcepts = parsed.outputConcepts;
         recordEvent("dataset_imported", safeObject("source", fileName, "samples", samples.size(),
                 "inputs", inputCount, "outputs", outputCount));
         lastReport = "已导入训练数据：" + samples.size() + " 条，输入 " + inputCount + " 维，输出 " + outputCount + " 维。";
@@ -1299,6 +1305,12 @@ public final class NeuronWorkspace {
                 Dataset d = new Dataset();
                 d.inputs = root.optInt("inputs", -1);
                 d.outputs = root.optInt("outputs", -1);
+                JSONArray inputNamesJson = root.optJSONArray("inputConcepts");
+                JSONArray outputNamesJson = root.optJSONArray("outputConcepts");
+                if (inputNamesJson != null && d.inputs > 0 && d.inputs <= MAX_INPUTS)
+                    d.inputConcepts = readConcepts(inputNamesJson, d.inputs, "输入");
+                if (outputNamesJson != null && d.outputs > 0 && d.outputs <= MAX_OUTPUTS)
+                    d.outputConcepts = readConcepts(outputNamesJson, d.outputs, "输出");
                 for (int i = 0; i < rows.length(); i++) {
                     JSONObject row = rows.getJSONObject(i);
                     double[] x = readAnyArray(row.optJSONArray("input"), "样本 input");
