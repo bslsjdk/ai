@@ -251,6 +251,8 @@ public final class GridWorldLabActivity extends Activity {
         if (requested < MIN_HIDDEN || requested > MAX_HIDDEN) { toast("神经元数量范围是 8～256。"); return; }
         if (requested == net.hiddenSize) { toast("当前网络已经是 " + requested + " 个隐藏神经元。"); return; }
         net = new QNet(System.nanoTime(), requested);
+        episodesDone = 0;
+        lastCompletedEpisode = 0;
         lastHidden = new double[requested];
         if (hiddenActivationTitle != null) hiddenActivationTitle.setText("隐藏神经元激活（" + requested + " 个）");
         lastQ = new double[4];
@@ -498,6 +500,10 @@ public final class GridWorldLabActivity extends Activity {
             report.put("executionBackend", "CPU Java forward/backprop; NPU/GPU not yet wired into this QNet");
             report.put("shortTermMemory", "last 8 positions per episode; repeated-visit penalty=-0.08 during training");
             report.put("longTermMemory", "trained Q-network weights saved in q_network.json");
+            report.put("shortTermMemoryLength", Math.min(HISTORY_LENGTH, path.size()));
+            JSONArray recentPath = new JSONArray();
+            for (int i = Math.max(0, path.size() - HISTORY_LENGTH); i < path.size(); i++) recentPath.put(path.get(i));
+            report.put("recentPathCellIds", recentPath);
             report.put("hiddenSize", net.hiddenSize);
             report.put("episodesTrained", episodesDone);
             report.put("evaluationType", "fresh_random_maps");
@@ -545,6 +551,7 @@ public final class GridWorldLabActivity extends Activity {
                     JSONObject saved = new JSONObject(new String(bytes, 0, n, StandardCharsets.UTF_8));
                     int savedHidden = saved.optInt("hiddenSize", DEFAULT_HIDDEN);
                     int oldInputSize = saved.optInt("inputSize", -1);
+                    episodesDone = Math.max(0L, saved.optLong("episodesTrained", 0L));
                     if ((oldInputSize == 8 || oldInputSize == INPUT_SIZE) && savedHidden >= MIN_HIDDEN && savedHidden <= MAX_HIDDEN) {
                         net = new QNet(20261009L, savedHidden);
                         lastHidden = new double[savedHidden];
