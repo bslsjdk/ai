@@ -1789,11 +1789,14 @@ std::string runMatMulFp16BufEx(const uint16_t* Ain,const uint16_t* Bin,uint16_t*
                                      std::to_string(Kb)+"x"+std::to_string(Nb)+
                                      (transposeB ? "_tb" : "");
         rc=f.graphCreate(g.context,graphName.c_str(),nullptr,&mg->graph);
-        ++g.graphCount;
         if(rc!=QNN_SUCCESS || !mg->graph){
             g.matMulGraphs.erase(inserted.first);
             return "ERR FP16BUF_GRAPH_CREATE rc="+std::to_string((int)rc)+" "+verbose(rc);
         }
+        // Count only a graph that QNN actually created. QNN 2.27 has no graphFree,
+        // so a successfully created graph consumes context budget even if a later
+        // tensor/node/finalize step fails; a failed graphCreate consumes no slot.
+        ++g.graphCount;
 
         mg->a=makeTensorN("a16",QNN_TENSOR_TYPE_APP_WRITE,QNN_DATATYPE_FLOAT_16,mg->dimsA,2);
         mg->b=makeTensorN("b16",QNN_TENSOR_TYPE_APP_WRITE,QNN_DATATYPE_FLOAT_16,mg->dimsB,2);
