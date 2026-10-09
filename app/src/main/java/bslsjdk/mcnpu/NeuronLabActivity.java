@@ -225,6 +225,7 @@ public final class NeuronLabActivity extends Activity {
         pageHost.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
 
         switch (page) {
+            case "autotest": buildAutomaticTestPage(content); break;
             case "neurons": buildNeuronsPage(content); break;
             case "runtime": buildRuntimePage(content); break;
             case "network": buildNetworkPage(content); break;
@@ -237,14 +238,39 @@ public final class NeuronLabActivity extends Activity {
 
     private String pageForNavIndex(int index) {
         switch (index) {
-            case 1: return "neurons";
-            case 2: return "runtime";
-            case 3: return "network";
-            case 4: return "train";
-            case 5: return "run";
-            case 6: return "data";
+            case 1: return "autotest";
+            case 2: return "neurons";
+            case 3: return "runtime";
+            case 4: return "network";
+            case 5: return "train";
+            case 6: return "run";
+            case 7: return "data";
             default: return "home";
         }
+    }
+
+    private void buildAutomaticTestPage(LinearLayout content) {
+        LinearLayout intro = card(content, "一键诊断 · 不需要你手动找日志");
+        addText(intro, "点按钮后会自动运行 CPU 路由基准、检查概念标签序列化、记录进程内存，并尝试独立 QNN/HTP 矩阵测试。完成后生成一份可复制的完整日志。", 13, false);
+        addText(intro, "测试规模受限，避免把手机卡死。NPU 结果只代表独立矩阵接口，不会冒充神经网络训练已加速。", 12, false);
+        automaticTestButton = primaryButton(automaticTestRunning ? "正在自动测试…" : "全自动测试");
+        automaticTestButton.setEnabled(!automaticTestRunning);
+        automaticTestButton.setOnClickListener(v -> runAutomaticTest());
+        intro.addView(automaticTestButton, params(-1, 56, 0, 8, 0, 0));
+
+        LinearLayout actions = card(content, "最终诊断日志");
+        automaticTestReport = label(lastAutomaticTestLog, 12, false);
+        automaticTestReport.setTextIsSelectable(true);
+        automaticTestReport.setTypeface(Typeface.MONOSPACE);
+        actions.addView(automaticTestReport, params(-1, -2, 0, 0, 0, 8));
+        addActionRow(actions, new String[]{"复制完整日志", "分享/发送日志"}, new Runnable[]{
+                this::copyAutomaticTestLog, this::shareAutomaticTestLog
+        });
+        Button rerun = secondaryButton("重新运行全自动测试");
+        rerun.setOnClickListener(v -> runAutomaticTest());
+        actions.addView(rerun, params(-1, 44, 0, 8, 0, 0));
+        LinearLayout guide = card(content, "怎么把结果发给我");
+        addText(guide, "1. 点「全自动测试」并等待完成。\n2. 点「复制完整日志」。\n3. 回到聊天直接粘贴。也可以点「分享/发送日志」选择应用。", 13, false);
     }
 
     private void buildRuntimePage(LinearLayout content) {
