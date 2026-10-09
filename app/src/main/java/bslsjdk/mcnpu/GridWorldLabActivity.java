@@ -240,6 +240,7 @@ public final class GridWorldLabActivity extends Activity {
                     final long winCount = wins;
                     final long stepCount = totalSteps;
                     final long elapsed = System.currentTimeMillis() - started;
+                    saveTrainingCheckpoint(finished);
                     main.post(() -> {
                         status.setText("训练中：" + finished + "/" + count + (cancelTraining ? "（正在停止）" : ""));
                         log.setText(String.format(Locale.US,
@@ -569,6 +570,10 @@ public final class GridWorldLabActivity extends Activity {
     }
 
     private void saveCheckpoint() {
+        if (training) {
+            toast("训练期间会自动保存检查点；训练结束后再生成最终报告。");
+            return;
+        }
         try {
             File dir = new File(getFilesDir(), "gridworld-lab");
             if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("无法创建实验目录");
@@ -604,6 +609,8 @@ public final class GridWorldLabActivity extends Activity {
             report.put("lastTrainingEnvironmentSteps", lastTrainingEnvironmentSteps);
             report.put("lastTrainingEpisodesPerSecond", lastTrainingEpisodesPerSecond);
             report.put("lastTrainingStepsPerSecond", lastTrainingStepsPerSecond);
+            report.put("autosaveCheckpoint", "q_network.json, atomic replacement at each progress interval");
+            report.put("autosaveError", lastAutosaveError);
             report.put("evaluationType", "fresh_random_maps");
             report.put("evaluationEpisodes", evalEpisodes);
             report.put("evaluationSuccesses", evalSuccesses);
@@ -626,6 +633,10 @@ public final class GridWorldLabActivity extends Activity {
     }
 
     private void copyTrainingReport() {
+        if (training) {
+            toast("训练尚未结束。当前权重会周期性自动保存，请结束训练后复制最终报告。");
+            return;
+        }
         try {
             // Always snapshot the current state first, so the copied report matches the visible experiment.
             saveCheckpoint();
@@ -672,8 +683,45 @@ public final class GridWorldLabActivity extends Activity {
         } catch (Exception ignored) { }
     }
 
+    private void saveTrainingCheckpoint(int completedEpisodes) {
+        try {
+            File dir = new File(getFilesDir(), "gridworld-lab");
+            if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("无法创建实验目录");
+            JSONObject checkpoint = net.toJson();
+            checkpoint.put("episodesTrained", episodesDone + completedEpisodes);
+            checkpoint.put("rewardVersion", REWARD_VERSION);
+            checkpoint.put("savedAt", System.currentTimeMillis());
+            checkpoint.put("checkpointKind", "periodic_training_autosave");
+            writeAtomic(new File(dir, "q_network.json"), checkpoint.toString());
+            lastAutosaveError = "";
+        } catch (Exception e) {
+            lastAutosaveError = e.getClass().getSimpleName() + ": " + String.valueOf(e.getMessage());
+        }
+    }
+
+    private volatile String lastAutosaveError = "";
+
     private static void write(File f, String s) throws Exception {
-        try (FileOutputStream out = new FileOutputStream(f)) { out.write(s.getBytes(StandardCharsets.UTF_8)); }
+        try (FileOutputStream out = new FileOutputStream(f)) {
+            out.write(s.getBytes(StandardCharsets.UTF_8));
+            out.getFD().sync();
+        }
+    }
+
+    /** Replace checkpoint atomically so a process death cannot leave half-written JSON. */
+    private static void writeAtomic(File target, String content) throws Exception {
+        File parent = target.getParentFile();
+        File temp = new File(parent, target.getName() + ".tmp");
+        File backup = new File(parent, target.getName() + ".bak");
+        write(temp, content);
+        if (backup.exists() && !backup.delete()) throw new IllegalStateException("无法清理旧检查点备份");
+        boolean hadTarget = target.exists();
+        if (hadTarget && !target.renameTo(backup)) throw new IllegalStateException("无法备份旧检查点");
+        if (!temp.renameTo(target)) {
+            if (hadTarget) backup.renameTo(target);
+            throw new IllegalStateException("无法提交新检查点");
+        }
+        if (backup.exists()) backup.delete();
     }
     private static double max(double[] a) { double m = a[0]; for (double v : a) m = Math.max(m, v); return m; }
     private static int argmax(double[] a) { int b = 0; for (int i = 1; i < a.length; i++) if (a[i] > a[b]) b = i; return b; }
