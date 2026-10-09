@@ -53,7 +53,7 @@ public final class GridWorldLabActivity extends Activity {
     private final Random rng = new Random(20261009L);
     private QNet net = new QNet(20261009L, DEFAULT_HIDDEN);
     private final List<Integer> path = new ArrayList<>();
-    private TextView status, metrics, activationText, qText, log;
+    private TextView status, metrics, activationText, qText, log, hiddenActivationTitle;
     private EditText hiddenSizeInput;
     private Board board;
     private volatile boolean training;
@@ -132,7 +132,8 @@ public final class GridWorldLabActivity extends Activity {
         log = text("日志：尚未开始训练。", 11, false);
         root.addView(status, spaced());
         root.addView(metrics, spaced());
-        root.addView(text("隐藏神经元激活（" + net.hiddenSize + " 个）", 15, true), spaced());
+        hiddenActivationTitle = text("隐藏神经元激活（" + net.hiddenSize + " 个）", 15, true);
+        root.addView(hiddenActivationTitle, spaced());
         root.addView(activationText, spaced());
         root.addView(text("动作 Q 值", 15, true), spaced());
         root.addView(qText, spaced());
@@ -235,6 +236,7 @@ public final class GridWorldLabActivity extends Activity {
         if (requested == net.hiddenSize) { toast("当前网络已经是 " + requested + " 个隐藏神经元。"); return; }
         net = new QNet(System.nanoTime(), requested);
         lastHidden = new double[requested];
+        if (hiddenActivationTitle != null) hiddenActivationTitle.setText("隐藏神经元激活（" + requested + " 个）");
         lastQ = new double[4];
         fastWinStreak = 0;
         lastEpisodeSteps = -1;
