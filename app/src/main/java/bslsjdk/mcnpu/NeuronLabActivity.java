@@ -161,7 +161,7 @@ public final class NeuronLabActivity extends Activity {
                 NeuronLabEngine.Result result = engine.trainAndScore(epochs, backend, trace);
                 String summary = engine.summary();
                 runOnUiThread(() -> {
-                    appendReport(result.report + "\n\n" + summary);
+                    appendReport(result.report + "\n" + memoryStatus() + "\n\n" + summary);
                     refreshUnits();
                     getPreferences(MODE_PRIVATE).edit().putInt("unit_count", count).apply();
                 });
@@ -175,6 +175,28 @@ public final class NeuronLabActivity extends Activity {
                 });
             }
         });
+    }
+
+
+    private String memoryStatus() {
+        long rssKb = -1L, peakKb = -1L;
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader("/proc/self/status"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("VmRSS:")) rssKb = parseKb(line);
+                else if (line.startsWith("VmHWM:")) peakKb = parseKb(line);
+            }
+        } catch (Throwable ignored) { }
+        if (rssKb < 0) return "process_memory=unavailable";
+        return "process_memory_rss_mib=" + String.format(java.util.Locale.US, "%.1f", rssKb / 1024.0)
+                + " peak_hwm_mib=" + (peakKb < 0 ? "unknown" : String.format(java.util.Locale.US, "%.1f", peakKb / 1024.0))
+                + " project_hard_limit_mib=4096 release_target_mib=3800";
+    }
+
+    private long parseKb(String line) {
+        String[] parts = line.trim().split("\\s+");
+        if (parts.length < 2) return -1L;
+        try { return Long.parseLong(parts[1]); } catch (NumberFormatException ignored) { return -1L; }
     }
 
     private int engineUnitCount() {
