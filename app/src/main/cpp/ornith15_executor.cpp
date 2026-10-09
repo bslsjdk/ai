@@ -614,8 +614,12 @@ bool ornith15_executor_run_delta_layer(const std::string &model_path,
     for(uint32_t ch=0;ch<8192;ch++){
         float y=0.0f;
         float *hist=state.conv.data()+(size_t)ch*4;
-        for(uint32_t j=0;j<3;j++) hist[j+1]=hist[j];
-        hist[0]=qkv[ch];
+        // Keep causal samples oldest-to-newest to match Conv1d cross-correlation:
+        // weights[0] multiplies the oldest sample and weights[3] the current one.
+        // Shift left before appending; shifting in ascending order to hist[j+1]
+        // duplicated hist[0] across the entire history and corrupted every token.
+        for(uint32_t j=0;j<3;j++) hist[j]=hist[j+1];
+        hist[3]=qkv[ch];
         for(uint32_t j=0;j<4;j++) y+=hist[j]*cw[(size_t)ch*4+j];
         conv[ch]=y/(1.0f+std::exp(-y));
     }
