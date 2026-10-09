@@ -19,6 +19,12 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate mobile neuron training fixture
+        run: |
+          python3 -m py_compile scripts/test_neuron_training_bundle.py
+          python3 scripts/test_neuron_training_bundle.py
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
