@@ -113,8 +113,9 @@ bool ornith15_deltanet_conv_step(Ornith15DeltaState &s,
     if (kernel > 1) {
         for (uint32_t ch = 0; ch < channels; ++ch) {
             float *hist = s.conv.data() + (size_t)ch * kernel;
-            for (uint32_t j = kernel - 1; j > 0; --j) hist[j] = hist[j - 1];
-            hist[0] = input[ch];
+            // Store causal history oldest-to-newest, matching Conv1d weight order.
+            for (uint32_t j = 0; j + 1 < kernel; ++j) hist[j] = hist[j + 1];
+            hist[kernel - 1] = input[ch];
         }
     }
     return true;
