@@ -428,8 +428,8 @@ public final class SelfOrganizingNeuronGraph {
     public int getActiveNeuronBudget() { return activeNeuronBudget; }
     public void setActiveNeuronBudget(int budget) {
         int minimum = Math.max(1, Math.min(neuronCount, inputCount + outputCount + 1));
-        if (budget < minimum || budget > maxNeurons)
-            throw new IllegalArgumentException("active budget must include input/readout ports and available graph capacity");
+        if (budget < minimum || budget > neuronCount)
+            throw new IllegalArgumentException("active budget must fit the current graph and include its input/readout ports");
         activeNeuronBudget = budget;
     }
     public double getRewardBaseline() { return rewardBaseline; }
@@ -555,8 +555,8 @@ public final class SelfOrganizingNeuronGraph {
             g.edgeUse[id] = finite(edge.optDouble("use", 0), "use");
         }
         int minimumActiveBudget = Math.max(1, Math.min(nCount, g.inputCount + g.outputCount + 1));
-        g.activeNeuronBudget = Math.max(minimumActiveBudget, Math.min(maxN,
-                root.optInt("activeNeuronBudget", Math.min(256, maxN))));
+        g.activeNeuronBudget = Math.max(minimumActiveBudget, Math.min(nCount,
+                root.optInt("activeNeuronBudget", Math.min(256, nCount))));
         g.rewardBaseline = finite(root.optDouble("rewardBaseline", 0), "rewardBaseline");
         g.ticks = Math.max(0, root.optLong("ticks", 0));
         g.topologyChanges = Math.max(0, root.optLong("topologyChanges", 0));
