@@ -7,6 +7,8 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.io.FileOutputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,8 +45,8 @@ public final class SparseDiffusionMobileModel {
 
     public synchronized void load(File file) throws Exception {
         loaded = false;
-        if (file == null || !file.isFile() || file.length() <= 0) {
-            throw new IllegalArgumentException("portable model file missing");
+        if (file == null || !file.isFile() || file.length() <= 0 || file.length() > 32L * 1024 * 1024) {
+            throw new IllegalArgumentException("portable model file missing or exceeds 32 MiB");
         }
         JSONObject root = new JSONObject(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
         if (!"aimeng-mobile-diffusion-json-v1".equals(root.optString("format"))) {
@@ -57,8 +59,10 @@ public final class SparseDiffusionMobileModel {
         fanout = cfg.getInt("fanout");
         maxSteps = cfg.getInt("max_steps");
         contextLength = cfg.optInt("context", 64);
-        if (neurons < 8 || width < 4 || activeK < 1 || activeK > neurons
-                || fanout < 1 || fanout >= neurons || maxSteps < 1 || maxSteps > 32) {
+        if (neurons < 8 || neurons > 2048 || width < 4 || width > 128
+                || activeK < 1 || activeK > Math.min(neurons, 256)
+                || fanout < 1 || fanout > 32 || fanout >= neurons || maxSteps < 1 || maxSteps > 12
+                || contextLength < 1 || contextLength > 512) {
             throw new IllegalArgumentException("invalid model dimensions");
         }
         weights.clear();
@@ -92,6 +96,7 @@ public final class SparseDiffusionMobileModel {
         Iterator<String> vocabKeys = vocab.keys();
         while (vocabKeys.hasNext()) { String ch = vocabKeys.next(); stoi.put(ch, vocab.getInt(ch)); }
         JSONArray tokens = root.getJSONArray("itos");
+        if (tokens.length() < 2 || tokens.length() > 2048) throw new IllegalArgumentException("vocabulary outside mobile safety limits");
         itos = new String[tokens.length()];
         for (int i = 0; i < itos.length; i++) itos[i] = tokens.getString(i);
         require("embedding.weight"); require("node_embedding"); require("neighbors");
@@ -206,11 +211,24 @@ public final class SparseDiffusionMobileModel {
                 System.arraycopy(old, 0, joined, 0, width);
                 System.arraycopy(incoming, 0, joined, width, width);
                 float[] gate = sigmoid(linear(joined, "gate.weight", "gate.bias"));
+                float deltaSum = 0f;
+            for (int id : candidates) {
+                float[] old = state[id].clone();
+                float[] incoming = messages[id];
+                float[] self = linear(old, "self_proj.weight", null);
+                float[] msg = linear(incoming, "message_proj.weight", null);
+                float[] joined = new float[2 * width];
+                System.arraycopy(old, 0, joined, 0, width);
+                System.arraycopy(incoming, 0, joined, width, width);
+                float[] gate = sigmoid(linear(joined, "gate.weight", "gate.bias"));
                 for (int j = 0; j < width; j++) {
                     float proposal = (float) Math.tanh(self[j] + msg[j]);
-                    state[id][j] = gate[j] * proposal + (1f - gate[j]) * old[j];
+                    float updated = gate[j] * proposal + (1f - gate[j]) * old[j];
+                    deltaSum += Math.abs(updated - old[j]);
+                    state[id][j] = updated;
                 }
             }
+            float deltaMean = deltaSum / Math.max(1, candidates.length * width);
             float energySum = 0;
             for (float e : energy) energySum += e;
             float[] pooled = new float[width];
@@ -224,6 +242,7 @@ public final class SparseDiffusionMobileModel {
             if (step == 0) halt = 0f;
             for (int v = 0; v < vocab; v++) survivalMix[v] += survival * halt * lastLogits[v];
             survival *= (1f - halt);
+            if (step + 1 >= 2 && halt >= 0.80f && deltaMean <= 0.025f) break;
         }
         if (lastLogits == null) throw new IllegalStateException("model produced no diffusion steps");
         for (int v = 0; v < vocab; v++) survivalMix[v] += survival * lastLogits[v];
@@ -353,7 +372,11 @@ public final class SparseDiffusionMobileModel {
             out.getFD().sync();
         }
         if (stateFile.exists() && !stateFile.delete()) throw new java.io.IOException("cannot replace learning state");
-        if (!temp.renameTo(stateFile)) throw new java.io.IOException("cannot commit learning state");
+        try {
+            Files.move(temp.toPath(), stateFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(temp.toPath(), stateFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     private String decoderFingerprint() {
