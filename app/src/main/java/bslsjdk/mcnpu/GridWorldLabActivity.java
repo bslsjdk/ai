@@ -768,6 +768,10 @@ public final class GridWorldLabActivity extends Activity {
         report.put("inputSize", EvoNet16.INPUTS);
         report.put("inputFeatures", "dx,dy normalized relative goal + BFS shortest distance + 3x3 local obstacle/boundary view + previous action one-hot");
         report.put("trainingAlgorithm", "weight mutation and selection; no backpropagation; no replay buffer");
+        report.put("localNeuronMutationRate", 0.28);
+        report.put("weakNeuronSlotRecyclingProbability", 0.20);
+        report.put("neuronImportanceProxy", "sum(abs(input weights)) * sum(abs(output weights)); heuristic proxy, not causal attribution");
+        report.put("hiddenUnitMemoryPolicy", "fixed-size network; weak neuron slots are recycled rather than dynamically reallocating the hidden layer");
         report.put("evaluations", evo16Evaluations);
         report.put("generations", evo16Generations);
         report.put("externalEliteBlocks", evo16Bank.size());
