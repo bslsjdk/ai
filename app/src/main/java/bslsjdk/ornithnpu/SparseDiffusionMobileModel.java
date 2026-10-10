@@ -107,6 +107,15 @@ public final class SparseDiffusionMobileModel {
         itos = new String[tokens.length()];
         for (int i = 0; i < itos.length; i++) itos[i] = tokens.getString(i);
         require("embedding.weight"); require("node_embedding"); require("neighbors");
+        // New checkpoints include position embeddings so token order affects context.
+        // Keep legacy bundles loadable; those continue using their original bag-of-chars path.
+        if (weights.containsKey("position_embedding.weight")) {
+            int[] positionShape = shapes.get("position_embedding.weight");
+            if (positionShape == null || positionShape.length != 2
+                    || positionShape[1] != width || positionShape[0] < contextLength) {
+                throw new IllegalArgumentException("invalid position embedding shape");
+            }
+        }
         require("edge_logits"); require("context_proj.weight"); require("context_proj.bias");
         require("self_proj.weight"); require("message_proj.weight"); require("gate.weight");
         require("gate.bias"); require("decoder.weight"); require("decoder.bias");
@@ -160,11 +169,17 @@ public final class SparseDiffusionMobileModel {
     private float[] forward(int[] tokenIds) {
         int vocab = itos.length;
         float[] embedding = w("embedding.weight");
+        float[] positionEmbedding = weights.get("position_embedding.weight");
         float[] context = new float[width];
-        for (int id : tokenIds) {
+        for (int pos = 0; pos < tokenIds.length; pos++) {
+            int id = tokenIds[pos];
             int safe = id >= 0 && id < vocab ? id : 0;
             int base = safe * width;
-            for (int j = 0; j < width; j++) context[j] += embedding[base + j];
+            int positionBase = pos * width;
+            for (int j = 0; j < width; j++) {
+                context[j] += embedding[base + j];
+                if (positionEmbedding != null) context[j] += positionEmbedding[positionBase + j];
+            }
         }
         float denom = Math.max(1, tokenIds.length);
         for (int j = 0; j < width; j++) context[j] /= denom;
