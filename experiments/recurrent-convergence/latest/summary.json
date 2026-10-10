@@ -1,15 +1,21 @@
 {
-  "format": "aimeng-recurrent-neuron-convergence/v1",
+  "format": "aimeng-recurrent-neuron-convergence/v2",
   "purpose": "Diagnostic extension of the prior 30-epoch RNN run; not a compute-matched head-to-head result.",
   "dataset": "Alice's Adventures in Wonderland, public-domain Project Gutenberg text",
   "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
   "settings": {
     "hidden": 64,
     "context": 64,
-    "epochs_max": 40,
+    "epochs_max": 100,
     "steps_per_epoch": 240,
     "batch_size": 32,
     "learning_rate": 0.003,
+    "learning_rate_schedule": {
+      "type": "step_decay",
+      "start_after_epoch": 30,
+      "every_epochs": 15,
+      "factor": 0.5
+    },
     "seeds": [
       20261010,
       20261011,
@@ -18,40 +24,44 @@
   },
   "aggregate": {
     "best_validation_epoch": {
-      "mean": 40,
-      "sample_stddev": 0.0
+      "mean": 86.66666666666667,
+      "sample_stddev": 10.692676621563626
     },
     "best_validation_loss": {
-      "mean": 1.619605927240281,
-      "sample_stddev": 0.003898559677003768
+      "mean": 1.607678004673549,
+      "sample_stddev": 0.006077539775928277
     },
     "epoch_30_validation_loss": {
-      "mean": 1.634850405511402,
-      "sample_stddev": 0.015436228317947715
+      "mean": 1.6348503998347692,
+      "sample_stddev": 0.015436483853641214
     },
     "epoch_40_validation_loss": {
-      "mean": 1.619605927240281,
-      "sample_stddev": 0.003898559677003768
+      "mean": 1.6176812592006866,
+      "sample_stddev": 0.006767099189669076
     },
-    "tail_trend_epoch_36_to_40": {
-      "mean": -0.009094232604617133,
-      "sample_stddev": 0.0050178351280062575
+    "epoch_100_validation_loss": {
+      "mean": 1.6097993453343709,
+      "sample_stddev": 0.005916918941410579
+    },
+    "tail_trend_epoch_96_to_100": {
+      "mean": 7.050377982002291e-05,
+      "sample_stddev": 0.0005888305683067255
     },
     "test_loss_at_best_checkpoint": {
-      "mean": 1.709944994184706,
-      "sample_stddev": 0.004063504919423242
+      "mean": 1.6954726199750547,
+      "sample_stddev": 0.004666631827114617
     },
     "test_bits_per_char": {
-      "mean": 2.466929163303183,
-      "sample_stddev": 0.005862398395879765
+      "mean": 2.4460499408010294,
+      "sample_stddev": 0.006732526594632971
     },
     "test_char_accuracy": {
-      "mean": 0.5210185185185185,
-      "sample_stddev": 0.000916912144460083
+      "mean": 0.5279398148148148,
+      "sample_stddev": 0.0023087884518132973
     },
     "wall_seconds": {
-      "mean": 35.434,
-      "sample_stddev": 0.1577624796965337
+      "mean": 224.135,
+      "sample_stddev": 0.20132312336143102
     }
   },
   "runs": [
@@ -59,73 +69,100 @@
       "seed": 20261010,
       "parameter_count": 13964,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
-      "best_validation_epoch": 40,
-      "best_validation_loss": 1.6151732036045618,
-      "epoch_30_validation_loss": 1.6184537070138114,
-      "epoch_40_validation_loss": 1.6151732036045618,
+      "best_validation_epoch": 99,
+      "best_validation_loss": 1.6013871261051722,
+      "epoch_30_validation_loss": 1.6184534685952323,
+      "epoch_40_validation_loss": 1.6098710298538208,
+      "epoch_100_validation_loss": 1.6036126273018974,
       "last_five_validation_losses": [
-        1.6219006606510706,
-        1.622983694076538,
-        1.6201730115073067,
-        1.6170753240585327,
-        1.6151732036045618
+        1.6035825865609306,
+        1.6027751139232091,
+        1.6024389266967773,
+        1.6013871261051722,
+        1.6036126273018974
       ],
-      "tail_trend_epoch_36_to_40": -0.006727457046508789,
-      "test_loss_at_best_checkpoint": 1.7101619582706027,
-      "test_bits_per_char": 2.467242176313957,
-      "test_char_accuracy": 0.5208333333333334,
-      "wall_seconds": 35.289,
-      "training_epochs": 40
+      "tail_trend_epoch_96_to_100": 3.0040740966796875e-05,
+      "tail_plateau_abs_delta_lt_0_005": true,
+      "convergence_status": "plateau_by_endpoint_delta",
+      "test_loss_at_best_checkpoint": 1.6939782502916123,
+      "test_bits_per_char": 2.443894021069472,
+      "test_char_accuracy": 0.5300694444444445,
+      "wall_seconds": 224.114,
+      "training_epochs": 100,
+      "learning_rate_schedule": {
+        "type": "step_decay",
+        "start_after_epoch": 30,
+        "every_epochs": 15,
+        "factor": 0.5
+      }
     },
     {
       "seed": 20261011,
       "parameter_count": 13964,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
-      "best_validation_epoch": 40,
-      "best_validation_loss": 1.6211425917489188,
-      "epoch_30_validation_loss": 1.6491017171314784,
-      "epoch_40_validation_loss": 1.6211425917489188,
+      "best_validation_epoch": 80,
+      "best_validation_loss": 1.6081299100603377,
+      "epoch_30_validation_loss": 1.649102006639753,
+      "epoch_40_validation_loss": 1.6217958245958601,
+      "epoch_100_validation_loss": 1.6103820630482264,
       "last_five_validation_losses": [
-        1.636000326701573,
-        1.6342924322400774,
-        1.626881548336574,
-        1.6249451296670097,
-        1.6211425917489188
+        1.609703540802002,
+        1.6109355858394079,
+        1.6104938302721297,
+        1.6112157276698522,
+        1.6103820630482264
       ],
-      "tail_trend_epoch_36_to_40": -0.014857734952654189,
-      "test_loss_at_best_checkpoint": 1.7057773537105985,
-      "test_bits_per_char": 2.46091652905898,
-      "test_char_accuracy": 0.5220138888888889,
-      "wall_seconds": 35.602,
-      "training_epochs": 40
+      "tail_trend_epoch_96_to_100": 0.0006785222462244445,
+      "tail_plateau_abs_delta_lt_0_005": true,
+      "convergence_status": "plateau_by_endpoint_delta",
+      "test_loss_at_best_checkpoint": 1.6917362128363715,
+      "test_bits_per_char": 2.4406594447513092,
+      "test_char_accuracy": 0.5282638888888889,
+      "wall_seconds": 224.346,
+      "training_epochs": 100,
+      "learning_rate_schedule": {
+        "type": "step_decay",
+        "start_after_epoch": 30,
+        "every_epochs": 15,
+        "factor": 0.5
+      }
     },
     {
       "seed": 20261012,
       "parameter_count": 13964,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
-      "best_validation_epoch": 40,
-      "best_validation_loss": 1.622501986367362,
-      "epoch_30_validation_loss": 1.636995792388916,
-      "epoch_40_validation_loss": 1.622501986367362,
+      "best_validation_epoch": 81,
+      "best_validation_loss": 1.6135169778551375,
+      "epoch_30_validation_loss": 1.636995724269322,
+      "epoch_40_validation_loss": 1.6213769231523787,
+      "epoch_100_validation_loss": 1.615403345652989,
       "last_five_validation_losses": [
-        1.6281994921820504,
-        1.6356768948691232,
-        1.625007016318185,
-        1.6280159269060408,
-        1.622501986367362
+        1.6159003973007202,
+        1.6144712993076868,
+        1.6151097331728255,
+        1.613725679261344,
+        1.615403345652989
       ],
-      "tail_trend_epoch_36_to_40": -0.0056975058146884194,
-      "test_loss_at_best_checkpoint": 1.7138956705729167,
-      "test_bits_per_char": 2.4726287845366115,
-      "test_char_accuracy": 0.5202083333333334,
-      "wall_seconds": 35.411,
-      "training_epochs": 40
+      "tail_trend_epoch_96_to_100": -0.0004970516477311726,
+      "tail_plateau_abs_delta_lt_0_005": true,
+      "convergence_status": "plateau_by_endpoint_delta",
+      "test_loss_at_best_checkpoint": 1.70070339679718,
+      "test_bits_per_char": 2.453596356582307,
+      "test_char_accuracy": 0.5254861111111111,
+      "wall_seconds": 223.945,
+      "training_epochs": 100,
+      "learning_rate_schedule": {
+        "type": "step_decay",
+        "start_after_epoch": 30,
+        "every_epochs": 15,
+        "factor": 0.5
+      }
     }
   ],
-  "interpretation_rule": "A negative epoch-36-to-40 delta means validation loss continued to improve over that interval; do not call the model converged solely because 40 epochs elapsed.",
+  "interpretation_rule": "Predeclared diagnostic: endpoint validation-loss absolute change from epoch 96 to 100 below 0.005 is labelled plateau_by_endpoint_delta; a decrease of at least 0.005 is still_improving; an increase of at least 0.005 is validation_worsening_or_unsettled. This is descriptive, not proof of global convergence. Learning rate starts at 0.003 and halves every 15 epochs after epoch 30.",
   "limitations": [
     "Single-book character prediction only.",
-    "This 40-epoch diagnostic has more training budget than the original 30-epoch RNN and is not directly compute-matched to the fixed-window experiment.",
+    "This 100-epoch diagnostic with learning-rate decay has more training budget than the original 30-epoch RNN and is not directly compute-matched to the fixed-window experiment.",
     "The validation set selects checkpoints; test metrics are reported only after training."
   ]
 }
