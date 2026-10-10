@@ -176,6 +176,7 @@ def main():
     ap.add_argument("--steps-per-epoch", type=int, default=400)
     ap.add_argument("--batch-size", type=int, default=256)
     ap.add_argument("--learning-rate", type=float, default=0.001)
+    ap.add_argument("--expected-dataset-sha256", default="e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1")
     args = ap.parse_args()
 
     text = args.text_file.read_text(encoding="utf-8", errors="replace").replace("\r\n", "\n").replace("\r", "\n")
@@ -199,6 +200,8 @@ def main():
     validation_positions = np.arange(train_end, val_end, dtype=np.int32)
     train_positions = np.arange(args.context, train_end, dtype=np.int32)
     data_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    if args.expected_dataset_sha256 and data_hash != args.expected_dataset_sha256:
+        raise SystemExit(f"dataset hash mismatch: expected {args.expected_dataset_sha256}, got {data_hash}")
 
     print("NGRAM_START "+json.dumps({"orders":[2,3,4,5],"alpha_grid":[0.001,0.01,0.1,1.0,10.0],
                                      "train":len(train_text),"validation":len(val_text),
