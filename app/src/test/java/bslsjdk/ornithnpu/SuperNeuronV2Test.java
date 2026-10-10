@@ -72,6 +72,22 @@ public class SuperNeuronV2Test {
     }
 
     @Test
+    public void recurrentCheckpointPersistsEligibilityTraceAndRewardIsBounded() throws Exception {
+        SuperNeuronV2 neuron = new SuperNeuronV2(3, 8, 5, 89L);
+        neuron.forward(new double[]{0.3, -0.2, 0.7});
+        neuron.applyReward(0.5, 0.001);
+        JSONObject checkpoint = neuron.toJson();
+        assertTrue(checkpoint.has("inputProjectionEligibility"));
+        assertTrue(checkpoint.has("recurrentEligibility"));
+        assertEquals(3, checkpoint.getInt("internalMicroSteps"));
+        SuperNeuronV2 restored = SuperNeuronV2.fromJson(
+                new JSONObject(checkpoint.toString()), 100L);
+        assertEquals(neuron.getForwardSteps(), restored.getForwardSteps());
+        for (double value : restored.forward(new double[]{0.1, 0.2, 0.3}))
+            assertTrue(Double.isFinite(value));
+    }
+
+    @Test
     public void compactPrototypeReportsBoundedStorage() {
         SuperNeuronV2 neuron = new SuperNeuronV2(8, 16, 64, 2L);
         assertTrue(neuron.estimatedStorageBytes() < 64 * 1024);
