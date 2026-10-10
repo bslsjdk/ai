@@ -230,7 +230,7 @@ public final class SuperNeuronLanguageTrainer {
     public int getEmbeddingSize() { return embeddingSize; }
     public long getTrainedTokenTargets() { return trainedTokenTargets; }
     public long getParameterCount() {
-        return model.getParameterCount();
+        return model.getParameterCount() + (long) embeddings.length;
     }
     public long estimatedStorageBytes() {
         return (long) embeddings.length * Double.BYTES + model.estimatedStorageBytes()
