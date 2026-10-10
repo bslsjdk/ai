@@ -89,13 +89,41 @@ final class EvoNet16 {
         double inSigma = sigma * (0.5 / Math.sqrt(INPUTS));
         double outSigma = sigma * 0.10;
         double biasSigma = sigma * 0.02;
+
+        // Local mutation: perturb a subset of hidden neurons instead of disturbing
+        // every unit on every offspring. Output biases remain globally mutable.
         for (int j = 0; j < hidden; j++) {
-            for (int i = 0; i < INPUTS; i++) w1[j][i] += r.nextGaussian() * inSigma;
-            b1[j] += r.nextGaussian() * biasSigma;
+            if (r.nextDouble() < 0.28) {
+                for (int i = 0; i < INPUTS; i++) w1[j][i] += r.nextGaussian() * inSigma;
+                b1[j] += r.nextGaussian() * biasSigma;
+                for (int a = 0; a < ACTIONS; a++) w2[a][j] += r.nextGaussian() * outSigma;
+            }
         }
-        for (int a = 0; a < ACTIONS; a++) {
-            for (int j = 0; j < hidden; j++) w2[a][j] += r.nextGaussian() * outSigma;
-            b2[a] += r.nextGaussian() * biasSigma;
+        for (int a = 0; a < ACTIONS; a++) b2[a] += r.nextGaussian() * biasSigma;
+
+        // Recycle one low-importance neuron slot from a high-importance neuron.
+        // Importance is a cheap structural proxy (incoming magnitude × outgoing magnitude),
+        // not a claim of causal neuron attribution; validation still decides survival.
+        if (hidden > 1 && r.nextDouble() < 0.20) {
+            int strongest = 0, weakest = 0;
+            double high = Double.NEGATIVE_INFINITY, low = Double.POSITIVE_INFINITY;
+            for (int j = 0; j < hidden; j++) {
+                double incoming = 0.0, outgoing = 0.0;
+                for (int i = 0; i < INPUTS; i++) incoming += Math.abs(w1[j][i]);
+                for (int a = 0; a < ACTIONS; a++) outgoing += Math.abs(w2[a][j]);
+                double score = incoming * outgoing;
+                if (score > high) { high = score; strongest = j; }
+                if (score < low) { low = score; weakest = j; }
+            }
+            if (strongest != weakest) {
+                System.arraycopy(w1[strongest], 0, w1[weakest], 0, INPUTS);
+                b1[weakest] = b1[strongest];
+                for (int a = 0; a < ACTIONS; a++) {
+                    w2[a][weakest] = w2[a][strongest] + r.nextGaussian() * outSigma;
+                }
+                for (int i = 0; i < INPUTS; i++) w1[weakest][i] += r.nextGaussian() * inSigma;
+                b1[weakest] += r.nextGaussian() * biasSigma;
+            }
         }
     }
 
