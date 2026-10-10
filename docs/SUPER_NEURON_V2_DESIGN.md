@@ -133,7 +133,7 @@ C. 共享核心、少量专属参数、稀疏激活的紧凑版本。
 ## 5.3 输出数量契约与当前训练闭环
 
 - `SuperNeuronV2` 的 `outputCount` 是固定输出维度；每次前向输出数组长度必须严格等于它，输出是归一化类别/下一 token 概率。语言任务中应把它配置为 tokenizer 词表大小，而不是把协作网络的 `outputChannels` 当成词表大小。
-- `SuperNeuronLanguageTrainer` 已提供小型监督基线：token ID 序列 -> 可训练 token embedding -> `SuperNeuronV2` -> 下一 token 交叉熵；词表 ID 越界会被拒绝，每次训练调用有 token 步数预算，估算模型与工作缓冲总量限制为 64 MiB。
+- `SuperNeuronLanguageTrainer` 已提供小型监督基线：token ID 序列 -> 可训练 token embedding -> `SuperNeuronV2` -> 下一 token 交叉熵；词表 ID 越界会被拒绝，每次训练调用有 token 步数预算，估算模型与工作缓冲总量限制为 16 MiB。
 - 该训练器使用单步/截断梯度更新 embedding 与模型参数，**没有完整的跨时间反向传播（BPTT）**，也没有 tokenizer、语料加载器、批处理、学习率调度或生产检查点管理。它是验证训练闭环的基线，不是成熟语言模型。
 - 评估必须在独立验证序列上进行；训练损失下降只是必要条件，不是语言泛化证明。后续需加入 train/validation/test 分离、多个 seed、困惑度、过拟合检测和与普通小型网络的公平对照。
 - 当前 CI 只在 Linux runner 上做单元测试和 Java 编译；它不能证明 Android 真机峰值 RSS/PSS、速度或 NPU 适配。真机测试仍须把进程运行时内存控制在 4 GiB 以下并留出安全余量。
