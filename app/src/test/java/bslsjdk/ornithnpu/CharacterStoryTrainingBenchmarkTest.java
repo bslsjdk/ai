@@ -52,5 +52,7 @@ public class CharacterStoryTrainingBenchmarkTest {
         assertTrue(Double.isFinite(meanTrainingLoss));
         assertTrue(Double.isFinite(before));
         assertTrue(Double.isFinite(after));
+        assertTrue("held-out character-story loss should decrease: before=" + before + ", after=" + after,
+                after < before);
     }
 }
