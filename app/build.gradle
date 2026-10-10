@@ -25,6 +25,14 @@ android {
             }
         }
     }
+    buildTypes {
+        debug {
+            // Keep the experimental AIMENG build installable alongside the existing
+            // Ornith/MCNPU app; never replace the user's working app during testing.
+            applicationIdSuffix ".aimengdebug"
+            versionNameSuffix "-aimeng"
+        }
+    }
     sourceSets { main { jniLibs.srcDirs = ["src/main/jniLibs"] } }
     packaging { jniLibs { useLegacyPackaging true } }
     externalNativeBuild {
