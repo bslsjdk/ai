@@ -42,6 +42,7 @@ public final class SparseDiffusionMobileModel {
     }
 
     public synchronized void load(File file) throws Exception {
+        loaded = false;
         if (file == null || !file.isFile() || file.length() <= 0) {
             throw new IllegalArgumentException("portable model file missing");
         }
@@ -227,10 +228,51 @@ public final class SparseDiffusionMobileModel {
         if (lastLogits == null) throw new IllegalStateException("model produced no diffusion steps");
         for (int v = 0; v < vocab; v++) survivalMix[v] += survival * lastLogits[v];
         lastPooled = pooledForLearning;
-        lastLogits = survivalMix;
+        this.lastLogits = survivalMix;
         return survivalMix;
     }
 
+
+
+    public synchronized int learnFromText(String text, File stateFile) throws Exception {
+        if (!loaded) throw new IllegalStateException("model not loaded");
+        if (text == null || text.length() < 2) throw new IllegalArgumentException("need at least two characters");
+        if (text.length() > 512) text = text.substring(0, 512);
+        int examples = 0;
+        float[] matrix = w("decoder.weight");
+        float[] bias = w("decoder.bias");
+        float lr = 0.01f / Math.max(1, Math.min(64, text.length() - 1));
+        for (int pos = 1; pos < text.length(); pos++) {
+            Integer targetValue = stoi.get(text.substring(pos, pos + 1));
+            if (targetValue == null || targetValue < 0 || targetValue >= itos.length) continue;
+            int start = Math.max(0, pos - contextLength);
+            int[] ids = new int[pos - start];
+            for (int j = start; j < pos; j++) {
+                Integer id = stoi.get(text.substring(j, j + 1));
+                ids[j - start] = id == null ? 0 : id;
+            }
+            float[] logits = forward(ids);
+            float[] p = probabilities(logits, 1f);
+            int target = targetValue;
+            for (int o = 0; o < itos.length; o++) {
+                float grad = (o == target ? 1f : 0f) - p[o];
+                grad = Math.max(-0.05f, Math.min(0.05f, grad));
+                bias[o] += lr * grad;
+                int base = o * width;
+                for (int j = 0; j < width; j++) {
+                    float delta = lr * grad * lastPooled[j];
+                    matrix[base + j] += Math.max(-0.002f, Math.min(0.002f, delta));
+                }
+            }
+            examples++;
+        }
+        if (examples > 0) {
+            learningUpdates++;
+            if (stateFile != null) saveLearningState(stateFile);
+        }
+        lastTrace.clear();
+        return examples;
+    }
 
     /** Applies a bounded REINFORCE-style update to the decoder from explicit user feedback.
      * Positive reward reinforces sampled characters; negative reward suppresses them.
