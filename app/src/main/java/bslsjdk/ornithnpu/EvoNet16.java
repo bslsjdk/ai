@@ -127,13 +127,13 @@ final class EvoNet16 {
         return n;
     }
 
-    private static JSONArray vector(double[] values) {
+    private static JSONArray vector(double[] values) throws Exception {
         JSONArray a = new JSONArray();
         for (double v : values) a.put(v);
         return a;
     }
 
-    private static JSONArray matrix(double[][] values) {
+    private static JSONArray matrix(double[][] values) throws Exception {
         JSONArray a = new JSONArray();
         for (double[] row : values) a.put(vector(row));
         return a;
