@@ -42,8 +42,17 @@ public final class SelfOrganizingNeuronGraph {
     private final double[] previous;
     private final double[] activityMean;
     private final double[] scratchSum;
+    private final int[] scratchIncomingCount;
     private final int[] edgeFrom;
     private final int[] edgeTo;
+    private final int[] edgeNextOut;
+    private final int[] edgeHeadOut;
+    private int activeNeuronBudget = 256;
+    private int lastActiveNeuronCount;
+    private int[] activeNodes;
+    private int[] nextActiveNodes;
+    private boolean[] activeMask;
+    private boolean[] nextActiveMask;
     private final double[] edgeWeight;
     private final double[] edgeTrace;
     private final double[] edgeUse;
@@ -80,8 +89,16 @@ public final class SelfOrganizingNeuronGraph {
         previous = new double[maxNeurons];
         activityMean = new double[maxNeurons];
         scratchSum = new double[maxNeurons];
+        scratchIncomingCount = new int[maxNeurons];
+        activeNodes = new int[maxNeurons];
+        nextActiveNodes = new int[maxNeurons];
+        activeMask = new boolean[maxNeurons];
+        nextActiveMask = new boolean[maxNeurons];
         edgeFrom = new int[maxEdges];
         edgeTo = new int[maxEdges];
+        edgeNextOut = new int[maxEdges];
+        edgeHeadOut = new int[maxNeurons];
+        Arrays.fill(edgeHeadOut, -1);
         edgeWeight = new double[maxEdges];
         edgeTrace = new double[maxEdges];
         edgeUse = new double[maxEdges];
@@ -147,6 +164,8 @@ public final class SelfOrganizingNeuronGraph {
         int e = edgeCount++;
         edgeFrom[e] = from;
         edgeTo[e] = to;
+        edgeNextOut[e] = edgeHeadOut[from];
+        edgeHeadOut[from] = e;
         edgeWeight[e] = clamp(weight, -MAX_ABS_WEIGHT, MAX_ABS_WEIGHT);
         edgeTrace[e] = 0;
         edgeUse[e] = 0;
@@ -195,38 +214,75 @@ public final class SelfOrganizingNeuronGraph {
         for (double v : inputs) if (!Double.isFinite(v))
             throw new IllegalArgumentException("input contains non-finite value");
 
-        System.arraycopy(state, 0, previous, 0, neuronCount);
         for (int i = 0; i < neuronCount; i++) if (!enabled[i]) state[i] = 0.0;
         for (int p = 0; p < inputCount; p++) {
             int i = inputOrder[p];
             state[i] = enabled[i] ? clamp(inputs[p], -1.0, 1.0) : 0.0;
         }
+
+        // Begin from sensor ports, then activate only nodes reached through outgoing
+        // edges, capped by activeNeuronBudget. The graph remains dynamic and recurrent;
+        // this is bounded sparse activation, not a fixed layer layout.
+        int activeCount = 0;
+        for (int p = 0; p < inputCount; p++) {
+            int id = inputOrder[p];
+            if (enabled[id] && !activeMask[id]) {
+                activeMask[id] = true;
+                activeNodes[activeCount++] = id;
+            }
+        }
         for (int round = 0; round < propagationRounds; round++) {
-            System.arraycopy(state, 0, previous, 0, neuronCount);
-            for (int i = 0; i < neuronCount; i++)
-                scratchSum[i] = enabled[i] && !inputPort[i] ? bias[i] : 0.0;
-            // One sparse edge pass per propagation round: O(V + E), not O(V * E).
-            for (int e = 0; e < edgeCount; e++) {
-                if (edgeEnabled[e]) {
-                    int target = edgeTo[e];
-                    if (enabled[target] && !inputPort[target])
-                        scratchSum[target] += previous[edgeFrom[e]] * edgeWeight[e];
+            int nextCount = 0;
+            for (int p = 0; p < inputCount; p++) {
+                int id = inputOrder[p];
+                if (enabled[id] && !nextActiveMask[id] && nextCount < activeNeuronBudget) {
+                    nextActiveMask[id] = true;
+                    nextActiveNodes[nextCount++] = id;
                 }
             }
-            for (int i = 0; i < neuronCount; i++) {
-                if (!enabled[i] || inputPort[i]) continue;
-                state[i] = Math.tanh(clamp(scratchSum[i], -8.0, 8.0));
+            for (int a = 0; a < activeCount; a++) {
+                int source = activeNodes[a];
+                for (int e = edgeHeadOut[source]; e >= 0; e = edgeNextOut[e]) {
+                    if (!edgeEnabled[e]) continue;
+                    int target = edgeTo[e];
+                    if (!enabled[target] || inputPort[target]) continue;
+                    if (!nextActiveMask[target]) {
+                        if (nextCount >= activeNeuronBudget) continue;
+                        nextActiveMask[target] = true;
+                        nextActiveNodes[nextCount++] = target;
+                        scratchSum[target] = bias[target];
+                    }
+                    scratchSum[target] += state[source] * edgeWeight[e];
+                }
             }
+            for (int i = 0; i < nextCount; i++) {
+                int id = nextActiveNodes[i];
+                if (!inputPort[id])
+                    state[id] = Math.tanh(clamp(scratchSum[id], -8.0, 8.0));
+            }
+            for (int i = 0; i < activeCount; i++) activeMask[activeNodes[i]] = false;
+            int[] nodeSwap = activeNodes; activeNodes = nextActiveNodes; nextActiveNodes = nodeSwap;
+            boolean[] maskSwap = activeMask; activeMask = nextActiveMask; nextActiveMask = maskSwap;
+            activeCount = nextCount;
+            Arrays.fill(nextActiveMask, 0, neuronCount, false);
         }
-        for (int i = 0; i < neuronCount; i++) {
-            activityMean[i] = activityMean[i] * 0.99 + Math.abs(state[i]) * 0.01;
+        lastActiveNeuronCount = activeCount;
+        for (int i = 0; i < activeCount; i++) {
+            int id = activeNodes[i];
+            activityMean[id] = activityMean[id] * 0.99 + Math.abs(state[id]) * 0.01;
         }
+        // Inactive edges lose eligibility gradually and cannot learn from stale states.
         for (int e = 0; e < edgeCount; e++) {
             if (!edgeEnabled[e]) continue;
-            double pre = state[edgeFrom[e]];
-            double post = state[edgeTo[e]];
-            edgeTrace[e] = clamp(traceDecay * edgeTrace[e] + pre * post, -10, 10);
-            edgeUse[e] = edgeUse[e] * 0.995 + Math.abs(pre * post) * 0.005;
+            if (activeMask[edgeFrom[e]] && activeMask[edgeTo[e]]) {
+                double pre = state[edgeFrom[e]];
+                double post = state[edgeTo[e]];
+                edgeTrace[e] = clamp(traceDecay * edgeTrace[e] + pre * post, -10, 10);
+                edgeUse[e] = edgeUse[e] * 0.995 + Math.abs(pre * post) * 0.005;
+            } else {
+                edgeTrace[e] *= traceDecay;
+                edgeUse[e] *= 0.995;
+            }
         }
         ticks++;
         double[] outputs = new double[outputCount];
@@ -254,17 +310,17 @@ public final class SelfOrganizingNeuronGraph {
         // Reuse the per-neuron scratch buffer to aggregate incoming traces in O(V + E).
         // A nested neuron-by-edge scan would become prohibitively expensive as graphs grow.
         Arrays.fill(scratchSum, 0, neuronCount, 0.0);
-        int[] incomingCount = new int[neuronCount];
+        Arrays.fill(scratchIncomingCount, 0, neuronCount, 0);
         for (int e = 0; e < edgeCount; e++) {
             if (!edgeEnabled[e]) continue;
             int target = edgeTo[e];
             scratchSum[target] += edgeTrace[e];
-            incomingCount[target]++;
+            scratchIncomingCount[target]++;
         }
         for (int i = 0; i < neuronCount; i++) {
-            if (enabled[i] && !inputPort[i] && incomingCount[i] > 0) {
+            if (enabled[i] && !inputPort[i] && scratchIncomingCount[i] > 0) {
                 bias[i] = clamp(bias[i] + learningRate * advantage
-                        * scratchSum[i] / incomingCount[i], -2, 2);
+                        * scratchSum[i] / scratchIncomingCount[i], -2, 2);
             }
         }
     }
@@ -324,6 +380,13 @@ public final class SelfOrganizingNeuronGraph {
     public int getOutputCount() { return outputCount; }
     public long getTicks() { return ticks; }
     public long getTopologyChanges() { return topologyChanges; }
+    public int getLastActiveNeuronCount() { return lastActiveNeuronCount; }
+    public int getActiveNeuronBudget() { return activeNeuronBudget; }
+    public void setActiveNeuronBudget(int budget) {
+        if (budget < Math.max(1, inputCount) || budget > maxNeurons)
+            throw new IllegalArgumentException("active neuron budget must be inputCount..maxNeurons");
+        activeNeuronBudget = budget;
+    }
     public double getRewardBaseline() { return rewardBaseline; }
     public double getNeuronActivity(int id) {
         if (!validNeuron(id)) throw new IllegalArgumentException("invalid neuron id");
@@ -340,6 +403,7 @@ public final class SelfOrganizingNeuronGraph {
         root.put("format", FORMAT);
         root.put("maxNeurons", maxNeurons);
         root.put("maxEdges", maxEdges);
+        root.put("activeNeuronBudget", activeNeuronBudget);
         root.put("traceDecay", traceDecay);
         root.put("neuronCount", neuronCount);
         root.put("edgeCount", edgeCount);
@@ -429,6 +493,8 @@ public final class SelfOrganizingNeuronGraph {
             g.edgeTrace[id] = finite(edge.optDouble("trace", 0), "trace");
             g.edgeUse[id] = finite(edge.optDouble("use", 0), "use");
         }
+        g.activeNeuronBudget = Math.max(g.inputCount, Math.min(maxN,
+                root.optInt("activeNeuronBudget", Math.min(256, maxN))));
         g.rewardBaseline = finite(root.optDouble("rewardBaseline", 0), "rewardBaseline");
         g.ticks = Math.max(0, root.optLong("ticks", 0));
         g.topologyChanges = Math.max(0, root.optLong("topologyChanges", 0));
