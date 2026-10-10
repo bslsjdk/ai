@@ -59,6 +59,24 @@ public class SelfOrganizingNeuronGraphTest {
         assertTrue(graph.estimatedStorageBytes() < 1024 * 1024);
     }
 
+
+    @Test
+    public void activeNeuronBudgetCapsPerTickActivation() {
+        SelfOrganizingNeuronGraph graph = new SelfOrganizingNeuronGraph(8, 16, 0.9, 11L);
+        int input = graph.addNeuron();
+        int output = graph.addNeuron();
+        int extra = graph.addNeuron();
+        assertTrue(graph.markInputPort(input));
+        assertTrue(graph.markOutputPort(output));
+        assertTrue(graph.addConnection(input, extra, 1.0));
+        assertTrue(graph.addConnection(input, output, 1.0));
+        graph.setActiveNeuronBudget(2);
+
+        double[] result = graph.step(new double[]{1.0}, 1);
+        assertEquals(Math.tanh(1.0), result[0], 1e-9);
+        assertTrue(graph.getLastActiveNeuronCount() <= 2);
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void rejectsWrongInputShape() {
         SelfOrganizingNeuronGraph graph = new SelfOrganizingNeuronGraph(4, 4, 0.9, 10L);
