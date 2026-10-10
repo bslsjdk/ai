@@ -314,6 +314,17 @@ public final class SelfOrganizingNeuronGraph {
      * from the environment. Baseline subtraction reduces raw reward bias.
      */
     public void applyReward(double reward, double learningRate) {
+        applyRewardInternal(reward, learningRate, -1);
+    }
+
+    /** Reward update with explicit credit assigned to the action readout selected by the policy. */
+    public void applyRewardForAction(int action, double reward, double learningRate) {
+        if (action < 0 || action >= outputCount)
+            throw new IllegalArgumentException("invalid action readout");
+        applyRewardInternal(reward, learningRate, action);
+    }
+
+    private void applyRewardInternal(double reward, double learningRate, int selectedAction) {
         if (!Double.isFinite(reward) || !Double.isFinite(learningRate)
                 || learningRate < 0 || learningRate > 0.1)
             throw new IllegalArgumentException("invalid reward or learning rate");
@@ -321,8 +332,13 @@ public final class SelfOrganizingNeuronGraph {
         rewardBaseline = rewardBaseline * 0.98 + reward * 0.02;
         for (int e = 0; e < edgeCount; e++) {
             if (!edgeEnabled[e]) continue;
-            edgeWeight[e] = clamp(edgeWeight[e] + learningRate * advantage * edgeTrace[e],
-                    -MAX_ABS_WEIGHT, MAX_ABS_WEIGHT);
+            double update = learningRate * advantage * edgeTrace[e];
+            if (selectedAction >= 0 && outputPort[edgeTo[e]]) {
+                double actionScale = edgeTo[e] == outputOrder[selectedAction]
+                        ? 1.0 : -1.0 / Math.max(1, outputCount - 1);
+                update += learningRate * advantage * edgeTrace[e] * actionScale * 3.0;
+            }
+            edgeWeight[e] = clamp(edgeWeight[e] + update, -MAX_ABS_WEIGHT, MAX_ABS_WEIGHT);
         }
         // Reuse the per-neuron scratch buffer to aggregate incoming traces in O(V + E).
         // A nested neuron-by-edge scan would become prohibitively expensive as graphs grow.
@@ -338,6 +354,13 @@ public final class SelfOrganizingNeuronGraph {
             if (enabled[i] && !inputPort[i] && scratchIncomingCount[i] > 0) {
                 bias[i] = clamp(bias[i] + learningRate * advantage
                         * scratchSum[i] / scratchIncomingCount[i], -2, 2);
+            }
+        }
+        if (selectedAction >= 0) {
+            for (int a = 0; a < outputCount; a++) {
+                int id = outputOrder[a];
+                double scale = a == selectedAction ? 1.0 : -1.0 / Math.max(1, outputCount - 1);
+                bias[id] = clamp(bias[id] + learningRate * advantage * scale * 0.5, -2, 2);
             }
         }
     }
