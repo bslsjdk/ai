@@ -134,7 +134,7 @@ public final class SuperNeuronLabActivity extends Activity {
             int[] generated = new int[prefixLength + generatedCount];
             System.arraycopy(tokens, 0, generated, 0, prefixLength);
             int previous = generated[prefixLength - 1];
-            for (int i = 0; i < prefixLength; i++) trainer.predictNextToken(tokens[i]);
+            for (int i = 0; i < prefixLength - 1; i++) trainer.predictNextToken(tokens[i]);
             for (int i = 0; i < generatedCount; i++) {
                 int next = trainer.predictNextToken(previous);
                 if (next < 0 || next >= CharacterTokenizer.VOCABULARY_SIZE)
