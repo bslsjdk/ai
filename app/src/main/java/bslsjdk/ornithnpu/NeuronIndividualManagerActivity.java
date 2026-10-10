@@ -225,7 +225,7 @@ public final class NeuronIndividualManagerActivity extends Activity {
         boolean duplicate = false;
         for (Individual item : individuals) if (item.id.equals(id)) { duplicate = true; break; }
         if (duplicate) id = UUID.randomUUID().toString();
-        return new Individual(id, name, id + ".json", graph);
+        Individual item = new Individual(id, name, id + ".json", graph);\n        item.lastTrainingResult = root.optString("lastTrainingResult", "尚无训练记录");\n        item.lastValidationResult = root.optString("lastValidationResult", "尚无独立验证记录");\n        return item;
     }
 
     private void loadAll() {
@@ -318,6 +318,62 @@ public final class NeuronIndividualManagerActivity extends Activity {
     private void updateButtons() {
         if (saveSelectedButton != null) saveSelectedButton.setEnabled(!selectedIds.isEmpty());
         if (exportSelectedButton != null) exportSelectedButton.setEnabled(!selectedIds.isEmpty());
+    }
+
+    private void chooseTrainingEpisodes() {
+        if (current == null) { toast("请先创建或选择个体"); return; }
+        final String[] labels = {"25 局（快速检查）", "100 局（默认）", "250 局（较长实验）"};
+        final int[] values = {25, 100, 250};
+        new AlertDialog.Builder(this).setTitle("训练当前个体")
+                .setItems(labels, (dialog, which) -> runExperiment(true, values[which]))
+                .setNegativeButton("取消", null).show();
+    }
+
+    private void runExperiment(boolean training, int episodes) {
+        if (experimentRunning) { toast("已有训练/验证任务运行中，请稍候"); return; }
+        if (current == null) { toast("请先创建或选择个体"); return; }
+        final Individual target = current;
+        experimentRunning = true;
+        status.setText((training ? "正在训练 " : "正在独立验证 ") + target.name
+                + "，地图数 " + episodes + "。任务在后台运行，界面仍可响应。");
+        new Thread(() -> {
+            SelfOrganizingMazeTrainer.Result result = null;
+            Exception failure = null;
+            try {
+                long seed = training
+                        ? (System.nanoTime() ^ target.id.hashCode())
+                        : (0x5EED2026L ^ target.id.hashCode());
+                SelfOrganizingNeuronGraph evaluatedGraph = target.graph;
+                if (!training) {
+                    // Validate a restored copy so evaluation does not change the saved
+                    // individual's traces, activity statistics, tick counter or weights.
+                    evaluatedGraph = SelfOrganizingNeuronGraph.fromJson(target.graph.toJson(), seed);
+                }
+                result = SelfOrganizingMazeTrainer.run(evaluatedGraph, episodes, seed, training);
+            } catch (Exception e) { failure = e; }
+            final SelfOrganizingMazeTrainer.Result completed = result;
+            final Exception error = failure;
+            runOnUiThread(() -> {
+                experimentRunning = false;
+                if (error != null) {
+                    showError(training ? "训练失败" : "独立验证失败", error);
+                    status.setText("任务失败；个体检查点未被标记为验证通过。");
+                    return;
+                }
+                if (training) target.lastTrainingResult = completed.toDisplayString();
+                else target.lastValidationResult = completed.toDisplayString();
+                try { writeIndividual(target); }
+                catch (Exception e) { showError("成绩保存失败", e); }
+                current = target;
+                refresh();
+                new AlertDialog.Builder(this)
+                        .setTitle(training ? "训练完成" : "独立验证完成")
+                        .setMessage(completed.toDisplayString()
+                                + (training ? "\\n注意：训练成绩不等于泛化能力，完成后请使用独立验证。" :
+                                "\\n验证使用独立种子，且在网络副本上执行，不修改当前个体。"))
+                        .setPositiveButton("确定", null).show();
+            });
+        }, training ? "NeuronMazeTrain" : "NeuronMazeValidate").start();
     }
 
     private void saveSelected() {
