@@ -33,6 +33,9 @@ public final class SparseDiffusionMobileModel {
     private java.util.List<LearningTrace> lastTrace = new java.util.ArrayList<>();
     private long learningUpdates = 0;
     private String baseModelFingerprint = "";
+    private float[] baseDecoderWeight;
+    private float[] baseDecoderBias;
+    private static final float MAX_DECODER_DRIFT = 0.25f;
 
     private static final class LearningTrace {
         final float[] pooled;
@@ -104,6 +107,8 @@ public final class SparseDiffusionMobileModel {
         require("self_proj.weight"); require("message_proj.weight"); require("gate.weight");
         require("gate.bias"); require("decoder.weight"); require("decoder.bias");
         require("halt_head.weight"); require("halt_head.bias");
+        baseDecoderWeight = w("decoder.weight").clone();
+        baseDecoderBias = w("decoder.bias").clone();
         loaded = true;
         baseModelFingerprint = modelFingerprint();
         lastTrace.clear();
@@ -267,11 +272,11 @@ public final class SparseDiffusionMobileModel {
             for (int o = 0; o < itos.length; o++) {
                 float grad = (o == target ? 1f : 0f) - p[o];
                 grad = Math.max(-0.05f, Math.min(0.05f, grad));
-                bias[o] += lr * grad;
+                bias[o] = clamp(bias[o] + lr * grad, baseDecoderBias[o] - MAX_DECODER_DRIFT, baseDecoderBias[o] + MAX_DECODER_DRIFT);
                 int base = o * width;
                 for (int j = 0; j < width; j++) {
                     float delta = lr * grad * lastPooled[j];
-                    matrix[base + j] += Math.max(-0.002f, Math.min(0.002f, delta));
+                    matrix[base + j] = clamp(matrix[base + j] + Math.max(-0.002f, Math.min(0.002f, delta)), baseDecoderWeight[base + j] - MAX_DECODER_DRIFT, baseDecoderWeight[base + j] + MAX_DECODER_DRIFT);
                 }
             }
             examples++;
@@ -306,12 +311,12 @@ public final class SparseDiffusionMobileModel {
                 float grad = ((o == trace.chosen ? 1f : 0f) - trace.probabilities[o]) * reward;
                 grad = Math.max(-0.05f, Math.min(0.05f, grad));
                 if (Math.abs(grad) < 1e-8f) continue;
-                bias[o] += lr * grad;
+                bias[o] = clamp(bias[o] + lr * grad, baseDecoderBias[o] - MAX_DECODER_DRIFT, baseDecoderBias[o] + MAX_DECODER_DRIFT);
                 int base = o * width;
                 for (int j = 0; j < width; j++) {
                     float delta = lr * grad * trace.pooled[j];
                     delta = Math.max(-0.005f, Math.min(0.005f, delta));
-                    matrix[base + j] += delta;
+                    matrix[base + j] = clamp(matrix[base + j] + delta, baseDecoderWeight[base + j] - MAX_DECODER_DRIFT, baseDecoderWeight[base + j] + MAX_DECODER_DRIFT);
                 }
                 changed++;
             }
@@ -320,6 +325,21 @@ public final class SparseDiffusionMobileModel {
         if (stateFile != null) saveLearningState(stateFile);
         lastTrace.clear();
         return changed;
+    }
+
+    public synchronized void resetLearningState(File stateFile) throws Exception {
+        if (!loaded || baseDecoderWeight == null || baseDecoderBias == null)
+            throw new IllegalStateException("model not loaded");
+        System.arraycopy(baseDecoderWeight, 0, w("decoder.weight"), 0, baseDecoderWeight.length);
+        System.arraycopy(baseDecoderBias, 0, w("decoder.bias"), 0, baseDecoderBias.length);
+        lastTrace.clear();
+        learningUpdates = 0;
+        if (stateFile != null && stateFile.exists() && !stateFile.delete())
+            throw new java.io.IOException("cannot remove saved learning state");
+    }
+
+    private static float clamp(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     public synchronized long getLearningUpdates() { return learningUpdates; }
@@ -337,8 +357,16 @@ public final class SparseDiffusionMobileModel {
         float[] matrix = w("decoder.weight");
         float[] bias = w("decoder.bias");
         if (savedW.length() != matrix.length || savedB.length() != bias.length) return;
-        for (int i = 0; i < matrix.length; i++) matrix[i] = (float) savedW.getDouble(i);
-        for (int i = 0; i < bias.length; i++) bias[i] = (float) savedB.getDouble(i);
+        for (int i = 0; i < matrix.length; i++) {
+            double value = savedW.getDouble(i);
+            if (!Double.isFinite(value)) return;
+            matrix[i] = clamp((float) value, baseDecoderWeight[i] - MAX_DECODER_DRIFT, baseDecoderWeight[i] + MAX_DECODER_DRIFT);
+        }
+        for (int i = 0; i < bias.length; i++) {
+            double value = savedB.getDouble(i);
+            if (!Double.isFinite(value)) return;
+            bias[i] = clamp((float) value, baseDecoderBias[i] - MAX_DECODER_DRIFT, baseDecoderBias[i] + MAX_DECODER_DRIFT);
+        }
         learningUpdates = state.optLong("updates", 0);
     }
 
