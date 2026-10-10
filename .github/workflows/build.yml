@@ -8,7 +8,7 @@ on:
   pull_request:
     branches: [feat/mobile-neuron-unit-runtime]
   push:
-    branches: [main, bonsai2-pq2-baseline, feat/scalable-neuron-architecture-v2]
+    branches: [main, bonsai2-pq2-baseline, feat/scalable-neuron-architecture-v2, feat/mobile-neuron-unit-runtime]
   workflow_dispatch:
 permissions:
   contents: write
