@@ -177,8 +177,11 @@ public final class SparseDiffusionMobileModel {
             int base = safe * width;
             int positionBase = pos * width;
             for (int j = 0; j < width; j++) {
-                context[j] += embedding[base + j];
-                if (positionEmbedding != null) context[j] += positionEmbedding[positionBase + j];
+                if (positionEmbedding != null) {
+                    context[j] += embedding[base + j] * (1f + positionEmbedding[positionBase + j]);
+                } else {
+                    context[j] += embedding[base + j];
+                }
             }
         }
         float denom = Math.max(1, tokenIds.length);
