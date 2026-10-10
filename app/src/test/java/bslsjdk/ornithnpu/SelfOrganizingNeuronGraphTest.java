@@ -103,7 +103,7 @@ public class SelfOrganizingNeuronGraphTest {
     public void mazeTrainerProducesBoundedMetrics() {
         SelfOrganizingNeuronGraph graph =
                 SelfOrganizingNeuronGraph.createRandomGraph(8, 4, 32, 80, 13L);
-        graph.setActiveNeuronBudget(12);
+        graph.setActiveNeuronBudget(20);
         SelfOrganizingMazeTrainer.Result result =
                 SelfOrganizingMazeTrainer.run(graph, 2, 14L, true);
         assertEquals(2, result.episodes);
