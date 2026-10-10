@@ -202,7 +202,7 @@ public final class SparseDiffusionActivity extends Activity {
     }
 
     private File modelFile() {
-        return new File(getFilesDir(), "aimeng-mobile-diffusion.json");
+        return new File(getFilesDir(), "aimeng-mobile-diffusion.aimg");
     }
 
     private File learningFile() {
@@ -243,7 +243,7 @@ public final class SparseDiffusionActivity extends Activity {
     private void chooseModel() {
         Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
-        i.setType("application/json");
+        i.setType("*/*");
         startActivityForResult(i, PICK);
     }
 
@@ -268,7 +268,7 @@ public final class SparseDiffusionActivity extends Activity {
                 });
             } catch (Throwable e) {
                 runOnUiThread(() -> {
-                    status.setText("本机模型恢复失败：" + errorText(e) + "。请重新导入有效的 mobile_diffusion.json。");
+                    status.setText("本机模型恢复失败：" + errorText(e) + "。请重新导入有效的 AIMENG .aimg 或旧版 .json 模型包。");
                     setBusy(false, null);
                     setModelActionsEnabled(false);
                 });
@@ -281,9 +281,9 @@ public final class SparseDiffusionActivity extends Activity {
         if (request != PICK || resultCode != RESULT_OK || data == null) return;
         Uri uri = data.getData();
         if (uri == null) return;
-        setBusy(true, "正在验证 AIMENG 模型包…");
+        setBusy(true, "正在校验 AIMENG 二进制/旧版模型包…");
         worker.execute(() -> {
-            File temp = new File(getFilesDir(), "aimeng-mobile-diffusion.json.tmp");
+            File temp = new File(getFilesDir(), "aimeng-mobile-diffusion.aimg.tmp");
             try {
                 try (InputStream in = getContentResolver().openInputStream(uri);
                      OutputStream out = new FileOutputStream(temp)) {
@@ -314,7 +314,7 @@ public final class SparseDiffusionActivity extends Activity {
                 temp.delete();
                 runOnUiThread(() -> {
                     status.setText("导入失败：" + errorText(e)
-                            + "。请选 AIMENG 导出的 mobile_diffusion.json，而不是 .safetensors。");
+                            + "。请选 AIMENG 的 .aimg 或旧版 .json 模型包，而不是 .pth / .safetensors。");
                     setBusy(false, null);
                 });
             }
