@@ -273,7 +273,7 @@ def main():
                        "Metrics must only be compared when the exact dataset hash and test target positions match."]
     }
     args.output_dir.mkdir(parents=True,exist_ok=True)
-    (args.output_dir/"summary.json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")
+    (args.output_dir/"summary.json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print("REAL_TEXT_BASELINES_SUMMARY "+json.dumps({"dataset_sha256":data_hash,
           "ngram":ngram,"fixed_window_aggregate":fixed_aggregate,
           "fixed_window_parameters":run_rows[0]["parameter_count"],
