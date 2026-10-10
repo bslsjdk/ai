@@ -72,6 +72,29 @@ public class SuperNeuronV2Test {
     }
 
     @Test
+    public void eligibilityTraceAppliesLocalRewardAndSurvivesCheckpoint() throws Exception {
+        SuperNeuronV2 neuron = new SuperNeuronV2(2, 7, 4, 991L);
+        neuron.forward(new double[]{0.8, -0.3});
+        JSONObject before = neuron.toJson();
+        assertTrue(before.has("eligibilityTrace"));
+        neuron.applyReward(0.7, 0.01);
+        JSONObject after = neuron.toJson();
+        assertNotEquals(before.getJSONArray("recurrentScale").toString(),
+                after.getJSONArray("recurrentScale").toString());
+        SuperNeuronV2 restored = SuperNeuronV2.fromJson(
+                new JSONObject(after.toString()), 4L);
+        assertEquals(after.getJSONArray("eligibilityTrace").toString(),
+                restored.toJson().getJSONArray("eligibilityTrace").toString());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void rejectsOutOfRangeReward() {
+        SuperNeuronV2 neuron = new SuperNeuronV2(2, 4, 3, 4L);
+        neuron.forward(new double[]{0.5, 0.5});
+        neuron.applyReward(-1.01, 0.01);
+    }
+
+    @Test
     public void compactPrototypeReportsBoundedStorage() {
         SuperNeuronV2 neuron = new SuperNeuronV2(8, 16, 64, 2L);
         assertTrue(neuron.estimatedStorageBytes() < 64 * 1024);
