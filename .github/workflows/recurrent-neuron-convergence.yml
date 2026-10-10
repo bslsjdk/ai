@@ -1,4 +1,4 @@
-name: Recurrent neuron convergence check (40 epochs)
+name: Recurrent neuron convergence check (100 epochs + LR decay)
 on:
   workflow_dispatch:
   push:
@@ -12,12 +12,12 @@ permissions:
 
 concurrency:
   group: recurrent-neuron-convergence-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   convergence:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -56,18 +56,19 @@ jobs:
           Path("experiments/recurrent-convergence/latest/alice.txt").write_text(text, encoding="utf-8")
           print("CORPUS_OK", len(text), digest)
           PY
-      - name: Train three seeds for up to 40 epochs
+      - name: Train three seeds for up to 100 epochs with step LR decay
         shell: bash
         run: |
           set -euo pipefail
-          python -m py_compile scripts/train_recurrent_neuron_lm.py scripts/run_recurrent_neuron_lm.py
+          python -m py_compile scripts/train_recurrent_neuron_lm_convergence.py scripts/run_recurrent_neuron_lm.py
           for seed in 20261010 20261011 20261012; do
             out="experiments/recurrent-convergence/latest/seed-$seed"
             mkdir -p "$out"
-            python scripts/train_recurrent_neuron_lm.py \
+            python scripts/train_recurrent_neuron_lm_convergence.py \
               --text-file experiments/recurrent-convergence/latest/alice.txt \
-              --output-dir "$out" --hidden 64 --context 64 --epochs 40 \
+              --output-dir "$out" --hidden 64 --context 64 --epochs 100 \
               --steps-per-epoch 240 --batch-size 32 --learning-rate 0.003 --seed "$seed" \
+              --lr-decay-start 30 --lr-decay-every 15 --lr-decay-factor 0.5 \
               2>&1 | tee "$out/terminal.log"
             python scripts/run_recurrent_neuron_lm.py \
               --model "$out/model.json" --prompt "Alice " --max-chars 80 --seed "$seed" \
@@ -94,14 +95,18 @@ jobs:
                   "best_validation_epoch": best["epoch"],
                   "best_validation_loss": best["validation_loss"],
                   "epoch_30_validation_loss": hist[29]["validation_loss"],
-                  "epoch_40_validation_loss": last["validation_loss"],
+                  "epoch_40_validation_loss": hist[39]["validation_loss"],
+                  "epoch_100_validation_loss": last["validation_loss"],
                   "last_five_validation_losses": [x["validation_loss"] for x in tail],
-                  "tail_trend_epoch_36_to_40": last["validation_loss"] - hist[35]["validation_loss"],
+                  "tail_trend_epoch_96_to_100": last["validation_loss"] - hist[95]["validation_loss"],
+                  "tail_plateau_abs_delta_lt_0_005": abs(last["validation_loss"] - hist[95]["validation_loss"]) < 0.005,
+                  "convergence_status": ("plateau_by_endpoint_delta" if abs(last["validation_loss"] - hist[95]["validation_loss"]) < 0.005 else ("still_improving" if last["validation_loss"] - hist[95]["validation_loss"] <= -0.005 else "validation_worsening_or_unsettled")),
                   "test_loss_at_best_checkpoint": d["final_heldout_loss"],
                   "test_bits_per_char": d["final_heldout_bits_per_char"],
                   "test_char_accuracy": d["final_heldout_char_accuracy"],
                   "wall_seconds": d["wall_seconds"],
-                  "training_epochs": d["metadata"]["epochs"] if "metadata" in d else 40
+                  "training_epochs": d["metadata"]["epochs"] if "metadata" in d else 100,
+                  "learning_rate_schedule": d["metadata"].get("learning_rate_schedule", {})
               })
           hashes = {r["dataset_sha256"] for r in rows}
           if hashes != {"e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"}:
@@ -111,7 +116,7 @@ jobs:
               return {"mean": statistics.mean(vals),
                       "sample_stddev": statistics.stdev(vals)}
           report = {
-              "format": "aimeng-recurrent-neuron-convergence/v1",
+              "format": "aimeng-recurrent-neuron-convergence/v2",
               "purpose": "Diagnostic extension of the prior 30-epoch RNN run; not a compute-matched head-to-head result.",
               "dataset": "Alice's Adventures in Wonderland, public-domain Project Gutenberg text",
               "dataset_sha256": next(iter(hashes)),
@@ -132,9 +137,9 @@ jobs:
                   "test_char_accuracy": stats("test_char_accuracy"),
                   "wall_seconds": stats("wall_seconds")},
               "runs": rows,
-              "interpretation_rule": "A negative epoch-36-to-40 delta means validation loss continued to improve over that interval; do not call the model converged solely because 40 epochs elapsed.",
+              "interpretation_rule": "Predeclared diagnostic: endpoint validation-loss absolute change from epoch 96 to 100 below 0.005 is labelled plateau_by_endpoint_delta; a decrease of at least 0.005 is still_improving; an increase of at least 0.005 is validation_worsening_or_unsettled. This is descriptive, not proof of global convergence. Learning rate starts at 0.003 and halves every 15 epochs after epoch 30.",
               "limitations": ["Single-book character prediction only.",
-                             "This 40-epoch diagnostic has more training budget than the original 30-epoch RNN and is not directly compute-matched to the fixed-window experiment.",
+                             "This 100-epoch diagnostic with learning-rate decay has more training budget than the original 30-epoch RNN and is not directly compute-matched to the fixed-window experiment.",
                              "The validation set selects checkpoints; test metrics are reported only after training."]
           }
           (root / "summary.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -157,7 +162,7 @@ jobs:
             cp -a "$BACKUP_DIR/." "$REPORT_DIR/"
             git add "$REPORT_DIR"
             if git diff --cached --quiet; then echo "No changed convergence artifacts"; exit 0; fi
-            git commit -m "Record 40-epoch recurrent convergence check [skip ci]"
+            git commit -m "Record 100-epoch recurrent convergence check [skip ci]"
             if git push origin "HEAD:${GITHUB_REF_NAME}"; then rm -rf "$BACKUP_DIR"; exit 0; fi
             sleep 2
           done
