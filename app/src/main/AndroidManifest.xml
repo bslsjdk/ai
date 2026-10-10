@@ -28,6 +28,7 @@
         <uses-native-library android:name="libdmabufheap.so" android:required="false" />
         <meta-data android:name="moe.shizuku.client.V3_SUPPORT" android:value="true" />
         <activity android:name=".MainActivity" android:exported="false" />
+        <activity android:name=".SparseDiffusionActivity" android:exported="false" />
         <activity android:name=".ChatActivity" android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
