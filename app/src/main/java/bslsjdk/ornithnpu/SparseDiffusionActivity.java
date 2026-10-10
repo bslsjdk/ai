@@ -197,7 +197,7 @@ public final class SparseDiffusionActivity extends Activity {
                 long pssMiB = Debug.getPss() / 1024L;
                 runOnUiThread(() -> {
                     status.setText("模型已自动恢复 · 本地学习 " + model.getLearningUpdates()
-                            + " 次 · 进程 PSS 约 " + pssMiB + " MiB · CPU 推理");
+                            + " 次 · 进程 PSS 约 " + pssMiB + " MiB · " + model.backendStatus());
                     setBusy(false, null);
                     setModelActionsEnabled(true);
                 });
