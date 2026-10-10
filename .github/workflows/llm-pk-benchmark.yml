@@ -89,6 +89,15 @@ jobs:
             local test_status=${PIPESTATUS[0]}
             set -e
             if [ "$test_status" -ne 0 ]; then STATUS=1; fi
+            if [ "$label" = "qwen25-05b-q4km" ]; then
+              set +e
+              python3 scripts/run_llm_pk.py --base-url http://127.0.0.1:8080 --model "$label" \
+                --output "experiments/llm-pk/latest/qwen25-05b-verify.json" --timeout 120 --limit "$LIMIT" --mode verify \
+                2>&1 | tee -a experiments/llm-pk/latest/terminal.log
+              local verify_status=${PIPESTATUS[0]}
+              set -e
+              if [ "$verify_status" -ne 0 ]; then STATUS=1; fi
+            fi
             kill "$server_pid" 2>/dev/null || true
             wait "$server_pid" 2>/dev/null || true
             rm -f "$model"
