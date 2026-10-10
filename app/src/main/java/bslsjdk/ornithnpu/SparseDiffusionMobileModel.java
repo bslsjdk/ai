@@ -202,16 +202,7 @@ public final class SparseDiffusionMobileModel {
             }
             for (int n = 0; n < neurons; n++) energy[n] = energy[n] * 0.9f + energyIncoming[n];
             int[] candidates = topK(energy, activeK);
-            for (int id : candidates) {
-                float[] old = state[id].clone();
-                float[] incoming = messages[id];
-                float[] self = linear(old, "self_proj.weight", null);
-                float[] msg = linear(incoming, "message_proj.weight", null);
-                float[] joined = new float[2 * width];
-                System.arraycopy(old, 0, joined, 0, width);
-                System.arraycopy(incoming, 0, joined, width, width);
-                float[] gate = sigmoid(linear(joined, "gate.weight", "gate.bias"));
-                float deltaSum = 0f;
+            float deltaSum = 0f;
             for (int id : candidates) {
                 float[] old = state[id].clone();
                 float[] incoming = messages[id];
