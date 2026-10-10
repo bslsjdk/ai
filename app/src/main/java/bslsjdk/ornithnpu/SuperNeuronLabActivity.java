@@ -129,8 +129,8 @@ public final class SuperNeuronLabActivity extends Activity {
             epochs = Integer.parseInt(epochsField.getText().toString().trim());
             lr = Double.parseDouble(learningRateField.getText().toString().trim());
             tokens = parseTokens(sequenceField.getText().toString(), vocab);
-            if ((long) (tokens.length - 1) * epochs > 2_000_000L)
-                throw new IllegalArgumentException("本次训练超过 2,000,000 个 token 目标的工作预算");
+            if ((long) (tokens.length - 1) * epochs > 100_000L)
+                throw new IllegalArgumentException("实验页面每次最多训练 100,000 个 token 目标，避免长时间占用手机 CPU");
         } catch (Exception e) {
             Toast.makeText(this, e.getMessage() == null ? "配置无效" : e.getMessage(),
                     Toast.LENGTH_LONG).show();
