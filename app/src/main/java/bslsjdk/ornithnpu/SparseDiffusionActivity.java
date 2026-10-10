@@ -168,7 +168,7 @@ public final class SparseDiffusionActivity extends Activity {
         resetButton.setEnabled(false);
         resetButton.setOnClickListener(v -> new AlertDialog.Builder(this)
                 .setTitle("恢复基础模型")
-                .setMessage("清除本机保存的学习参数，但保留导入的模型文件。")
+                .setMessage("清除本机学习参数和神经元残留状态，但保留导入的模型文件。")
                 .setNegativeButton("取消", (dialog, which) -> { })
                 .setPositiveButton("恢复", (dialog, which) -> resetLearning())
                 .show());
@@ -394,7 +394,7 @@ public final class SparseDiffusionActivity extends Activity {
                 model.resetRuntimeState();
                 saveRuntimeStateQuietly();
                 runOnUiThread(() -> {
-                    status.setText("已恢复导入时的基础模型 · 本机学习记录已清除");
+                    status.setText("已恢复基础模型 · 本机学习记录已清除 · 神经元残留状态已重置");
                     setBusy(false, null);
                     setModelActionsEnabled(true);
                 });
