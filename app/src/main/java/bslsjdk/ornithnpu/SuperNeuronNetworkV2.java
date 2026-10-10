@@ -12,6 +12,7 @@ public final class SuperNeuronNetworkV2 {
     private final int[] head, to, channel, next;
     private final double[] edgeWeight, edgeEligibility;
     private final double[] neuronEligibility;
+    private final double[] sharedWeightEligibility, sharedBiasEligibility;
     private int edges;
     private final double[] pending, current;
     private final int[] pendingStamp, currentStamp, pendingTouched, currentTouched;
@@ -33,6 +34,7 @@ public final class SuperNeuronNetworkV2 {
         edgeWeight = new double[maxEdges]; edgeEligibility = new double[maxEdges];
         neuronEligibility = new double[n];
         sharedWeight = new double[channels]; sharedBias = new double[channels];
+        sharedWeightEligibility = new double[channels]; sharedBiasEligibility = new double[channels];
         pending = new double[n]; current = new double[n];
         pendingStamp = new int[n]; currentStamp = new int[n];
         pendingTouched = new int[n]; currentTouched = new int[n];
@@ -83,7 +85,14 @@ public final class SuperNeuronNetworkV2 {
             for (int e = head[node]; e >= 0; e = next[e]) {
                 edgeEligibility[e] *= 0.9;
                 edgeEligibility[e] += a * state[to[e]];
-                double message = Math.tanh(a * sharedWeight[channel[e]] + sharedBias[channel[e]]) * edgeWeight[e];
+                int c = channel[e];
+                double channelTanh = Math.tanh(a * sharedWeight[c] + sharedBias[c]);
+                double channelDerivative = 1.0 - channelTanh * channelTanh;
+                sharedWeightEligibility[c] = 0.9 * sharedWeightEligibility[c]
+                        + edgeWeight[e] * a * channelDerivative;
+                sharedBiasEligibility[c] = 0.9 * sharedBiasEligibility[c]
+                        + edgeWeight[e] * channelDerivative;
+                double message = channelTanh * edgeWeight[e];
                 if (message != 0.0) addPending(to[e], message);
             }
         }
@@ -115,6 +124,14 @@ public final class SuperNeuronNetworkV2 {
                 edgeWeight[e] = clamp(edgeWeight[e] + learningRate * reward * edgeEligibility[e], -4.0, 4.0);
             }
         }
+        // Shared output-core parameters must also learn; otherwise the supposedly
+        // shared computation remains permanently random and only edges can adapt.
+        for (int c = 0; c < channels; c++) {
+            sharedWeight[c] = clamp(sharedWeight[c]
+                    + learningRate * reward * sharedWeightEligibility[c], -2.0, 2.0);
+            sharedBias[c] = clamp(sharedBias[c]
+                    + learningRate * reward * sharedBiasEligibility[c], -2.0, 2.0);
+        }
     }
 
     public int getNeuronCount() { return n; }
@@ -130,12 +147,14 @@ public final class SuperNeuronNetworkV2 {
         long doubles = (long) bias.length + state.length + activation.length
                 + sharedWeight.length + sharedBias.length + edgeWeight.length
                 + pending.length + current.length + score.length
-                + edgeEligibility.length + neuronEligibility.length;
+                + edgeEligibility.length + neuronEligibility.length
+                + sharedWeightEligibility.length + sharedBiasEligibility.length;
         return ints * 4L + doubles * 8L;
     }
     public void resetState() {
         Arrays.fill(state, 0); Arrays.fill(activation, 0);
         Arrays.fill(neuronEligibility, 0); Arrays.fill(edgeEligibility, 0);
+        Arrays.fill(sharedWeightEligibility, 0); Arrays.fill(sharedBiasEligibility, 0);
         Arrays.fill(pending, 0); Arrays.fill(current, 0);
         Arrays.fill(pendingStamp, 0); Arrays.fill(currentStamp, 0);
         pendingCount = currentCount = activeCount = 0; generation = 1;
