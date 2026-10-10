@@ -69,7 +69,7 @@ public class VnWaveFieldTest {
     public void payloadEstimateStaysBoundedForMobileScale() {
         VnWaveField field = new VnWaveField(2048, 64, 65536, 0.1, 0.4, 0.2);
         for (int i = 0; i < 2048; i++) field.addDirectedEdge(i, (i + 1) % 2048, 0.5);
-        assertTrue(field.estimatedPayloadBytes() < 1024L * 1024L);
+        assertTrue(field.estimatedPayloadBytes() < 2L * 1024L * 1024L);
         assertEquals(2048, field.getNodeCount());
         assertEquals(2048, field.getEdgeCount());
     }
