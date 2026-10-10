@@ -11,6 +11,7 @@ public final class OpenClGpuBackend {
     private static boolean initialized;
     private static boolean failed;
     private static String device = "GPU 未初始化";
+    private static long gpuOperations;
 
     static {
         try {
@@ -50,6 +51,13 @@ public final class OpenClGpuBackend {
 
     public static synchronized String deviceName() { return device; }
 
+    public static synchronized String statusText() {
+        if (!isAvailable()) return "CPU 兜底（未检测到可用 OpenCL GPU）";
+        return gpuOperations == 0
+                ? "GPU/OpenCL：" + device + "（已就绪，尚未执行达到阈值的大矩阵）"
+                : "GPU/OpenCL：" + device + "（已执行 " + gpuOperations + " 次 GPU 矩阵运算；小矩阵走 CPU）";
+    }
+
     /**
      * Returns null if the GPU operation failed; callers must then run the CPU
      * implementation. The GPU path is deliberately used only for sufficiently
@@ -63,12 +71,15 @@ public final class OpenClGpuBackend {
             if (result == null || result.length != out) {
                 failed = true;
                 device = "GPU 执行失败，已切换 CPU";
+                try { nativeShutdown(); } catch (Throwable ignored) {}
                 return null;
             }
+            gpuOperations++;
             return result;
         } catch (Throwable error) {
             failed = true;
             device = "GPU 执行失败，已切换 CPU：" + error.getClass().getSimpleName();
+            try { nativeShutdown(); } catch (Throwable ignored) {}
             return null;
         }
     }
