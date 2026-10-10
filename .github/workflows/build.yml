@@ -9,6 +9,16 @@ on:
     branches: [feat/mobile-neuron-unit-runtime]
   push:
     branches: [main, bonsai2-pq2-baseline, feat/scalable-neuron-architecture-v2, feat/mobile-neuron-unit-runtime]
+    # This workflow packages Android only. Terminal experiments run in
+    # gridworld-terminal-benchmark.yml and must not launch an APK build.
+    paths:
+      - "app/**"
+      - "build.gradle"
+      - "settings.gradle"
+      - "gradle.properties"
+      - "gradlew"
+      - "gradle/**"
+      - "buildSrc/**"
   workflow_dispatch:
 permissions:
   contents: write
