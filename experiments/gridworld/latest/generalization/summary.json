@@ -16,7 +16,7 @@
     "success_rate": 1.0,
     "successes": 500
   },
-  "elapsedSeconds": 17.93,
+  "elapsedSeconds": 18.012,
   "episodesPerSeed": 5000,
   "evaluation": "100 fixed-seed held-out maps, 5 starts per map, exploration disabled",
   "format": "aimeng-gridworld-heldout-map-report/v1",
@@ -43,7 +43,7 @@
         "success_rate": 0.048,
         "successes": 24
       },
-      "seconds": 5.978,
+      "seconds": 6.028,
       "seed": 20262001,
       "successDelta": 0.826
     },
@@ -63,7 +63,7 @@
         "success_rate": 0.0,
         "successes": 0
       },
-      "seconds": 6.042,
+      "seconds": 6.051,
       "seed": 20262002,
       "successDelta": 0.806
     },
@@ -83,7 +83,7 @@
         "success_rate": 0.0,
         "successes": 0
       },
-      "seconds": 5.886,
+      "seconds": 5.909,
       "seed": 20262003,
       "successDelta": 0.83
     }

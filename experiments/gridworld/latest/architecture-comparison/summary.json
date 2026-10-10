@@ -1,0 +1,189 @@
+{
+  "bfsOracle": {
+    "episodes": 500,
+    "mean_steps_success": 4.504,
+    "note": "BFS oracle upper bound; not a learned model",
+    "success_rate": 1.0,
+    "successes": 500
+  },
+  "episodesPerSeed": 5000,
+  "evaluation": "100 fixed-seed held-out maps, 5 starts per map, exploration disabled",
+  "format": "aimeng-parameter-matched-architecture-report/v1",
+  "limitations": [
+    "This is a small navigation control benchmark, not a language-model evaluation.",
+    "The recurrent model repeats hidden-state computation within one observation; it does not preserve memory across environment steps.",
+    "Only a few seeds and one task distribution are tested; results do not establish broad superiority."
+  ],
+  "models": {
+    "mlp-212": {
+      "aggregate": {
+        "finalSuccessRateMax": 0.874,
+        "finalSuccessRateMean": 0.8233333333333334,
+        "finalSuccessRateMin": 0.724,
+        "finalSuccessRateStdev": 0.07024401912064987,
+        "initialSuccessRateMean": 0.034666666666666665,
+        "meanTrainingSeconds": 5.782333333333333,
+        "seedCount": 3,
+        "seedsImproved": 3
+      },
+      "architecture": "8-16-4 ReLU MLP",
+      "parameterCount": 212,
+      "perSeed": [
+        {
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9993461915658712,
+            "mean_steps_success": 4.196796338672769,
+            "success_rate": 0.874,
+            "successes": 437
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 1.53125,
+            "success_rate": 0.064,
+            "successes": 32
+          },
+          "parameterCount": 212,
+          "seed": 20263001,
+          "successDelta": 0.81,
+          "trainingSeconds": 5.669
+        },
+        {
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9956261510128914,
+            "mean_steps_success": 3.903314917127072,
+            "success_rate": 0.724,
+            "successes": 362
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 2.05,
+            "success_rate": 0.04,
+            "successes": 20
+          },
+          "parameterCount": 212,
+          "seed": 20263002,
+          "successDelta": 0.6839999999999999,
+          "trainingSeconds": 6.211
+        },
+        {
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9990316004077472,
+            "mean_steps_success": 4.236238532110092,
+            "success_rate": 0.872,
+            "successes": 436
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.0,
+            "mean_steps_success": 0.0,
+            "success_rate": 0.0,
+            "successes": 0
+          },
+          "parameterCount": 212,
+          "seed": 20263003,
+          "successDelta": 0.872,
+          "trainingSeconds": 5.467
+        }
+      ]
+    },
+    "recurrent-thought-202": {
+      "aggregate": {
+        "finalSuccessRateMax": 0.888,
+        "finalSuccessRateMean": 0.8306666666666667,
+        "finalSuccessRateMin": 0.802,
+        "finalSuccessRateStdev": 0.040540788788028706,
+        "initialSuccessRateMean": 0.06533333333333334,
+        "meanTrainingSeconds": 10.050333333333333,
+        "seedCount": 3,
+        "seedsImproved": 3
+      },
+      "architecture": "8-9 recurrent hidden units, 2 shared-weight thought cycles, 4 outputs",
+      "parameterCount": 202,
+      "perSeed": [
+        {
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9966913341913342,
+            "mean_steps_success": 4.2342342342342345,
+            "success_rate": 0.888,
+            "successes": 444
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 2.2,
+            "success_rate": 0.14,
+            "successes": 70
+          },
+          "parameterCount": 202,
+          "seed": 20263001,
+          "successDelta": 0.748,
+          "trainingSeconds": 9.576
+        },
+        {
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9923207853382418,
+            "mean_steps_success": 3.9825436408977555,
+            "success_rate": 0.802,
+            "successes": 401
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 1.4642857142857142,
+            "success_rate": 0.056,
+            "successes": 28
+          },
+          "parameterCount": 202,
+          "seed": 20263002,
+          "successDelta": 0.746,
+          "trainingSeconds": 10.29
+        },
+        {
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9944582986977002,
+            "mean_steps_success": 4.129675810473816,
+            "success_rate": 0.802,
+            "successes": 401
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.0,
+            "mean_steps_success": 0.0,
+            "success_rate": 0.0,
+            "successes": 0
+          },
+          "parameterCount": 202,
+          "seed": 20263003,
+          "successDelta": 0.802,
+          "trainingSeconds": 10.285
+        }
+      ]
+    }
+  },
+  "randomBaseline": {
+    "episodes": 500,
+    "mean_steps_success": 17.02906976744186,
+    "success_rate": 0.344,
+    "successes": 172
+  },
+  "seeds": [
+    20263001,
+    20263002,
+    20263003
+  ],
+  "trainingSchedule": "identical pre-generated map/start sequence per seed for both models"
+}
