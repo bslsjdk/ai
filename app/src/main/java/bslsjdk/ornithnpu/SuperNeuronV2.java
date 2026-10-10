@@ -32,7 +32,7 @@ public final class SuperNeuronV2 {
     private final double[] gateBias;
     // Diagonal recurrent connection: O(hiddenSize), not O(hiddenSize^2).
     private final double[] recurrentScale;
-    private final double[] outputWeight; // [outputCount * hiddenSize]
+    private final int outputRank;\n    private final double[] hiddenToOutputRank; // [hiddenSize * outputRank]\n    private final double[] outputEmbedding; // [outputCount * outputRank]\n    private final double[] lastLatent;\n    private final double[] latentGradient;\n    private final double[] hiddenGradient;
     private final double[] outputBias;
     private final double[] state;
 
@@ -60,7 +60,7 @@ public final class SuperNeuronV2 {
         gateWeight = new double[inputCount];
         gateBias = new double[inputCount];
         recurrentScale = new double[hiddenSize];
-        outputWeight = new double[outputCount * hiddenSize];
+        outputRank = Math.min(32, hiddenSize);\n        hiddenToOutputRank = new double[hiddenSize * outputRank];\n        outputEmbedding = new double[outputCount * outputRank];\n        lastLatent = new double[outputRank];\n        latentGradient = new double[outputRank];\n        hiddenGradient = new double[hiddenSize];
         outputBias = new double[outputCount];
         state = new double[hiddenSize];
         lastInput = new double[inputCount];
@@ -100,12 +100,21 @@ public final class SuperNeuronV2 {
         }
         System.arraycopy(lastHidden, 0, state, 0, hiddenSize);
 
+        // Factorized output head: hidden -> compact rank -> token/class scores.
+        // This reduces output-head parameters from O(vocabulary * hidden) to
+        // O(hidden * rank + vocabulary * rank), with rank <= 32.
+        for (int r = 0; r < outputRank; r++) {
+            double sum = 0.0;
+            for (int h = 0; h < hiddenSize; h++)
+                sum += lastHidden[h] * hiddenToOutputRank[h * outputRank + r];
+            lastLatent[r] = sum;
+        }
         double maxLogit = Double.NEGATIVE_INFINITY;
         for (int o = 0; o < outputCount; o++) {
             double sum = outputBias[o];
-            int base = o * hiddenSize;
-            for (int h = 0; h < hiddenSize; h++)
-                sum += outputWeight[base + h] * lastHidden[h];
+            int base = o * outputRank;
+            for (int r = 0; r < outputRank; r++)
+                sum += outputEmbedding[base + r] * lastLatent[r];
             lastProbabilities[o] = sum;
             if (sum > maxLogit) maxLogit = sum;
         }
@@ -137,15 +146,18 @@ public final class SuperNeuronV2 {
         if (!Double.isFinite(learningRate) || learningRate <= 0.0 || learningRate > 0.1)
             throw new IllegalArgumentException("learningRate must be in (0, 0.1]");
         double loss = -Math.log(Math.max(1.0e-12, lastProbabilities[targetClass]));
+        Arrays.fill(latentGradient, 0.0);
+        Arrays.fill(hiddenGradient, 0.0);
 
-        double[] hiddenGradient = new double[hiddenSize];
+        // First accumulate dL/d(latent) with the old output embeddings, then update
+        // embeddings. Reusing scratch arrays avoids per-step gradient allocations.
         for (int o = 0; o < outputCount; o++) {
             double grad = lastProbabilities[o] - (o == targetClass ? 1.0 : 0.0);
-            int base = o * hiddenSize;
-            for (int h = 0; h < hiddenSize; h++) {
-                hiddenGradient[h] += grad * outputWeight[base + h];
-                outputWeight[base + h] = clamp(
-                        outputWeight[base + h] - learningRate * grad * lastHidden[h],
+            int base = o * outputRank;
+            for (int r = 0; r < outputRank; r++) {
+                latentGradient[r] += grad * outputEmbedding[base + r];
+                outputEmbedding[base + r] = clamp(
+                        outputEmbedding[base + r] - learningRate * grad * lastLatent[r],
                         -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
             }
             outputBias[o] = clamp(outputBias[o] - learningRate * grad,
@@ -153,10 +165,19 @@ public final class SuperNeuronV2 {
         }
 
         for (int h = 0; h < hiddenSize; h++) {
+            for (int r = 0; r < outputRank; r++) {
+                int index = h * outputRank + r;
+                hiddenGradient[h] += latentGradient[r] * hiddenToOutputRank[index];
+                hiddenToOutputRank[index] = clamp(hiddenToOutputRank[index]
+                        - learningRate * latentGradient[r] * lastHidden[h],
+                        -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
+            }
+        }
+
+        for (int h = 0; h < hiddenSize; h++) {
             double preGradient = hiddenGradient[h] * (1.0 - lastHidden[h] * lastHidden[h]);
             recurrentScale[h] = clamp(recurrentScale[h]
-                    - learningRate * preGradient * lastPreviousState[h],
-                    -1.0, 1.0);
+                    - learningRate * preGradient * lastPreviousState[h], -1.0, 1.0);
             for (int p = 0; p < inputCount; p++) {
                 int index = p * hiddenSize + h;
                 double gatedInput = lastInput[p] * lastGate[p];
@@ -166,15 +187,14 @@ public final class SuperNeuronV2 {
             }
         }
 
-        // Train each input gate with the derivative through sigmoid(gateBias + gateWeight*x).
+        // Gate gradients are local to each port; no optimizer history is retained.
         for (int p = 0; p < inputCount; p++) {
             double dGate = 0.0;
             for (int h = 0; h < hiddenSize; h++) {
                 double preGradient = hiddenGradient[h] * (1.0 - lastHidden[h] * lastHidden[h]);
                 dGate += preGradient * inputProjection[p * hiddenSize + h] * lastInput[p];
             }
-            double sigmoidGradient = lastGate[p] * (1.0 - lastGate[p]);
-            double gateGradient = dGate * sigmoidGradient;
+            double gateGradient = dGate * lastGate[p] * (1.0 - lastGate[p]);
             gateWeight[p] = clamp(gateWeight[p] - learningRate * gateGradient * lastInput[p],
                     -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
             gateBias[p] = clamp(gateBias[p] - learningRate * gateGradient,
@@ -223,7 +243,7 @@ public final class SuperNeuronV2 {
         putArray(root, "gateWeight", gateWeight);
         putArray(root, "gateBias", gateBias);
         putArray(root, "recurrentScale", recurrentScale);
-        putArray(root, "outputWeight", outputWeight);
+        root.put("outputRank", outputRank);\n        putArray(root, "hiddenToOutputRank", hiddenToOutputRank);\n        putArray(root, "outputEmbedding", outputEmbedding);
         putArray(root, "outputBias", outputBias);
         putArray(root, "state", state);
         return root;
@@ -240,7 +260,7 @@ public final class SuperNeuronV2 {
         readArray(root, "gateWeight", result.gateWeight);
         readArray(root, "gateBias", result.gateBias);
         readArray(root, "recurrentScale", result.recurrentScale);
-        readArray(root, "outputWeight", result.outputWeight);
+        if (root.optInt("outputRank", result.outputRank) != result.outputRank)\n            throw new IllegalArgumentException("checkpoint outputRank mismatch");\n        readArray(root, "hiddenToOutputRank", result.hiddenToOutputRank);\n        readArray(root, "outputEmbedding", result.outputEmbedding);
         readArray(root, "outputBias", result.outputBias);
         readArray(root, "state", result.state);
         result.forwardSteps = Math.max(0L, root.optLong("forwardSteps", 0L));
