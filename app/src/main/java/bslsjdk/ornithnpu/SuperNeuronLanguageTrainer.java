@@ -88,6 +88,45 @@ public final class SuperNeuronLanguageTrainer {
         return totalLoss / steps;
     }
 
+    /**
+     * Runs an exact number of online next-character updates over a cyclic sequence.
+     * Each call is bounded in work; callers can run it in 1000-step chunks and
+     * sample process memory between chunks. No sequence-wide gradient tape is kept.
+     */
+    public double trainSteps(int[] tokenIds, int steps, double learningRate) {
+        validateSequence(tokenIds);
+        if (steps < 1 || steps > 10000)
+            throw new IllegalArgumentException("steps must be 1..10000 per call");
+        if (!Double.isFinite(learningRate) || learningRate <= 0.0 || learningRate > 0.05)
+            throw new IllegalArgumentException("learningRate must be in (0, 0.05]");
+        model.resetState();
+        double totalLoss = 0.0;
+        int pairCount = tokenIds.length - 1;
+        long startIndex = trainedTokenTargets % pairCount;
+        for (int step = 0; step < steps; step++) {
+            int index = (int) ((startIndex + step) % pairCount);
+            if (index == 0 && step != 0) model.resetState();
+            int token = tokenIds[index];
+            int target = tokenIds[index + 1];
+            copyEmbedding(token, inputScratch);
+            model.forwardInto(inputScratch, outputScratch);
+            double loss = model.trainClass(target, learningRate);
+            totalLoss += loss;
+            model.copyLastInputGradient(gradientScratch);
+            int base = token * embeddingSize;
+            for (int d = 0; d < embeddingSize; d++) {
+                double grad = Math.max(-5.0, Math.min(5.0, gradientScratch[d]));
+                embeddings[base + d] = clamp(
+                        embeddings[base + d] - learningRate * grad,
+                        -MAX_ABS_EMBEDDING, MAX_ABS_EMBEDDING);
+            }
+            double normalizedReward = clamp(1.0 - loss / Math.log(vocabularySize), -1.0, 1.0);
+            model.applyReward(normalizedReward, learningRate * 0.05);
+            trainedTokenTargets++;
+        }
+        return totalLoss / steps;
+    }
+
     /** Mean next-token cross-entropy without updating any learned parameters. */
     public double evaluateSequence(int[] tokenIds) {
         validateSequence(tokenIds);
