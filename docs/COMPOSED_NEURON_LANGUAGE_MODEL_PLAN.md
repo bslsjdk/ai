@@ -128,3 +128,16 @@
 ### 评估协议改进
 
 后续循环网络实验改为按原文顺序切分 **85% 训练 / 5% 验证 / 10% 最终测试**。验证集只用于选择最低验证损失的 checkpoint，最终测试集只在训练结束、恢复最佳 checkpoint 后用于汇报和单元消融。历史报告使用的 90%/10% 单次切分会保留作历史结果，不与新协议的分数混为同一条曲线。该更改旨在避免反复查看测试指标后再调整训练策略造成评估污染。
+
+
+## 终端推理入口
+
+训练导出的 `model.json` 可通过 `scripts/run_recurrent_neuron_lm.py` 独立加载，不必重新训练。示例：
+
+```bash
+python scripts/run_recurrent_neuron_lm.py \
+  --model experiments/recurrent-neuron-lm/latest/seed-20261010/model.json \
+  --prompt "Alice " --max-chars 200 --temperature 0.8 --seed 7
+```
+
+可加 `--output generated.txt` 把结果写入文本文件。训练工作流会对每个 seed 的导出 checkpoint 执行一次推理 smoke test，确认权重方向、输出概率和提示词前缀正确。此入口是 Python/NumPy 参考运行器；它不是 Android 原生实现，也没有声称满足手机运行时内存约束。移动端部署仍需单独实现并测量。
