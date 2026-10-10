@@ -23,6 +23,8 @@ public final class SuperNeuronEvolutionPool {
     private long lastTrainingSteps;
     private double bestValidationLoss = Double.POSITIVE_INFINITY;
     private SuperNeuronLanguageTrainer bestTrainer;
+    private SuperNeuronLanguageTrainer currentTrainer;
+    private boolean stoppedEarly;
 
     public SuperNeuronEvolutionPool(int populationSize, int vocabularySize,
                                     int embeddingSize, int hiddenSize, long seed) {
@@ -53,10 +55,12 @@ public final class SuperNeuronEvolutionPool {
         double lossTotal = 0.0;
         long lossCount = 0;
         boolean stopped = false;
+        stoppedEarly = false;
         for (int i = 0; i < population.size(); i++) {
             long budget = base + (i < remainder ? 1 : 0);
             if (budget == 0) continue;
             SuperNeuronLanguageTrainer individual = population.get(i);
+            currentTrainer = individual;
             final long offset = completed;
             final long[] local = {0};
             double meanLoss = individual.trainSequenceSteps(trainingTokens, budget, learningRate,
@@ -76,6 +80,12 @@ public final class SuperNeuronEvolutionPool {
             }
         }
         lastTrainingSteps = completed;
+        if (stopped || completed != totalSteps) {
+            stoppedEarly = true;
+            bestTrainer = currentTrainer;
+            bestValidationLoss = Double.NaN;
+            return lossCount == 0 ? 0.0 : lossTotal / lossCount;
+        }
 
         population.sort(Comparator.comparingDouble(candidate -> candidate.evaluateSequence(validationTokens)));
         bestTrainer = population.get(0);
@@ -103,6 +113,8 @@ public final class SuperNeuronEvolutionPool {
         return bestTrainer;
     }
     public double getBestValidationLoss() { return bestValidationLoss; }
+    public SuperNeuronLanguageTrainer getCurrentTrainer() { return currentTrainer; }
+    public boolean wasStoppedEarly() { return stoppedEarly; }
     public long getGeneration() { return generation; }
     public long getLastTrainingSteps() { return lastTrainingSteps; }
     public int getPopulationSize() { return population.size(); }
