@@ -249,6 +249,7 @@ public final class SparseDiffusionActivity extends Activity {
 
     private void restoreSavedModel() {
         File file = modelFile();
+        if (!file.isFile()) file = new File(getFilesDir(), "aimeng-mobile-diffusion.json");
         if (!file.isFile()) {
             status.setText("尚未导入模型。先取得 AIMENG 导出的 mobile_diffusion.json；不需要 9B 模型。");
             return;
