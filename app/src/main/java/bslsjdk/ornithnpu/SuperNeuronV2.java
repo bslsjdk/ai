@@ -240,6 +240,9 @@ public final class SuperNeuronV2 {
         if (usedNpu) {
             lastBatchBackend = "QNN_HTP_V73_INT8_BATCH";
         } else {
+            // A rejected NPU attempt may have filled part of drive before detecting
+            // a bad scale/result. Clear it before recomputing the complete CPU result.
+            for (double[] row : drive) Arrays.fill(row, 0.0);
             computeBatchInputDrive(inputs, gates, drive);
             if (NpuRuntime.isReady() && batch >= 16 && macs >= 262144L)
                 lastBatchBackend = "CPU_FALLBACK_AFTER_NPU_CHECK";
