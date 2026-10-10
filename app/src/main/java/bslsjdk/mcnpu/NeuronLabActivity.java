@@ -71,6 +71,7 @@ public final class NeuronLabActivity extends Activity {
     });
 
     private LinearLayout shell;
+    private LinearLayout advancedTools;
     private FrameLayout pageHost;
     private LinearLayout navRow;
     private TextView globalStatus;
@@ -162,13 +163,10 @@ public final class NeuronLabActivity extends Activity {
         header.setPadding(dp(18), dp(12), dp(18), dp(10));
         header.setBackgroundColor(Color.WHITE);
         header.addView(label("AIMENG 超级神经元实验室", 23, true));
-        TextView subtitle = label("独立神经元单元 · 本地训练 · 评分筛选 · 单个/批量保存", 12, false);
+        TextView subtitle = label("训练 · 运行 · 管理和保存模型", 13, false);
         subtitle.setTextColor(0xFF667085);
         header.addView(subtitle, params(-1, -2, 0, 3, 0, 0));
-        TextView buildFingerprint = label("构建版本 " + BuildConfig.VERSION_NAME + " · commit " + BuildConfig.AIMENG_BUILD_SHA, 11, true);
-        buildFingerprint.setTextColor(0xFF155E58);
-        header.addView(buildFingerprint, params(-1, -2, 0, 4, 0, 0));
-        globalStatus = label("工作区自动保存到应用内部存储。", 11, false);
+        globalStatus = label("工作区已就绪 · 自动保存开启", 11, false);
         globalStatus.setTextColor(0xFF287D72);
         header.addView(globalStatus, params(-1, -2, 0, 5, 0, 0));
         shell.addView(header, params(-1, -2, 0, 0, 0, 0));
@@ -182,9 +180,9 @@ public final class NeuronLabActivity extends Activity {
         navRow = new LinearLayout(this);
         navRow.setOrientation(LinearLayout.HORIZONTAL);
         String[][] pages = {
-                {"home", "总览"}, {"autotest", "全自动测试"}, {"neurons", "神经元"},
-                {"runtime", "群体运行时"}, {"network", "网络图"}, {"train", "训练任务"},
-                {"run", "运行"}, {"data", "数据/保存"}
+                {"home", "首页"}, {"train", "训练"}, {"run", "运行"},
+                {"neurons", "神经元"}, {"network", "网络图"}, {"data", "数据"},
+                {"autotest", "测试"}, {"runtime", "高级运行时"}
         };
         for (String[] entry : pages) {
             Button b = new Button(this);
@@ -664,59 +662,82 @@ public final class NeuronLabActivity extends Activity {
     }
 
     private void buildHomePage(LinearLayout content) {
-        LinearLayout status = card(content, "工作区状态");
-        addText(status, workspace.summary(), 14, false);
-        addText(status, "工作区估算占用：" + formatMiB(workspace.getEstimatedBytes())
-                + " / " + formatMiB(NeuronWorkspace.MAX_WORKSPACE_BUDGET_BYTES) + " MiB", 12, true);
-        addText(status, "进程内存：" + memoryStatus(), 11, false);
-        addText(status, "硬约束：整个应用运行时 RAM < 4096 MiB；发布目标 < 3800 MiB。4GB 是硬上限，不是分给神经元的全部配额。", 12, true);
-        addText(status, "NPU： " + npuStatus, 11, false);
+        LinearLayout welcome = card(content, "先从这里开始");
+        addText(welcome, "不用先研究所有按钮。选择你现在要做的事即可；高级工具默认收起来了。", 14, false);
+        addText(welcome, "当前工作区会自动保存。需要把模型文件拿到手机其他位置时，进入“数据/保存”或对应实验页面使用“导出”。", 12, false);
 
-        LinearLayout quick = card(content, "快捷操作");
-        addActionRow(quick, new String[]{"开始训练", "运行网络", "查看网络图"}, new Runnable[]{
-                () -> showPage("train"), () -> showPage("run"), () -> showPage("network")
-        });
-        addActionRow(quick, new String[]{"管理神经元", "保存工作区", "NPU 诊断"}, new Runnable[]{
-                () -> showPage("neurons"), this::persistWorkspaceWithToast, this::runNpuDiagnostic
-        });
+        Button train = primaryButton("① 训练神经网络");
+        train.setOnClickListener(v -> showPage("train"));
+        content.addView(train, params(-1, 52, 0, 4, 0, 5));
 
-        Button autoTest = primaryButton("全自动测试 · 生成可复制的性能日志");
-        autoTest.setOnClickListener(v -> showPage("autotest"));
-        quick.addView(autoTest, params(-1, 50, 0, 8, 0, 0));
+        Button run = primaryButton("② 运行网络 / 查看输出");
+        run.setOnClickListener(v -> showPage("run"));
+        content.addView(run, params(-1, 52, 0, 4, 0, 5));
 
-        Button individuals = primaryButton("打开神经网络个体管理 · 独立保存/批量操作");
+        Button neurons = primaryButton("③ 管理当前网络的神经元");
+        neurons.setOnClickListener(v -> showPage("neurons"));
+        content.addView(neurons, params(-1, 52, 0, 4, 0, 5));
+
+        Button individuals = secondaryButton("独立模型管理：新建、保存、导入、导出");
         individuals.setOnClickListener(v -> startActivity(
                 new Intent(NeuronLabActivity.this, NeuronIndividualManagerActivity.class)));
-        quick.addView(individuals, params(-1, 50, 0, 8, 0, 0));
+        content.addView(individuals, params(-1, 48, 0, 4, 0, 5));
 
-        Button recurrentLanguage = primaryButton("超级神经元循环语言实验 · 10,000 步");
-        recurrentLanguage.setOnClickListener(v -> startActivity(
+        Button language = secondaryButton("中文字符训练实验");
+        language.setOnClickListener(v -> startActivity(
                 new Intent(NeuronLabActivity.this, bslsjdk.ornithnpu.SuperNeuronLabActivity.class)));
-        quick.addView(recurrentLanguage, params(-1, 50, 0, 8, 0, 0));
+        content.addView(language, params(-1, 48, 0, 4, 0, 5));
 
-        Button gridWorld = primaryButton("打开迷宫实验 · 观看神经网络学习");
-        gridWorld.setOnClickListener(v -> startActivity(
+        Button maze = secondaryButton("迷宫学习实验");
+        maze.setOnClickListener(v -> startActivity(
                 new Intent(NeuronLabActivity.this, GridWorldLabActivity.class)));
-        quick.addView(gridWorld, params(-1, 50, 0, 8, 0, 0));
-        Button terminal = primaryButton("打开通用命令终端 · Shell / Java / Python 环境");
+        content.addView(maze, params(-1, 48, 0, 4, 0, 5));
+
+        Button more = secondaryButton("更多工具与诊断  ▾");
+        more.setOnClickListener(v -> {
+            boolean show = advancedTools.getVisibility() != View.VISIBLE;
+            advancedTools.setVisibility(show ? View.VISIBLE : View.GONE);
+            more.setText(show ? "收起高级工具  ▴" : "更多工具与诊断  ▾");
+        });
+        content.addView(more, params(-1, 46, 0, 12, 0, 5));
+
+        advancedTools = new LinearLayout(this);
+        advancedTools.setOrientation(LinearLayout.VERTICAL);
+        advancedTools.setVisibility(View.GONE);
+        content.addView(advancedTools, params(-1, -2, 0, 0, 0, 0));
+
+        LinearLayout status = card(advancedTools, "运行状态（高级）");
+        addText(status, workspace.summary(), 13, false);
+        addText(status, "工作区估算占用：" + formatMiB(workspace.getEstimatedBytes())
+                + " / " + formatMiB(NeuronWorkspace.MAX_WORKSPACE_BUDGET_BYTES) + " MiB", 12, false);
+        addText(status, "进程内存：" + memoryStatus(), 11, false);
+        addText(status, "内存保护：整个应用运行时 RAM 必须低于 4096 MiB。", 12, false);
+        addText(status, "NPU 状态：" + npuStatus, 11, false);
+
+        LinearLayout quick = card(advancedTools, "高级操作");
+        addActionRow(quick, new String[]{"自动测试", "网络图", "保存工作区"}, new Runnable[]{
+                () -> showPage("autotest"), () -> showPage("network"), this::persistWorkspaceWithToast
+        });
+        addActionRow(quick, new String[]{"运行时", "数据/导入导出", "NPU 诊断"}, new Runnable[]{
+                () -> showPage("runtime"), () -> showPage("data"), this::runNpuDiagnostic
+        });
+
+        Button terminal = secondaryButton("打开命令终端");
         terminal.setOnClickListener(v -> startActivity(
                 new Intent(NeuronLabActivity.this, CommandTerminalActivity.class)));
-        quick.addView(terminal, params(-1, 50, 0, 8, 0, 0));
-        Button evolve = primaryButton("资源竞争 · 安全进化一代");
+        quick.addView(terminal, params(-1, 46, 0, 6, 0, 0));
+
+        Button evolve = secondaryButton("安全进化一代");
         evolve.setOnClickListener(v -> runEvolution());
-        quick.addView(evolve, params(-1, 48, 0, 8, 0, 0));
+        quick.addView(evolve, params(-1, 46, 0, 6, 0, 0));
 
-        LinearLayout how = card(content, "当前网络如何工作");
-        addText(how, "输入层接收一组数值 → 活动隐藏神经元计算 tanh(加权输入 + 偏置) → 多个输出节点汇总各神经元的贡献。", 13, false);
-        addText(how, "在“运行”页能看到每个隐藏单元的激活值，以及它对 y0、y1 等输出的贡献；“神经元”页可单独禁用、评分、保存、导出或批量操作。", 13, false);
-        addText(how, "当前是可解释的数值任务网络，不是语言模型。它不能直接理解任意中文指令；复杂自然语言训练需要后续文本编码和任务数据管线。", 12, false);
+        LinearLayout how = card(advancedTools, "这个网络是什么");
+        addText(how, "当前主工作区是数值神经网络：输入数值，计算后产生输出。它不是能直接理解任意中文的通用语言模型。", 13, false);
+        addText(how, "训练结束会自动保存。导出文件时，系统会让你选择手机上的保存位置。", 12, false);
 
-        LinearLayout report = card(content, "最近一次训练 / 进化");
+        LinearLayout report = card(advancedTools, "最近一次训练记录");
         addText(report, trainingStatus, 12, false);
         addText(report, workspace.lastReport, 12, false);
-        LinearLayout saving = card(content, "保存和恢复");
-        addText(saving, "模型、权重、训练数据、神经元库、训练历史和事件记录会自动保存到应用内部的 neuron-workspace.json。导出文件则由你通过系统文件选择器选择位置。", 12, false);
-        addText(saving, "单神经元/批量神经元文件可以独立保存和重新导入。导入维度不兼容时会先询问，不会静默覆盖现有网络。", 12, false);
     }
 
     private void buildNeuronsPage(LinearLayout content) {
