@@ -52,7 +52,7 @@ public final class SuperNeuronLabActivity extends Activity {
         root.addView(title);
 
         TextView warning = new TextView(this);
-        warning.setText("这是 token ID 级别的训练烟雾测试，不是自然语言聊天。真实 tokenizer、语料导入、完整跨时间反向传播和模型持久化尚未接入。模型估算存储上限 64 MiB；手机进程总内存仍必须低于 4 GiB。");
+        warning.setText("这是 token ID 级别的训练烟雾测试，不是自然语言聊天。真实 tokenizer、语料导入、完整跨时间反向传播和模型持久化尚未接入。模型估算存储上限 16 MiB；手机进程总内存仍必须低于 4 GiB。");
         warning.setTextColor(Color.rgb(153, 72, 16));
         warning.setTextSize(13);
         warning.setPadding(0, dp(8), 0, dp(12));
