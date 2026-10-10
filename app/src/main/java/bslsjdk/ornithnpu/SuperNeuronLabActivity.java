@@ -65,14 +65,14 @@ public final class SuperNeuronLabActivity extends Activity {
         });
 
         TextView heading = new TextView(this);
-        heading.setText("AIMENG 超级神经元 · 循环语言实验");
+        heading.setText("中文学习实验");
         heading.setTextSize(21);
         heading.setTextColor(0xFF172033);
         heading.setPadding(0, 0, 0, dp(8));
         root.addView(heading);
 
         TextView details = new TextView(this);
-        details.setText("这个实验会用一小段中文故事训练字符预测。训练结果会自动保存；想把模型文件拿到手机其他位置，请使用下面的导出按钮。");
+        details.setText("两种方式：直接训练，或导入电脑/Kaggle生成的老师知识文件做蒸馏。手机只运行小学生网络，训练结果可导出到下载文件夹。");
         details.setTextSize(14);
         details.setTextColor(0xFF374151);
         root.addView(details);
@@ -83,12 +83,21 @@ public final class SuperNeuronLabActivity extends Activity {
         runButton.setOnClickListener(v -> startExperiment());
 
         batchButton = new Button(this);
-        batchButton.setText("高级测试：批量计算速度（不训练）");
+        batchButton.setText("批量计算速度测试（不训练）");
+        batchButton.setVisibility(View.GONE);
         root.addView(batchButton);
         batchButton.setOnClickListener(v -> startBatchBenchmark());
+        Button advancedToggle = new Button(this);
+        advancedToggle.setText("高级工具  ▾");
+        root.addView(advancedToggle);
+        advancedToggle.setOnClickListener(v -> {
+            boolean show = batchButton.getVisibility() != View.VISIBLE;
+            batchButton.setVisibility(show ? View.VISIBLE : View.GONE);
+            advancedToggle.setText(show ? "收起高级工具  ▴" : "高级工具  ▾");
+        });
 
         distillButton = new Button(this);
-        distillButton.setText("知识蒸馏：导入老师数据并训练学生");
+        distillButton.setText("知识蒸馏：导入老师知识文件");
         root.addView(distillButton);
         distillButton.setOnClickListener(v -> chooseDistillationFile());
 
