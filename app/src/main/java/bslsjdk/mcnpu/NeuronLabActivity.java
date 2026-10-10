@@ -161,7 +161,7 @@ public final class NeuronLabActivity extends Activity {
         header.setOrientation(LinearLayout.VERTICAL);
         header.setPadding(dp(18), dp(12), dp(18), dp(10));
         header.setBackgroundColor(Color.WHITE);
-        header.addView(label("AIMENG · 神经元工作台", 23, true));
+        header.addView(label("AIMENG 超级神经元实验室", 23, true));
         TextView subtitle = label("独立神经元单元 · 本地训练 · 评分筛选 · 单个/批量保存", 12, false);
         subtitle.setTextColor(0xFF667085);
         header.addView(subtitle, params(-1, -2, 0, 3, 0, 0));
@@ -683,6 +683,16 @@ public final class NeuronLabActivity extends Activity {
         Button autoTest = primaryButton("全自动测试 · 生成可复制的性能日志");
         autoTest.setOnClickListener(v -> showPage("autotest"));
         quick.addView(autoTest, params(-1, 50, 0, 8, 0, 0));
+
+        Button individuals = primaryButton("打开神经网络个体管理 · 独立保存/批量操作");
+        individuals.setOnClickListener(v -> startActivity(
+                new Intent(NeuronLabActivity.this, NeuronIndividualManagerActivity.class)));
+        quick.addView(individuals, params(-1, 50, 0, 8, 0, 0));
+
+        Button recurrentLanguage = primaryButton("超级神经元循环语言实验 · 10,000 步");
+        recurrentLanguage.setOnClickListener(v -> startActivity(
+                new Intent(NeuronLabActivity.this, bslsjdk.ornithnpu.SuperNeuronLabActivity.class)));
+        quick.addView(recurrentLanguage, params(-1, 50, 0, 8, 0, 0));
 
         Button gridWorld = primaryButton("打开迷宫实验 · 观看神经网络学习");
         gridWorld.setOnClickListener(v -> startActivity(

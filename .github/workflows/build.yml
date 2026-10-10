@@ -5,14 +5,17 @@ concurrency:
   cancel-in-progress: false
 
 on:
+  pull_request:
+    branches: [feat/mobile-neuron-unit-runtime]
   push:
-    branches: [main, bonsai2-pq2-baseline, feat/mobile-neuron-unit-runtime]
+    branches: [main, bonsai2-pq2-baseline, feat/mobile-neuron-unit-runtime, feat/scalable-neuron-architecture-v2]
   workflow_dispatch:
 permissions:
   contents: write
   issues: write
 jobs:
   build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.number == 74
     # Ubuntu 22.04 entered deprecation on 2026-09-17; 24.04 is the supported
     # fixed label and matches the last known-good hosted runner image.
     runs-on: ubuntu-24.04
