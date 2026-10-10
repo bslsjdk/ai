@@ -277,6 +277,8 @@ public final class GridWorldLabActivity extends Activity {
                                 mapProjection, replayWallOverlap);
                         replayUpdates++;
                     }
+                    // Bound floating-point drift from incremental cache updates.
+                    if ((steps & 63) == 63) mapProjection = net.projectMap(wallFeatures);
                     pos = tr.next;
                     history = nextHistory;
                     if (tr.done) { wins++; reachedGoal = true; break; }
