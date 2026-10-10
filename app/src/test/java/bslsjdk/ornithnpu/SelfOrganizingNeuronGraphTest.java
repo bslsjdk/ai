@@ -66,11 +66,13 @@ public class SelfOrganizingNeuronGraphTest {
         int input = graph.addNeuron();
         int output = graph.addNeuron();
         int extra = graph.addNeuron();
+        graph.addNeuron();
+        graph.addNeuron();
         assertTrue(graph.markInputPort(input));
         assertTrue(graph.markOutputPort(output));
         assertTrue(graph.addConnection(input, extra, 1.0));
         assertTrue(graph.addConnection(input, output, 1.0));
-        graph.setActiveNeuronBudget(2);
+        graph.setActiveNeuronBudget(3);
 
         double[] result = graph.step(new double[]{1.0}, 1);
         assertEquals(Math.tanh(1.0), result[0], 1e-9);
