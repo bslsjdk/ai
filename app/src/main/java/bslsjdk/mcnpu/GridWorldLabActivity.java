@@ -777,8 +777,8 @@ public final class GridWorldLabActivity extends Activity {
         report.put("meanSuccessfulPathSteps", evo16TestMeanSuccessfulSteps);
         report.put("usesPrivilegedBfsDistanceFeature", true);
         report.put("interpretationCaveat", "This policy receives the true BFS shortest distance as an input feature; its score does not measure fully blind navigation.");
-        report.put("sampledPeakProcessPssBytes", evo16SampledPeakPssBytes);
         report.put("finalProcessPssBytes", sampleEvo16ProcessMemory());
+        report.put("sampledPeakProcessPssBytes", evo16SampledPeakPssBytes);
         report.put("processMemoryLimitBytes", 4L * 1024L * 1024L * 1024L);
         report.put("sampledProcessMemoryWithin4GiB", evo16SampledPeakPssBytes < 4L * 1024L * 1024L * 1024L);
         report.put("processMemoryMeasurementNote", "Android Debug.getPss() sampled at generation boundaries and test-map boundaries; sampled peak can miss short transient peaks.");
