@@ -102,6 +102,22 @@ class ComposedNeuronLanguageModel:
         accuracy = float((probs.argmax(axis=1) == y).mean())
         return float(loss), accuracy
 
+    def generate(self, prefix, vocab, max_chars=32):
+        """Greedy autoregressive decoding using only this trained model's own weights."""
+        reverse_vocab = list(vocab.keys())
+        text = prefix
+        for _ in range(max_chars):
+            tail = text[-self.context:]
+            if len(tail) < self.context:
+                tail = (" " * (self.context - len(tail))) + tail
+            x = np.zeros((1, self.context * self.vocab_size), dtype=np.float32)
+            for pos, ch in enumerate(tail):
+                token_id = vocab.get(ch, vocab.get(" ", 0))
+                x[0, pos * self.vocab_size + token_id] = 1.0
+            probs, _, _ = self.forward(x)
+            text += reverse_vocab[int(probs[0].argmax())]
+        return text
+
     def save(self, path, vocab, metadata):
         units = []
         for u in self.units:
@@ -175,6 +191,17 @@ def main():
         print("COMPOSED_NEURON_LM_EPOCH " + json.dumps(row, sort_keys=True), flush=True)
     elapsed = time.perf_counter() - started
     final_loss, final_acc = model.evaluate(x_test, y_test)
+    # Unit-level ablation: measure held-out loss after disabling each unit individually.
+    ablation = []
+    for unit in model.units:
+        unit["enabled"] = False
+        loss_without, _ = model.evaluate(x_test, y_test)
+        unit["enabled"] = True
+        ablation.append({"id": unit["id"], "loss_without": loss_without,
+                         "loss_delta": float(loss_without - final_loss)})
+    ablation.sort(key=lambda row: row["loss_delta"], reverse=True)
+    samples = {prefix: model.generate(prefix, vocab, 28) for prefix in
+               ["add 7 and 4", "the sum of 8", "calculate 12 +"]}
     metadata = {
         "seed": args.seed, "epochs": args.epochs, "learning_rate": args.learning_rate,
         "training_characters": len(train_text), "heldout_characters": len(test_text),
@@ -183,6 +210,8 @@ def main():
         "wall_seconds": round(elapsed, 4), "baseline_unigram_heldout_loss": baseline_loss,
         "final_heldout_loss": final_loss, "final_heldout_next_char_accuracy": final_acc,
         "loss_improvement_over_unigram": baseline_loss - final_loss,
+        "unit_ablation_ranked": ablation,
+        "greedy_generation_samples": samples,
         "history": history,
         "limits": "Synthetic arithmetic-format corpus; fixed context, one hidden layer, character-level prediction. This is not a general-purpose assistant or a fair direct score against pretrained chat LLMs."
     }
@@ -193,6 +222,7 @@ def main():
         "vocab_size": len(vocab), "context": args.context, "baseline_unigram_heldout_loss": baseline_loss,
         "final_heldout_loss": final_loss, "final_heldout_next_char_accuracy": final_acc,
         "loss_improvement_over_unigram": baseline_loss - final_loss, "wall_seconds": round(elapsed, 4),
+        "greedy_generation_samples": samples, "top_unit_ablation": ablation[:10],
         "seed": args.seed, "dataset_sha256": metadata["dataset_sha256"],
         "history": history, "model_file": "model.json", "limitations": metadata["limits"]
     }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
