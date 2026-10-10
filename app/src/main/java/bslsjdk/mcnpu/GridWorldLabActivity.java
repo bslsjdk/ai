@@ -630,6 +630,11 @@ public final class GridWorldLabActivity extends Activity {
     private long sampleEvo16ProcessMemory() {
         long pss = Math.max(0L, (long)Debug.getPss() * 1024L);
         if (pss > evo16SampledPeakPssBytes) evo16SampledPeakPssBytes = pss;
+        // Stop with a 512 MiB safety margin below the hard 4 GiB process-RAM ceiling.
+        if (training && pss >= 3584L * 1024L * 1024L) {
+            cancelTraining = true;
+            lastAutosaveError = "Evo16 stopped at sampled process PSS >= 3.5 GiB to protect the 4 GiB runtime limit";
+        }
         return pss;
     }
 
