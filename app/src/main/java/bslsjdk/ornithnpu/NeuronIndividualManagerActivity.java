@@ -118,6 +118,11 @@ public final class NeuronIndividualManagerActivity extends Activity {
         addButton(row4, "独立验证当前", v -> runExperiment(false, 40));
         root.addView(row4);
 
+        LinearLayout row5 = makeRow();
+        addButton(row5, "设置激活预算", v -> chooseActiveBudget());
+        addButton(row5, "保存当前个体", v -> { if (current != null) { try { writeIndividual(current); toast("当前个体已保存"); } catch (Exception e) { showError("保存失败", e); } } });
+        root.addView(row5);
+
         currentInfo = new TextView(this);
         currentInfo.setTextSize(14);
         currentInfo.setPadding(0, dp(12), 0, dp(8));
@@ -353,6 +358,8 @@ public final class NeuronIndividualManagerActivity extends Activity {
                 + "\n完整结构：" + current.graph.getNeuronCount() + " 个神经元 / "
                 + current.graph.getActiveEdgeCount() + " 条活跃连接 / "
                 + current.graph.getEdgeSlotCount() + " 个连接槽"
+                + "\n活动预算：" + current.graph.getActiveNeuronBudget() + " 个神经元/tick，最近实际激活 "
+                + current.graph.getLastActiveNeuronCount()
                 + "\n检查点估算数组内存：" + (current.graph.estimatedStorageBytes() / 1024) + " KiB"
                 + "\n" + current.lastTrainingResult + "\n" + current.lastValidationResult);
         status.setText("本地个体数：" + individuals.size() + " · 已选中：" + selectedIds.size()
