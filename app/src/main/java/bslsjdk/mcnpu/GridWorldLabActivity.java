@@ -911,10 +911,14 @@ public final class GridWorldLabActivity extends Activity {
                     : "bounded random replay buffer; sampled one transition per eight environment steps after warmup");
             report.put("experienceReplayCapacity", REPLAY_CAPACITY);
             report.put("experienceReplayWarmup", REPLAY_WARMUP);
-            report.put("experienceReplayUpdates", lastReplayUpdates);
+            report.put("experienceReplayUpdates", lastTrainingAlgorithm.equals("neuroevolution_mutation_selection") ? 0L : lastReplayUpdates);
             report.put("experienceReplayFinalSize", lastReplaySize);
-            report.put("memoryModel", "last 8 positions are episode-local short-term memory; replay_memory.bin persists up to 2048 transitions across launches; q_network.json stores persistent learned weights");
-            report.put("replayMemoryPersistence", "atomic binary checkpoint alongside q_network.json");
+            report.put("memoryModel", lastTrainingAlgorithm.equals("neuroevolution_mutation_selection")
+                    ? "last 8 positions are episode-local; q_network.json stores the selected elite; replay_memory.bin is preserved but not used by evolution"
+                    : "last 8 positions are episode-local short-term memory; replay_memory.bin persists up to 2048 transitions across launches; q_network.json stores persistent learned weights");
+            report.put("replayMemoryPersistence", lastTrainingAlgorithm.equals("neuroevolution_mutation_selection")
+                    ? "existing replay file preserved; not updated by evolution"
+                    : "atomic binary checkpoint alongside q_network.json");
             report.put("replayMemoryError", replayMemoryError);
             report.put("recurrentTraining", lastTrainingAlgorithm.equals("neuroevolution_mutation_selection")
                     ? "no gradient/BPTT in the evolutionary trainer; weights optimized by mutation and selection"
@@ -990,6 +994,10 @@ public final class GridWorldLabActivity extends Activity {
                     int oldInputSize = saved.optInt("inputSize", -1);
                     int savedRewardVersion = saved.optInt("rewardVersion", 1);
                     if (savedHidden < MIN_HIDDEN || savedHidden > MAX_HIDDEN) savedHidden = DEFAULT_HIDDEN;
+                    lastTrainingAlgorithm = saved.optString("trainingAlgorithm", "td_q_learning_with_replay");
+                    lastEvolutionEvaluations = saved.optLong("evolutionEvaluations", 0L);
+                    lastEvolutionGenerations = saved.optInt("evolutionGenerations", 0);
+                    lastMutationSigma = saved.optDouble("evolutionMutationSigma", 0.20);
                     if (savedRewardVersion != REWARD_VERSION) {
                         File backup = new File(f.getParentFile(), "q_network_reward_v" + savedRewardVersion + "_backup_" + System.currentTimeMillis() + ".json");
                         if (!f.renameTo(backup)) return; // Never overwrite weights if backup failed.
