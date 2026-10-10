@@ -31,6 +31,11 @@ public class SuperNeuronLanguageTrainerTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
+    public void rejectsOversizedModelBeforeAllocation() {
+        new SuperNeuronLanguageTrainer(65536, 64, 256, 3L);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
     public void rejectsTokenOutsideVocabulary() {
         SuperNeuronLanguageTrainer trainer = new SuperNeuronLanguageTrainer(5, 8, 12, 2L);
         trainer.trainSequence(new int[]{0, 5}, 1, 0.01);
