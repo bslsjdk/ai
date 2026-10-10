@@ -14,7 +14,9 @@
     ],
     "input_edges_per_unit": 16,
     "output_edges_per_unit": 12,
-    "rewire_fraction": 0.125,
+    "rewire_fractions": [
+      0.125
+    ],
     "rewire_start": 2,
     "rewire_every": 1
   },
@@ -27,19 +29,22 @@
       "runs": 3,
       "mean_parameters": 1426.0,
       "mean_heldout_loss": 2.167673190434774,
-      "mean_heldout_accuracy": 0.4716038812785388
+      "mean_heldout_accuracy": 0.4716038812785388,
+      "mean_wall_seconds": 1.2825666666666666
     },
     "dense_parameter_matched": {
       "runs": 3,
       "mean_parameters": 1569.0,
       "mean_heldout_loss": 1.1934901873270671,
-      "mean_heldout_accuracy": 0.7236729452054794
+      "mean_heldout_accuracy": 0.7236729452054794,
+      "mean_wall_seconds": 0.7230666666666666
     },
-    "dynamic_sparse": {
+    "dynamic_sparse_f0_125": {
       "runs": 3,
       "mean_parameters": 1426.0,
       "mean_heldout_loss": 1.3855820099512737,
-      "mean_heldout_accuracy": 0.6875
+      "mean_heldout_accuracy": 0.6875,
+      "mean_wall_seconds": 1.2580666666666669
     }
   },
   "runs": [
@@ -50,7 +55,7 @@
       "parameter_count": 1426,
       "heldout_loss": 2.1885831356048584,
       "heldout_accuracy": 0.4396404109589041,
-      "wall_seconds": 1.8234,
+      "wall_seconds": 1.3514,
       "history": [
         {
           "epoch": 1,
@@ -154,7 +159,7 @@
         },
         {
           "epoch": 21,
-          "heldout_loss": 2.357166051864624,
+          "heldout_loss": 2.357166290283203,
           "heldout_accuracy": 0.3784246575342466
         },
         {
@@ -181,7 +186,7 @@
       "parameter_count": 1569,
       "heldout_loss": 1.1979544162750244,
       "heldout_accuracy": 0.7403681506849316,
-      "wall_seconds": 1.2522,
+      "wall_seconds": 0.7306,
       "history": [
         {
           "epoch": 1,
@@ -245,7 +250,7 @@
         },
         {
           "epoch": 13,
-          "heldout_loss": 1.582849144935608,
+          "heldout_loss": 1.5828490257263184,
           "heldout_accuracy": 0.6397688356164384
         },
         {
@@ -265,7 +270,7 @@
         },
         {
           "epoch": 17,
-          "heldout_loss": 1.4028128385543823,
+          "heldout_loss": 1.4028127193450928,
           "heldout_accuracy": 0.693279109589041
         },
         {
@@ -290,7 +295,7 @@
         },
         {
           "epoch": 22,
-          "heldout_loss": 1.2482852935791016,
+          "heldout_loss": 1.248285174369812,
           "heldout_accuracy": 0.734375
         },
         {
@@ -306,12 +311,13 @@
       ]
     },
     {
-      "kind": "dynamic_sparse",
+      "kind": "dynamic_sparse_f0_125",
       "seed": 20261010,
       "hidden_units": 48,
       "parameter_count": 1426,
       "heldout_loss": 1.318726897239685,
       "heldout_accuracy": 0.7071917808219178,
+      "wall_seconds": 1.2758,
       "history": [
         {
           "epoch": 1,
@@ -335,7 +341,7 @@
         },
         {
           "epoch": 5,
-          "heldout_loss": 2.9423789978027344,
+          "heldout_loss": 2.9423787593841553,
           "heldout_accuracy": 0.21789383561643835
         },
         {
@@ -395,7 +401,7 @@
         },
         {
           "epoch": 17,
-          "heldout_loss": 1.7371419668197632,
+          "heldout_loss": 1.7371418476104736,
           "heldout_accuracy": 0.5811215753424658
         },
         {
@@ -425,7 +431,7 @@
         },
         {
           "epoch": 23,
-          "heldout_loss": 1.3630951642990112,
+          "heldout_loss": 1.3630952835083008,
           "heldout_accuracy": 0.7059075342465754
         },
         {
@@ -434,6 +440,7 @@
           "heldout_accuracy": 0.7071917808219178
         }
       ],
+      "rewire_fraction": 0.125,
       "target_sparse_parameter_count": 1426,
       "parameter_difference_vs_sparse_pct": 0.0
     },
@@ -444,7 +451,7 @@
       "parameter_count": 1426,
       "heldout_loss": 2.140194892883301,
       "heldout_accuracy": 0.5378852739726028,
-      "wall_seconds": 1.7706,
+      "wall_seconds": 1.2497,
       "history": [
         {
           "epoch": 1,
@@ -528,7 +535,7 @@
         },
         {
           "epoch": 17,
-          "heldout_loss": 2.526914119720459,
+          "heldout_loss": 2.526914358139038,
           "heldout_accuracy": 0.3324058219178082
         },
         {
@@ -553,7 +560,7 @@
         },
         {
           "epoch": 22,
-          "heldout_loss": 2.247645139694214,
+          "heldout_loss": 2.2476449012756348,
           "heldout_accuracy": 0.4884417808219178
         },
         {
@@ -575,7 +582,7 @@
       "parameter_count": 1569,
       "heldout_loss": 1.2309768199920654,
       "heldout_accuracy": 0.712970890410959,
-      "wall_seconds": 1.2671,
+      "wall_seconds": 0.7154,
       "history": [
         {
           "epoch": 1,
@@ -614,12 +621,12 @@
         },
         {
           "epoch": 8,
-          "heldout_loss": 1.8834233283996582,
+          "heldout_loss": 1.8834234476089478,
           "heldout_accuracy": 0.5699914383561644
         },
         {
           "epoch": 9,
-          "heldout_loss": 1.8055264949798584,
+          "heldout_loss": 1.8055267333984375,
           "heldout_accuracy": 0.5969606164383562
         },
         {
@@ -634,7 +641,7 @@
         },
         {
           "epoch": 12,
-          "heldout_loss": 1.6248807907104492,
+          "heldout_loss": 1.6248809099197388,
           "heldout_accuracy": 0.658818493150685
         },
         {
@@ -649,7 +656,7 @@
         },
         {
           "epoch": 15,
-          "heldout_loss": 1.4913161993026733,
+          "heldout_loss": 1.4913160800933838,
           "heldout_accuracy": 0.6971318493150684
         },
         {
@@ -669,7 +676,7 @@
         },
         {
           "epoch": 19,
-          "heldout_loss": 1.356931447982788,
+          "heldout_loss": 1.3569315671920776,
           "heldout_accuracy": 0.7116866438356164
         },
         {
@@ -700,12 +707,13 @@
       ]
     },
     {
-      "kind": "dynamic_sparse",
+      "kind": "dynamic_sparse_f0_125",
       "seed": 20261011,
       "hidden_units": 48,
       "parameter_count": 1426,
       "heldout_loss": 1.4191980361938477,
       "heldout_accuracy": 0.7016267123287672,
+      "wall_seconds": 1.2674,
       "history": [
         {
           "epoch": 1,
@@ -739,7 +747,7 @@
         },
         {
           "epoch": 7,
-          "heldout_loss": 2.735502243041992,
+          "heldout_loss": 2.735502004623413,
           "heldout_accuracy": 0.2574914383561644
         },
         {
@@ -794,7 +802,7 @@
         },
         {
           "epoch": 18,
-          "heldout_loss": 1.7513459920883179,
+          "heldout_loss": 1.7513461112976074,
           "heldout_accuracy": 0.6179366438356164
         },
         {
@@ -828,6 +836,7 @@
           "heldout_accuracy": 0.7016267123287672
         }
       ],
+      "rewire_fraction": 0.125,
       "target_sparse_parameter_count": 1426,
       "parameter_difference_vs_sparse_pct": 0.0
     },
@@ -838,7 +847,7 @@
       "parameter_count": 1426,
       "heldout_loss": 2.174241542816162,
       "heldout_accuracy": 0.4372859589041096,
-      "wall_seconds": 1.761,
+      "wall_seconds": 1.2466,
       "history": [
         {
           "epoch": 1,
@@ -872,7 +881,7 @@
         },
         {
           "epoch": 7,
-          "heldout_loss": 2.9854612350463867,
+          "heldout_loss": 2.985461473464966,
           "heldout_accuracy": 0.21789383561643835
         },
         {
@@ -897,7 +906,7 @@
         },
         {
           "epoch": 12,
-          "heldout_loss": 2.762490749359131,
+          "heldout_loss": 2.7624905109405518,
           "heldout_accuracy": 0.24336472602739725
         },
         {
@@ -932,7 +941,7 @@
         },
         {
           "epoch": 19,
-          "heldout_loss": 2.4224905967712402,
+          "heldout_loss": 2.4224908351898193,
           "heldout_accuracy": 0.371361301369863
         },
         {
@@ -969,7 +978,7 @@
       "parameter_count": 1569,
       "heldout_loss": 1.1515393257141113,
       "heldout_accuracy": 0.717679794520548,
-      "wall_seconds": 1.262,
+      "wall_seconds": 0.7232,
       "history": [
         {
           "epoch": 1,
@@ -978,7 +987,7 @@
         },
         {
           "epoch": 2,
-          "heldout_loss": 2.7393264770507812,
+          "heldout_loss": 2.739326238632202,
           "heldout_accuracy": 0.270333904109589
         },
         {
@@ -1003,7 +1012,7 @@
         },
         {
           "epoch": 7,
-          "heldout_loss": 1.947852611541748,
+          "heldout_loss": 1.947852373123169,
           "heldout_accuracy": 0.5434503424657534
         },
         {
@@ -1018,12 +1027,12 @@
         },
         {
           "epoch": 10,
-          "heldout_loss": 1.6813749074935913,
+          "heldout_loss": 1.6813750267028809,
           "heldout_accuracy": 0.6016695205479452
         },
         {
           "epoch": 11,
-          "heldout_loss": 1.6160697937011719,
+          "heldout_loss": 1.6160696744918823,
           "heldout_accuracy": 0.610445205479452
         },
         {
@@ -1063,7 +1072,7 @@
         },
         {
           "epoch": 19,
-          "heldout_loss": 1.2725884914398193,
+          "heldout_loss": 1.2725886106491089,
           "heldout_accuracy": 0.6913527397260274
         },
         {
@@ -1094,12 +1103,13 @@
       ]
     },
     {
-      "kind": "dynamic_sparse",
+      "kind": "dynamic_sparse_f0_125",
       "seed": 20261012,
       "hidden_units": 48,
       "parameter_count": 1426,
       "heldout_loss": 1.418821096420288,
       "heldout_accuracy": 0.653681506849315,
+      "wall_seconds": 1.231,
       "history": [
         {
           "epoch": 1,
@@ -1143,7 +1153,7 @@
         },
         {
           "epoch": 9,
-          "heldout_loss": 2.5365724563598633,
+          "heldout_loss": 2.536572217941284,
           "heldout_accuracy": 0.3463184931506849
         },
         {
@@ -1178,7 +1188,7 @@
         },
         {
           "epoch": 16,
-          "heldout_loss": 1.892444133758545,
+          "heldout_loss": 1.892444372177124,
           "heldout_accuracy": 0.5575770547945206
         },
         {
@@ -1222,6 +1232,7 @@
           "heldout_accuracy": 0.653681506849315
         }
       ],
+      "rewire_fraction": 0.125,
       "target_sparse_parameter_count": 1426,
       "parameter_difference_vs_sparse_pct": 0.0
     }
