@@ -315,8 +315,8 @@ public final class SuperNeuronLabActivity extends Activity {
                         tokenizer.tokenAt(prediction), pool.getLastTrainingSteps(), trainLoss,
                         initialValidationLoss,
                         Double.isFinite(validationLoss) ? String.format(Locale.US, "%.5f", validationLoss) : "未完成",
-                        pool.getGeneration(), finalPss / 1024.0, finalRss / 1024.0, samples.length(), reportDirectory);
-                result += curveText.toString();
+                        pool.getGeneration(), finalPss / 1024.0, finalRss / 1024.0, samples.length(), reportDirectory)
+                        + curveText.toString();
                 main.post(() -> {
                     trainer = best;
                     resultView.setText(result);
