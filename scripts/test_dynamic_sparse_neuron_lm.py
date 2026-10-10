@@ -73,10 +73,25 @@ def dynamic_train(model, x_train, y_train, x_test, y_test, args, seed):
             "active_output_edges": int(model.my.sum()),
         }, sort_keys=True), flush=True)
     loss, acc = model.evaluate(x_test, y_test)
+    unit_details = []
+    for j in range(model.hidden):
+        original = model.my[j].copy()
+        model.my[j, :] = 0
+        loss_without, _ = model.evaluate(x_test, y_test)
+        model.my[j, :] = original
+        unit_details.append({
+            "id": f"neuron-{j:03d}",
+            "input_feature_indices": np.flatnonzero(model.mx[:, j]).astype(int).tolist(),
+            "output_token_ids": np.flatnonzero(model.my[j]).astype(int).tolist(),
+            "input_weight_l2": float(np.linalg.norm(model.wx[:, j])),
+            "output_weight_l2": float(np.linalg.norm(model.wy[j])),
+            "ablation_loss_delta": float(loss_without - loss),
+        })
+    unit_details.sort(key=lambda row: row["ablation_loss_delta"], reverse=True)
     return {"kind": "dynamic_sparse", "seed": seed, "hidden_units": model.hidden,
             "parameter_count": model.parameter_count, "heldout_loss": loss,
             "heldout_accuracy": acc, "wall_seconds": round(time.perf_counter() - started, 4),
-            "history": history}
+            "unit_details": unit_details, "history": history}
 
 
 def rewire(model, grad_x, grad_y, signed_x, signed_y, fraction, learning_rate):
@@ -162,7 +177,7 @@ def main():
             rows_to_print.append(dynamic)
         for row in rows_to_print:
             print("DYNAMIC_SPARSE_RESULT " + json.dumps({
-                k: v for k, v in row.items() if k != "history"
+                k: v for k, v in row.items() if k not in ("history", "unit_details")
             }, sort_keys=True), flush=True)
 
     aggregate = {}
@@ -180,6 +195,8 @@ def main():
         "format": "aimeng-dynamic-sparse-neuron-lm/v1",
         "dataset": "synthetic arithmetic-format character-level corpus",
         "context_characters": 8, "vocabulary_size": vocab_size,
+        "vocabulary": [ch for ch, _ in sorted(vocab.items(), key=lambda item: item[1])],
+        "input_feature_layout": "feature_index = context_position * vocabulary_size + token_id",
         "settings": {"epochs": args.epochs, "batch_size": args.batch_size,
                      "learning_rate": args.learning_rate, "seeds": args.seeds,
                      "input_edges_per_unit": args.input_edges,
