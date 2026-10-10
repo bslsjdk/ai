@@ -72,6 +72,7 @@ public final class NeuronLabActivity extends Activity {
 
     private LinearLayout shell;
     private LinearLayout advancedTools;
+    private LinearLayout moreExperiments;
     private FrameLayout pageHost;
     private LinearLayout navRow;
     private TextView globalStatus;
@@ -664,7 +665,7 @@ public final class NeuronLabActivity extends Activity {
     private void buildHomePage(LinearLayout content) {
         LinearLayout welcome = card(content, "先从这里开始");
         addText(welcome, "不用先研究所有按钮。选择你现在要做的事即可；高级工具默认收起来了。", 14, false);
-        addText(welcome, "当前工作区会自动保存。需要把模型文件拿到手机其他位置时，进入“数据/保存”或对应实验页面使用“导出”。", 12, false);
+        addText(welcome, "工作区自动保存。老师模型在电脑/Kaggle生成知识文件，手机只训练小学生网络，避免把大模型塞进 4GB 内存。", 12, false);
 
         Button train = primaryButton("① 训练神经网络");
         train.setOnClickListener(v -> showPage("train"));
@@ -678,20 +679,33 @@ public final class NeuronLabActivity extends Activity {
         neurons.setOnClickListener(v -> showPage("neurons"));
         content.addView(neurons, params(-1, 52, 0, 4, 0, 5));
 
-        Button individuals = secondaryButton("独立模型管理：新建、保存、导入、导出");
+        Button moreExperimentsButton = secondaryButton("更多实验与模型管理  ▾");
+        moreExperimentsButton.setOnClickListener(v -> {
+            boolean show = moreExperiments.getVisibility() != View.VISIBLE;
+            moreExperiments.setVisibility(show ? View.VISIBLE : View.GONE);
+            moreExperimentsButton.setText(show ? "收起更多实验  ▴" : "更多实验与模型管理  ▾");
+        });
+        content.addView(moreExperimentsButton, params(-1, 46, 0, 10, 0, 5));
+
+        moreExperiments = new LinearLayout(this);
+        moreExperiments.setOrientation(LinearLayout.VERTICAL);
+        moreExperiments.setVisibility(View.GONE);
+        content.addView(moreExperiments, params(-1, -2, 0, 0, 0, 0));
+
+        Button individuals = secondaryButton("独立模型管理：新建 / 保存 / 导入 / 导出");
         individuals.setOnClickListener(v -> startActivity(
                 new Intent(NeuronLabActivity.this, NeuronIndividualManagerActivity.class)));
-        content.addView(individuals, params(-1, 48, 0, 4, 0, 5));
+        moreExperiments.addView(individuals, params(-1, 48, 0, 2, 0, 4));
 
-        Button language = secondaryButton("中文字符训练实验");
+        Button language = secondaryButton("中文学习与知识蒸馏实验");
         language.setOnClickListener(v -> startActivity(
                 new Intent(NeuronLabActivity.this, bslsjdk.ornithnpu.SuperNeuronLabActivity.class)));
-        content.addView(language, params(-1, 48, 0, 4, 0, 5));
+        moreExperiments.addView(language, params(-1, 48, 0, 2, 0, 4));
 
         Button maze = secondaryButton("迷宫学习实验");
         maze.setOnClickListener(v -> startActivity(
                 new Intent(NeuronLabActivity.this, GridWorldLabActivity.class)));
-        content.addView(maze, params(-1, 48, 0, 4, 0, 5));
+        moreExperiments.addView(maze, params(-1, 48, 0, 2, 0, 4));
 
         Button more = secondaryButton("更多工具与诊断  ▾");
         more.setOnClickListener(v -> {
