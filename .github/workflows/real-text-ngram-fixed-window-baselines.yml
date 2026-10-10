@@ -1,0 +1,89 @@
+name: Real-text n-gram and fixed-window neuron baselines
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/mobile-neuron-unit-runtime
+    paths:
+      - "scripts/run_real_text_baselines.py"
+      - ".github/workflows/real-text-ngram-fixed-window-baselines.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: real-text-baselines-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install NumPy
+        run: python -m pip install numpy
+      - name: Fetch canonical public-domain corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p experiments/real-text-baselines/latest
+          python - <<'PY'
+          from urllib.request import Request, urlopen
+          from pathlib import Path
+          url = "https://www.gutenberg.org/cache/epub/11/pg11.txt"
+          req = Request(url, headers={"User-Agent": "AIMENG-Neuron-LM-Research/1.0"})
+          with urlopen(req, timeout=60) as r:
+              text = r.read().decode("utf-8", errors="replace")
+          start = text.find("*** START OF THE PROJECT GUTENBERG EBOOK")
+          if start >= 0:
+              text = text[text.find("\\n", start)+1:]
+          end = text.find("*** END OF THE PROJECT GUTENBERG EBOOK")
+          if end >= 0:
+              text = text[:end]
+          Path("experiments/real-text-baselines/latest/alice.txt").write_text(text, encoding="utf-8")
+          print("CORPUS_CHARACTERS", len(text))
+          PY
+      - name: Compile and run n-gram plus fixed-window experiments
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile scripts/run_real_text_baselines.py
+          python scripts/run_real_text_baselines.py \
+            --text-file experiments/real-text-baselines/latest/alice.txt \
+            --output-dir experiments/real-text-baselines/latest \
+            --context 16 --hidden 64 --epochs 12 --steps-per-epoch 400 \
+            --batch-size 256 --learning-rate 0.001 --ngram-alpha 0.1 \
+            --seeds 20261010 20261011 20261012 \
+            2>&1 | tee experiments/real-text-baselines/latest/terminal.log
+      - name: Commit benchmark results
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          REPORT_DIR="experiments/real-text-baselines/latest"
+          BACKUP_DIR="$(mktemp -d)"
+          cp -a "$REPORT_DIR/." "$BACKUP_DIR/"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "${GITHUB_REF_NAME}"
+            git reset --hard "origin/${GITHUB_REF_NAME}"
+            mkdir -p "$REPORT_DIR"
+            cp -a "$BACKUP_DIR/." "$REPORT_DIR/"
+            git add "$REPORT_DIR"
+            if git diff --cached --quiet; then echo "No changed benchmark results"; exit 0; fi
+            git commit -m "Record real-text n-gram and fixed-window baselines [skip ci]"
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then rm -rf "$BACKUP_DIR"; exit 0; fi
+            sleep 2
+          done
+          rm -rf "$BACKUP_DIR"
+          echo "Could not push baseline results after retries" >&2
+          exit 1
