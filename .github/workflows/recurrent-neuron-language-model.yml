@@ -95,17 +95,24 @@ jobs:
                            "wall_seconds": d["wall_seconds"],
                            "ablation_delta_mean": d["unit_ablation_loss_delta_mean"],
                            "ablation_delta_max": d["unit_ablation_loss_delta_max"],
+                           "best_validation_epoch": d["best_validation_epoch"],
+                           "best_validation_loss": d["best_validation_loss"],
+                           "evaluation_protocol": d["evaluation_protocol"],
                            "dataset_sha256": d["dataset_sha256"]})
           if len({r["dataset_sha256"] for r in rows}) != 1:
               raise SystemExit("dataset hashes differ across seeds")
+          if len({r["evaluation_protocol"] for r in rows}) != 1:
+              raise SystemExit("evaluation protocols differ across seeds")
           aggregate = {}
           for key in ("baseline_loss", "heldout_loss", "bits_per_char", "char_accuracy",
-                      "wall_seconds", "ablation_delta_mean", "ablation_delta_max"):
+                      "wall_seconds", "ablation_delta_mean", "ablation_delta_max",
+                      "best_validation_epoch", "best_validation_loss"):
               aggregate["mean_" + key] = statistics.mean(r[key] for r in rows)
           aggregate["parameter_count"] = rows[0]["parameter_count"]
           report = {"format": "aimeng-recurrent-neuron-lm-multiseed/v1",
                     "dataset": "Alice's Adventures in Wonderland, public-domain Project Gutenberg text",
                     "dataset_sha256": rows[0]["dataset_sha256"],
+                    "evaluation_protocol": rows[0]["evaluation_protocol"],
                     "model": "from-scratch character-level vanilla RNN with individually addressable recurrent neuron units",
                     "settings": {"hidden": 64, "context": 64, "epochs": 30,
                                  "steps_per_epoch": 240, "batch_size": 32,
