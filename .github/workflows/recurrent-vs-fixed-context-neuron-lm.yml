@@ -6,6 +6,7 @@ on:
       - feat/mobile-neuron-unit-runtime
     paths:
       - "scripts/train_fixed_context_neuron_lm.py"
+      - "scripts/run_real_text_baselines.py"
       - ".github/workflows/recurrent-vs-fixed-context-neuron-lm.yml"
 
 permissions:
