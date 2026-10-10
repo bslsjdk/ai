@@ -66,12 +66,10 @@ public final class SelfOrganizingMazeTrainer {
         double rewardSum = 0;
         double stepSum = 0;
         long beforeTicks = graph.getTicks();
-        long stepsTaken = 0;
 
         for (int ep = 0; ep < episodes; ep++) {
             MapData map = makeReachableMap(random);
             int pos = map.start;
-            int previousAction = -1;
             double episodeReward = 0;
             graph.resetEpisodeState();
 
@@ -97,13 +95,9 @@ public final class SelfOrganizingMazeTrainer {
                     successes++;
                 }
 
-                if (training) graph.applyReward(reward, LEARNING_RATE);
+                if (training) graph.applyRewardForAction(action, reward, LEARNING_RATE);
                 episodeReward += reward;
-                previousAction = action;
                 if (success) break;
-                // A tiny deterministic tie-breaking signal avoids an exactly symmetric
-                // policy getting identical outcomes forever; it is not a target label.
-                if (previousAction < 0) throw new IllegalStateException("unreachable");
             }
             rewardSum += episodeReward;
             stepSum += episodeSteps;
