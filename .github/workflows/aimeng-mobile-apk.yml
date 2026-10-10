@@ -55,8 +55,8 @@ jobs:
             echo "AIMENG_STABLE_SIGNING=true" >> "$GITHUB_ENV"
             echo "Stable AIMENG test signing key loaded."
           else
-            echo "AIMENG_STABLE_SIGNING=false" >> "$GITHUB_ENV"
-            echo "::warning::Stable signing secrets are not configured. This APK uses a runner-generated debug key and may NOT install as an update over another CI APK."
+            echo "::error::Stable AIMENG signing is required. Configure repository Actions secrets AIMENG_KEYSTORE_BASE64, AIMENG_KEYSTORE_PASSWORD, AIMENG_KEY_ALIAS, and AIMENG_KEY_PASSWORD before building an updateable APK."
+            exit 1
           fi
       - name: Build installable debug APK
         env:
