@@ -263,7 +263,9 @@ public final class SuperNeuronV2 {
         long doubles = (long) inputProjection.length + gateWeight.length + gateBias.length
                 + recurrentScale.length + hiddenToOutputRank.length + outputEmbedding.length + outputBias.length
                 + state.length + lastInput.length + lastGate.length
-                + lastHidden.length + lastPreviousState.length + lastProbabilities.length;
+                + lastHidden.length + lastPreviousState.length + lastProbabilities.length
+                + lastLatent.length + latentGradient.length + hiddenGradient.length
+                + gateGradientScratch.length;
         return doubles * Double.BYTES;
     }
 
