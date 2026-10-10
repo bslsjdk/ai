@@ -11,7 +11,7 @@ public class SuperNeuronLanguageTrainerTest {
         assertEquals(11, trainer.getVocabularySize());
         int predicted = trainer.predictNextToken(3);
         assertTrue(predicted >= 0 && predicted < 11);
-        assertTrue(trainer.estimatedStorageBytes() < 64L * 1024L * 1024L);
+        assertTrue(trainer.estimatedStorageBytes() < 16L * 1024L * 1024L);
     }
 
     @Test
