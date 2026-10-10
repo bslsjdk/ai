@@ -66,32 +66,20 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           REPORT_DIR="experiments/dynamic-sparse-neuron-lm/latest"
-          git add "$REPORT_DIR"
-          if git diff --cached --quiet; then
-            echo "No experiment outputs to commit."
-          else
-            BACKUP_DIR="$(mktemp -d)"
-            cp -a "$REPORT_DIR/." "$BACKUP_DIR/"
-            COMMIT_MESSAGE="Record dynamic sparse neuron LM experiment [skip ci]"
-            git commit -m "$COMMIT_MESSAGE"
-            pushed=0
-            for attempt in 1 2 3 4 5; do
-              git fetch origin "${GITHUB_REF_NAME}"
-              if git rebase "origin/${GITHUB_REF_NAME}"; then
-                if git push origin "HEAD:${GITHUB_REF_NAME}"; then
-                  pushed=1
-                  break
-                fi
-              else
-                git rebase --abort || true
-                git fetch origin "${GITHUB_REF_NAME}"
-                git reset --hard "origin/${GITHUB_REF_NAME}"
-                cp -a "$BACKUP_DIR/." "$REPORT_DIR/"
-                git add "$REPORT_DIR"
-                git commit -m "$COMMIT_MESSAGE"
-              fi
-              sleep 2
-            done
-            rm -rf "$BACKUP_DIR"
-            test "$pushed" = "1"
-          fi
+          BACKUP_DIR="$(mktemp -d)"
+          mkdir -p "$REPORT_DIR"
+          cp -a "$REPORT_DIR/." "$BACKUP_DIR/"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "${GITHUB_REF_NAME}"
+            git reset --hard "origin/${GITHUB_REF_NAME}"
+            mkdir -p "$REPORT_DIR"
+            cp -a "$BACKUP_DIR/." "$REPORT_DIR/"
+            git add "$REPORT_DIR"
+            if git diff --cached --quiet; then echo "No changed dynamic sparse artifacts"; exit 0; fi
+            git commit -m "Record dynamic sparse neuron LM experiment [skip ci]"
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then rm -rf "$BACKUP_DIR"; exit 0; fi
+            sleep 2
+          done
+          rm -rf "$BACKUP_DIR"
+          echo "Could not push dynamic sparse artifacts after retries" >&2
+          exit 1
