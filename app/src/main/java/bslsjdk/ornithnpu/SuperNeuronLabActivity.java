@@ -1,19 +1,24 @@
 package bslsjdk.ornithnpu;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Debug;
 import android.view.View;
+import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
+import java.io.OutputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -22,6 +27,7 @@ import java.util.Locale;
 /** On-device recurrent character prediction experiment with bounded memory checks. */
 public final class SuperNeuronLabActivity extends Activity {
     private static final int TOTAL_STEPS = 10000;
+    private static final int REQUEST_EXPORT_CHECKPOINT = 5101;
     private static final int CHUNK_STEPS = 1000;
     private static final long STOP_PSS_BYTES = 2560L * 1024L * 1024L;
     private static final String STORY =
@@ -43,6 +49,15 @@ public final class SuperNeuronLabActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(16), dp(12), dp(16), dp(12));
         root.setBackgroundColor(0xFFF3F5F8);
+        getWindow().setDecorFitsSystemWindows(false);
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            android.graphics.Insets bars = insets.getInsets(
+                    WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+            android.graphics.Insets ime = insets.getInsets(WindowInsets.Type.ime());
+            view.setPadding(bars.left + dp(16), bars.top + dp(12), bars.right + dp(16),
+                    Math.max(bars.bottom, ime.bottom) + dp(12));
+            return insets;
+        });
 
         TextView heading = new TextView(this);
         heading.setText("AIMENG 超级神经元 · 循环语言实验");
@@ -52,8 +67,7 @@ public final class SuperNeuronLabActivity extends Activity {
         root.addView(heading);
 
         TextView details = new TextView(this);
-        details.setText("固定字符词表 200 · 每个字符 3 次内部循环 · 局部资格迹奖励 · 不使用全局 BPTT。" +
-                " 每 1000 步记录交叉熵和 Android PSS/RSS；PSS 达到 2.5 GiB 即保存检查点并停止。");
+        details.setText("这个实验会用一小段中文故事训练字符预测。训练结果会自动保存；想把模型文件拿到手机其他位置，请使用下面的导出按钮。");
         details.setTextSize(14);
         details.setTextColor(0xFF374151);
         root.addView(details);
@@ -64,9 +78,14 @@ public final class SuperNeuronLabActivity extends Activity {
         runButton.setOnClickListener(v -> startExperiment());
 
         batchButton = new Button(this);
-        batchButton.setText("测试批量前向与 HTP 加速");
+        batchButton.setText("高级测试：批量计算速度（不训练）");
         root.addView(batchButton);
         batchButton.setOnClickListener(v -> startBatchBenchmark());
+
+        Button exportButton = new Button(this);
+        exportButton.setText("导出训练检查点到手机文件夹");
+        root.addView(exportButton);
+        exportButton.setOnClickListener(v -> exportCheckpoint());
 
         ScrollView scroll = new ScrollView(this);
         output = new TextView(this);
@@ -151,7 +170,7 @@ public final class SuperNeuronLabActivity extends Activity {
                     .append("\n训练目标步数：").append(trainer.getTrainedTokenTargets())
                     .append("\n生成文本（前 ").append(prefixLength).append(" 个字符为提示词）：\n")
                     .append(tokenizer.decode(generated)).append("\n")
-                    .append("\n检查点：").append(new File(getFilesDir(), "super-neuron-character-checkpoint.json").getAbsolutePath())
+                    .append("\n检查点已自动保存在应用内部空间。其他应用不能直接读取这个路径；点页面上方“导出训练检查点到手机文件夹”，选择“下载”或其他文件夹即可拿到 JSON 文件。")
                     .append("\n注意：只有验证交叉熵下降，且生成文本更接近可读中文，才算初步改善；单次短故事实验不证明通用语言能力。");
             publish(report.toString());
         } catch (Throwable error) {
@@ -249,6 +268,42 @@ public final class SuperNeuronLabActivity extends Activity {
                 runButton.setEnabled(true);
                 batchButton.setEnabled(true);
             });
+        }
+    }
+
+    private void exportCheckpoint() {
+        File checkpoint = new File(getFilesDir(), "super-neuron-character-checkpoint.json");
+        if (!checkpoint.isFile()) {
+            Toast.makeText(this, "还没有训练检查点。先运行一次训练。", Toast.LENGTH_LONG).show();
+            return;
+        }
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/json");
+        intent.putExtra(Intent.EXTRA_TITLE, "super-neuron-character-checkpoint.json");
+        try {
+            startActivityForResult(intent, REQUEST_EXPORT_CHECKPOINT);
+        } catch (Throwable error) {
+            Toast.makeText(this, "无法打开系统文件保存窗口：" + error.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_EXPORT_CHECKPOINT || resultCode != RESULT_OK
+                || data == null || data.getData() == null) return;
+        Uri destination = data.getData();
+        File checkpoint = new File(getFilesDir(), "super-neuron-character-checkpoint.json");
+        try (FileInputStream input = new FileInputStream(checkpoint);
+             OutputStream outputStream = getContentResolver().openOutputStream(destination, "wt")) {
+            if (outputStream == null) throw new java.io.IOException("系统没有提供可写入的文件");
+            byte[] buffer = new byte[8192];
+            int count;
+            while ((count = input.read(buffer)) != -1) outputStream.write(buffer, 0, count);
+            outputStream.flush();
+            Toast.makeText(this, "检查点已导出。你可以在系统文件管理器中找到它。", Toast.LENGTH_LONG).show();
+        } catch (Throwable error) {
+            Toast.makeText(this, "导出失败：" + error.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
