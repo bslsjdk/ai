@@ -1,0 +1,24 @@
+name: Evo16 Java compile check
+on:
+  push:
+    branches: [feat/evo16-fixed-benchmarks]
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-35 build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+      - name: Compile Android Java
+        run: gradle :app:compileReleaseJavaWithJavac --no-daemon --stacktrace
