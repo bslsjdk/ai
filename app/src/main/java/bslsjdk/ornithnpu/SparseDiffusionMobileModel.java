@@ -28,6 +28,9 @@ public final class SparseDiffusionMobileModel {
     private int neurons, width, activeK, fanout, maxSteps, contextLength;
     private boolean loaded;
     private float[] lastPooled;
+    // Persistent residual state carried across separate prompts and generations.
+    private float[] residentState;
+    private float[] residentEnergy;
     private float[] lastLogits;
     private int lastChosen = -1;
     private java.util.List<LearningTrace> lastTrace = new java.util.ArrayList<>();
@@ -109,8 +112,10 @@ public final class SparseDiffusionMobileModel {
         require("halt_head.weight"); require("halt_head.bias");
         baseDecoderWeight = w("decoder.weight").clone();
         baseDecoderBias = w("decoder.bias").clone();
-        loaded = true;
         baseModelFingerprint = modelFingerprint();
+        residentState = new float[neurons * width];
+        residentEnergy = new float[neurons];
+        loaded = true;
         lastTrace.clear();
         // Probe the phone GPU once after a valid model is loaded. Failure is normal
         // on devices without an exposed OpenCL GPU runtime; the CPU path remains valid.
@@ -172,10 +177,20 @@ public final class SparseDiffusionMobileModel {
         }
         int[] seeds = topK(route, activeK);
         float[][] state = new float[neurons][width];
-        float[] energy = new float[neurons];
+        float[] energy = residentEnergy == null || residentEnergy.length != neurons
+                ? new float[neurons] : residentEnergy.clone();
+        for (int n = 0; n < neurons; n++) {
+            int base = n * width;
+            if (residentState != null && residentState.length == neurons * width)
+                System.arraycopy(residentState, base, state[n], 0, width);
+            energy[n] = Math.max(0f, Math.min(100f, energy[n] * 0.85f));
+        }
         for (int id : seeds) {
-            energy[id] = 1f;
-            for (int j = 0; j < width; j++) state[id][j] = (float) Math.tanh(context[j] + node[id * width + j]);
+            energy[id] = Math.max(1f, energy[id]);
+            for (int j = 0; j < width; j++) {
+                float fresh = (float) Math.tanh(context[j] + node[id * width + j]);
+                state[id][j] = 0.65f * state[id][j] + 0.35f * fresh;
+            }
         }
 
         float[] edgeLogits = w("edge_logits");
@@ -250,6 +265,16 @@ public final class SparseDiffusionMobileModel {
         }
         if (lastLogits == null) throw new IllegalStateException("model produced no diffusion steps");
         for (int v = 0; v < vocab; v++) survivalMix[v] += survival * lastLogits[v];
+        // Retain bounded state residue across calls. This is actual model state,
+        // not a UI-only trace; it is checkpointed by the runtime service.
+        if (residentState == null || residentState.length != neurons * width)
+            residentState = new float[neurons * width];
+        if (residentEnergy == null || residentEnergy.length != neurons)
+            residentEnergy = new float[neurons];
+        for (int n = 0; n < neurons; n++) {
+            System.arraycopy(state[n], 0, residentState, n * width, width);
+            residentEnergy[n] = Math.max(0f, Math.min(100f, energy[n]));
+        }
         lastPooled = pooledForLearning;
         this.lastLogits = survivalMix;
         return survivalMix;
@@ -363,6 +388,75 @@ public final class SparseDiffusionMobileModel {
 
     private static float clamp(float value, float min, float max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    /** Save the resident neural state using a compact binary checkpoint. */
+    public synchronized void saveRuntimeState(File stateFile) throws Exception {
+        if (!loaded || stateFile == null) return;
+        File parent = stateFile.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs())
+            throw new java.io.IOException("cannot create runtime-state directory");
+        File temp = new File(parent, stateFile.getName() + ".tmp");
+        try (java.io.DataOutputStream out = new java.io.DataOutputStream(
+                new java.io.BufferedOutputStream(new FileOutputStream(temp)))) {
+            out.writeInt(0x41494D52); // AIMR
+            out.writeInt(1);
+            out.writeUTF(baseModelFingerprint);
+            out.writeInt(neurons);
+            out.writeInt(width);
+            for (int i = 0; i < neurons * width; i++)
+                out.writeFloat(residentState == null ? 0f : residentState[i]);
+            for (int i = 0; i < neurons; i++)
+                out.writeFloat(residentEnergy == null ? 0f : residentEnergy[i]);
+            out.flush();
+        }
+        try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(temp, "rw")) {
+            raf.getFD().sync();
+        }
+        try {
+            Files.move(temp.toPath(), stateFile.toPath(), StandardCopyOption.REPLACE_EXISTING,
+                    StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(temp.toPath(), stateFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    /** Restore state only when its dimensions and base-model fingerprint match. */
+    public synchronized boolean loadRuntimeState(File stateFile) throws Exception {
+        if (!loaded || stateFile == null || !stateFile.isFile()) return false;
+        long expectedBytes = 4L + 4L + 2L + baseModelFingerprint.length()
+                + 4L + 4L + 4L * ((long) neurons * width + neurons);
+        if (stateFile.length() < expectedBytes || stateFile.length() > expectedBytes + 16L)
+            return false;
+        try (java.io.DataInputStream in = new java.io.DataInputStream(
+                new java.io.BufferedInputStream(new java.io.FileInputStream(stateFile)))) {
+            if (in.readInt() != 0x41494D52 || in.readInt() != 1) return false;
+            if (!baseModelFingerprint.equals(in.readUTF())) return false;
+            if (in.readInt() != neurons || in.readInt() != width) return false;
+            float[] state = new float[neurons * width];
+            float[] energy = new float[neurons];
+            for (int i = 0; i < state.length; i++) {
+                float v = in.readFloat();
+                if (!Float.isFinite(v) || v < -1.5f || v > 1.5f) return false;
+                state[i] = v;
+            }
+            for (int i = 0; i < energy.length; i++) {
+                float v = in.readFloat();
+                if (!Float.isFinite(v) || v < 0f || v > 100f) return false;
+                energy[i] = v;
+            }
+            residentState = state;
+            residentEnergy = energy;
+            return true;
+        } catch (java.io.EOFException e) {
+            return false;
+        }
+    }
+
+    public synchronized void resetRuntimeState() {
+        if (residentState != null) Arrays.fill(residentState, 0f);
+        if (residentEnergy != null) Arrays.fill(residentEnergy, 0f);
+        lastTrace.clear();
     }
 
     public synchronized long getLearningUpdates() { return learningUpdates; }
