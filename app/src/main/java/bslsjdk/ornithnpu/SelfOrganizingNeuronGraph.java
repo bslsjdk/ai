@@ -136,11 +136,7 @@ public final class SelfOrganizingNeuronGraph {
         // are inserted last, so the outgoing adjacency visits them early under a
         // small active-neuron budget instead of starving all action ports.
         for (int o = totalNeurons - outputCount; o < totalNeurons; o++) {
-            boolean connected = false;
-            for (int p = 0; p < inputCount; p++) {
-                int source = g.inputOrder[p];
-                if (g.findEdge(source, o) >= 0) { connected = true; break; }
-            }
+            boolean connected = g.findEdge(g.inputOrder[0], o) >= 0;
             if (!connected) g.addConnection(g.inputOrder[0], o,
                     (r.nextDouble() * 2.0 - 1.0) * 0.2);
         }
@@ -418,8 +414,8 @@ public final class SelfOrganizingNeuronGraph {
     }
     public long estimatedStorageBytes() {
         // Primitive-array payload estimate; excludes object headers and JSON snapshots.
-        return (long) maxNeurons * (1 + 1 + 1 + 4 + 8 * 4)
-                + (long) maxEdges * (4 * 2 + 8 * 3 + 1);
+        return (long) maxNeurons * (3 + 4 * 5 + 8 * 5 + 4 + 4 + 4 * 2 + 2)
+                + (long) maxEdges * (4 * 3 + 8 * 3 + 1);
     }
 
     public JSONObject toJson() throws JSONException {
