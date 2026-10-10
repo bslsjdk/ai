@@ -1,0 +1,75 @@
+{
+  "format": "aimeng-ngram-alpha-sensitivity/v1",
+  "dataset": "Project Gutenberg Alice's Adventures in Wonderland, chronological split",
+  "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
+  "split": {
+    "train_characters": 122913,
+    "validation_characters": 7230,
+    "test_characters": 14461,
+    "validation_characters_scored": 7168,
+    "test_characters_scored": 14400,
+    "vocabulary_size": 76,
+    "target_alignment": "same 64-character chunk boundaries as recurrent RNN; context resets at each boundary"
+  },
+  "smoothing": {
+    "method": "recursive Dirichlet interpolation; unigram base uses additive smoothing",
+    "alpha_grid": [
+      0.001,
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0,
+      1000.0
+    ],
+    "selection": "minimum validation loss per order; test set used only once after selection"
+  },
+  "wall_seconds": 15.988,
+  "orders": {
+    "2": {
+      "order": 2,
+      "context_characters": 1,
+      "selected_alpha_from_validation": 1.0,
+      "validation_loss_at_selected_alpha": 2.3841778692129796,
+      "test_characters_scored": 14400,
+      "test_loss": 2.420940347913855,
+      "test_bits_per_char": 3.4926786342233203,
+      "test_char_accuracy": 0.30527777777777776
+    },
+    "3": {
+      "order": 3,
+      "context_characters": 2,
+      "selected_alpha_from_validation": 10.0,
+      "validation_loss_at_selected_alpha": 1.8752363641360912,
+      "test_characters_scored": 14400,
+      "test_loss": 1.9174682443551374,
+      "test_bits_per_char": 2.766321927193224,
+      "test_char_accuracy": 0.4386111111111111
+    },
+    "4": {
+      "order": 4,
+      "context_characters": 3,
+      "selected_alpha_from_validation": 10.0,
+      "validation_loss_at_selected_alpha": 1.630510778963806,
+      "test_characters_scored": 14400,
+      "test_loss": 1.6812881265244983,
+      "test_bits_per_char": 2.42558604244239,
+      "test_char_accuracy": 0.51875
+    },
+    "5": {
+      "order": 5,
+      "context_characters": 4,
+      "selected_alpha_from_validation": 10.0,
+      "validation_loss_at_selected_alpha": 1.570834277548706,
+      "test_characters_scored": 14400,
+      "test_loss": 1.6356898482408027,
+      "test_bits_per_char": 2.359801632489427,
+      "test_char_accuracy": 0.5424305555555555
+    }
+  },
+  "limitations": [
+    "Single-book character prediction only.",
+    "This is a smoothing-parameter sensitivity sweep, not a new neural-model experiment.",
+    "Three or fewer n-gram orders may select an edge alpha; report the selected alpha and validation loss rather than assuming the grid optimum is a global optimum."
+  ]
+}
