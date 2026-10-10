@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: compute-matched-fixed-window-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   benchmark:
