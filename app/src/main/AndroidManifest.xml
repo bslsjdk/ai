@@ -16,7 +16,7 @@
         <package android:name="com.aiunit.aon" />
         <intent><action android:name="oplus.intent.action.AIUNIT_SERVICE" /></intent>
     </queries>
-    <application android:allowBackup="false" android:label="Ornith NPU" android:supportsRtl="true">
+    <application android:allowBackup="false" android:label="AIMENG 神经元" android:supportsRtl="true">
         <meta-data android:name="com.oplus.aiunit.auth_style" android:value="0" />
         <uses-native-library android:name="libcdsprpc.so" android:required="false" />
         <uses-native-library android:name="libadsprpc.so" android:required="false" />
@@ -28,14 +28,14 @@
         <uses-native-library android:name="libdmabufheap.so" android:required="false" />
         <meta-data android:name="moe.shizuku.client.V3_SUPPORT" android:value="true" />
         <activity android:name=".MainActivity" android:exported="false" />
-        <activity android:name=".SparseDiffusionActivity" android:exported="false" />
-        <activity android:name=".ChatActivity" android:exported="true"
-            android:windowSoftInputMode="adjustResize">
+        <activity android:name=".SparseDiffusionActivity" android:exported="true" android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".ChatActivity" android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <receiver android:name=".NpuWakeReceiver" android:exported="true" android:enabled="true">
             <intent-filter>
                 <action android:name="bslsjdk.ornithnpu.action.WAKE" />
