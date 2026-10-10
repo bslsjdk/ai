@@ -3,6 +3,7 @@ package bslsjdk.ornithnpu;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Debug;
 import android.os.Looper;
 import android.graphics.Color;
 import android.view.Gravity;
@@ -14,8 +15,17 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Locale;
 
 /**
@@ -25,7 +35,7 @@ import java.util.Locale;
  */
 public final class SuperNeuronLabActivity extends Activity {
     private final Handler main = new Handler(Looper.getMainLooper());
-    private EditText vocabularyField, embeddingField, hiddenField, epochsField, learningRateField, sequenceField;
+    private EditText vocabularyField, embeddingField, hiddenField, epochsField, learningRateField, sequenceField, storyField;
     private TextView resultView;
     private Button trainButton;
     private SuperNeuronLanguageTrainer trainer;
@@ -52,7 +62,7 @@ public final class SuperNeuronLabActivity extends Activity {
         root.addView(title);
 
         TextView warning = new TextView(this);
-        warning.setText("这是 token ID 级别的训练烟雾测试，不是自然语言聊天。真实 tokenizer、语料导入、完整跨时间反向传播和模型持久化尚未接入。模型估算存储上限 16 MiB；手机进程总内存仍必须低于 4 GiB。");
+        warning.setText("实验包括字符级故事预测、单个模型内的局部梯度/资格迹，以及模型池精英选择与变异重组。每 1000 步记录 PSS/RSS；PSS 超过 2.5 GiB 时保存检查点并停止。模型估算存储预算 16 MiB，手机进程总内存仍必须低于 4 GiB。");
         warning.setTextColor(Color.rgb(153, 72, 16));
         warning.setTextSize(13);
         warning.setPadding(0, dp(8), 0, dp(12));
@@ -64,6 +74,18 @@ public final class SuperNeuronLabActivity extends Activity {
         epochsField = addField(root, "训练轮数", "100");
         learningRateField = addField(root, "学习率（0.001 到 0.05）", "0.02");
         sequenceField = addField(root, "Token ID 序列（空格分隔）", "0 1 0 1 0 1 0 1 0 1 0 1");
+
+        storyField = addMultilineField(root, "字符级儿童故事（原文）",
+                "小兔子住在森林边的小木屋里。一天早晨，它发现门口有一颗闪闪发光的种子。小兔把种子种进土里，每天浇水，也和小鸟一起等它发芽。过了几天，嫩绿的小芽探出头来。大风来时，小兔用树枝挡风，下雨时又把积水轻轻排开。后来种子长成一棵小树，结出了甜甜的果子。小兔把果子分给小鸟、刺猬和路过的鹿。大家一起种下更多种子，让森林变得更加茂盛。小兔明白，耐心照料和分享，会让小小的善意慢慢长大。");
+
+        Button storyButton = new Button(this);
+        storyButton.setText("字符故事训练：10,000 步 + 内存探针 + 进化");
+        storyButton.setAllCaps(false);
+        LinearLayout.LayoutParams storyParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(54));
+        storyParams.topMargin = dp(8);
+        root.addView(storyButton, storyParams);
+        storyButton.setOnClickListener(v -> trainCharacterStory(storyButton));
 
         trainButton = new Button(this);
         trainButton.setText("训练并验证下一 Token 预测");
@@ -115,6 +137,26 @@ public final class SuperNeuronLabActivity extends Activity {
         field.setBackgroundColor(Color.WHITE);
         root.addView(field, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(48)));
+        return field;
+    }
+
+    private EditText addMultilineField(LinearLayout root, String labelText, String defaultValue) {
+        TextView label = new TextView(this);
+        label.setText(labelText);
+        label.setTextColor(Color.rgb(55, 65, 81));
+        label.setTextSize(13);
+        root.addView(label, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        EditText field = new EditText(this);
+        field.setText(defaultValue);
+        field.setTextSize(14);
+        field.setGravity(Gravity.TOP | Gravity.START);
+        field.setMinLines(5);
+        field.setMaxLines(10);
+        field.setPadding(dp(10), dp(8), dp(10), dp(8));
+        field.setBackgroundColor(Color.WHITE);
+        root.addView(field, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         return field;
     }
 
