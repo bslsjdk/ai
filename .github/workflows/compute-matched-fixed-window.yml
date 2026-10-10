@@ -1,0 +1,133 @@
+name: Compute-matched fixed-window neuron baseline
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/mobile-neuron-unit-runtime
+    paths:
+      - "scripts/run_real_text_baselines.py"
+      - ".github/workflows/compute-matched-fixed-window.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: compute-matched-fixed-window-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install NumPy
+        run: python -m pip install numpy
+      - name: Fetch canonical public-domain corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p experiments/compute-matched-fixed-window/latest
+          python - <<'PY'
+          from urllib.request import Request, urlopen
+          from pathlib import Path
+          url = "https://www.gutenberg.org/cache/epub/11/pg11.txt"
+          req = Request(url, headers={"User-Agent": "AIMENG-Neuron-LM-Research/1.0"})
+          with urlopen(req, timeout=60) as r:
+              text = r.read().decode("utf-8", errors="replace")
+          start = text.find("*** START OF THE PROJECT GUTENBERG EBOOK")
+          if start >= 0:
+              text = text[text.find("\n", start)+1:]
+          end = text.find("*** END OF THE PROJECT GUTENBERG EBOOK")
+          if end >= 0:
+              text = text[:end]
+          Path("experiments/compute-matched-fixed-window/latest/alice.txt").write_text(text, encoding="utf-8")
+          print("CORPUS_CHARACTERS", len(text))
+          PY
+      - name: Compile and run n-gram plus fixed-window experiments
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile scripts/run_real_text_baselines.py
+          python scripts/run_real_text_baselines.py \
+            --text-file experiments/compute-matched-fixed-window/latest/alice.txt \
+            --output-dir experiments/compute-matched-fixed-window/latest \
+            --context 16 --hidden 128 --epochs 180 --steps-per-epoch 400 \
+            --batch-size 256 --learning-rate 0.001 \
+            --seeds 20261010 20261011 20261012 \
+            2>&1 | tee experiments/compute-matched-fixed-window/latest/terminal.log
+      - name: Add estimated MAC budget audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("experiments/compute-matched-fixed-window/latest/summary.json")
+          report = json.loads(path.read_text(encoding="utf-8"))
+          vocab, rnn_hidden, rnn_context = 76, 64, 64
+          fixed_hidden, fixed_context = 128, 16
+          rnn_forward = vocab*rnn_hidden + rnn_hidden*rnn_hidden + rnn_hidden*vocab
+          rnn_backward = (rnn_hidden*vocab + vocab*rnn_hidden +
+                          rnn_hidden*rnn_hidden + rnn_hidden*rnn_hidden +
+                          vocab*rnn_hidden)
+          rnn_targets = 30*240*32*rnn_context
+          fixed_forward_backward_macs = 3*fixed_hidden*vocab
+          fixed_targets = 180*400*256
+          rnn_total = rnn_targets*(rnn_forward+rnn_backward)
+          fixed_total = fixed_targets*fixed_forward_backward_macs
+          fixed_parameters = fixed_context*vocab*fixed_hidden + fixed_hidden + fixed_hidden*vocab + vocab
+          report["compute_budget_audit"] = {
+              "method": "Approximate training MAC count from the implemented dense matrix multiplications; excludes softmax/activation, context summations, scatter-adds, optimizer elementwise operations and data movement. One MAC conventionally equals about two FLOPs.",
+              "recurrent_rnn_reference": {
+                  "vocabulary_size": vocab, "hidden_neurons": rnn_hidden, "sequence_length": rnn_context,
+                  "training_targets_per_seed": rnn_targets,
+                  "forward_macs_per_target": rnn_forward,
+                  "backward_macs_per_target": rnn_backward,
+                  "estimated_total_training_macs_per_seed": rnn_total,
+                  "parameter_count": 13964
+              },
+              "fixed_window": {
+                  "context_characters": fixed_context, "hidden_neurons": fixed_hidden,
+                  "training_targets_per_seed": fixed_targets,
+                  "estimated_macs_per_target": fixed_forward_backward_macs,
+                  "estimated_total_training_macs_per_seed": fixed_total,
+                  "parameter_count": fixed_parameters
+              },
+              "fixed_window_to_rnn_estimated_mac_ratio": fixed_total/rnn_total,
+              "interpretation": "The estimated training MAC budgets are approximately matched, but parameter count is not matched. This is a formula-based estimate, not a hardware performance counter."
+          }
+          path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          print("COMPUTE_BUDGET_AUDIT", json.dumps(report["compute_budget_audit"], sort_keys=True))
+          PY
+      - name: Commit benchmark results
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          REPORT_DIR="experiments/compute-matched-fixed-window/latest"
+          BACKUP_DIR="$(mktemp -d)"
+          cp -a "$REPORT_DIR/." "$BACKUP_DIR/"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "${GITHUB_REF_NAME}"
+            git reset --hard "origin/${GITHUB_REF_NAME}"
+            mkdir -p "$REPORT_DIR"
+            cp -a "$BACKUP_DIR/." "$REPORT_DIR/"
+            git add "$REPORT_DIR"
+            if git diff --cached --quiet; then echo "No changed benchmark results"; exit 0; fi
+            git commit -m "Record compute-matched fixed-window baseline [skip ci]"
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then rm -rf "$BACKUP_DIR"; exit 0; fi
+            sleep 2
+          done
+          rm -rf "$BACKUP_DIR"
+          echo "Could not push baseline results after retries" >&2
+          exit 1
