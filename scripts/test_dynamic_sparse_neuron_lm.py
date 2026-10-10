@@ -140,6 +140,7 @@ def main():
     args = p.parse_args()
     if not 1 <= args.epochs <= 100 or any(not 0 < f <= 0.5 for f in args.rewire_fractions):
         raise SystemExit("epochs must be 1..100 and every rewire fraction must be in (0, 0.5]")
+    args.output_dir.mkdir(parents=True, exist_ok=True)
     base = load_script("base_lm", "train_composed_neuron_lm.py")
     compare = load_script("compare_lm", "compare_sparse_dense_neuron_lm.py")
     train_text, test_text = base.build_corpus()
@@ -170,6 +171,26 @@ def main():
             tag = str(fraction).replace(".", "_")
             dynamic["kind"] = "dynamic_sparse_f" + tag
             dynamic["rewire_fraction"] = fraction
+            checkpoint_rel = f"model-seed-{seed}-rewire-{tag}.json"
+            checkpoint = {
+                "format": "aimeng-dynamic-sparse-neuron-checkpoint/v1",
+                "seed": seed, "rewire_fraction": fraction,
+                "context_characters": 8, "vocabulary": [ch for ch, _ in sorted(vocab.items(), key=lambda item: item[1])],
+                "parameter_count": model.parameter_count, "hidden_units": model.hidden,
+                "units": [{
+                    "id": f"neuron-{j:03d}", "enabled": True, "bias": float(model.bh[j]),
+                    "input_edges": [{"feature_index": int(i), "weight": float(model.wx[i, j])}
+                                    for i in np.flatnonzero(model.mx[:, j])],
+                    "output_edges": [{"token_id": int(k), "weight": float(model.wy[j, k])}
+                                     for k in np.flatnonzero(model.my[j])],
+                } for j in range(model.hidden)],
+                "output_bias": model.bo.astype(float).tolist(),
+                "evaluation": {"heldout_loss": dynamic["heldout_loss"],
+                               "heldout_accuracy": dynamic["heldout_accuracy"]},
+            }
+            (args.output_dir / checkpoint_rel).write_text(
+                json.dumps(checkpoint, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            dynamic["checkpoint_file"] = checkpoint_rel
             dynamic["target_sparse_parameter_count"] = sparse_params
             dynamic["parameter_difference_vs_sparse_pct"] = round(
                 100.0 * (dynamic["parameter_count"] - sparse_params) / sparse_params, 3)
@@ -212,7 +233,6 @@ def main():
             "Dense width is integer-rounded; compare actual parameter counts.",
         ],
     }
-    args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir / "summary.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print("DYNAMIC_SPARSE_AGGREGATE " + json.dumps(aggregate, sort_keys=True), flush=True)
 
