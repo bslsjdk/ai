@@ -44,7 +44,7 @@ jobs:
             --output-dir experiments/dynamic-sparse-neuron-lm/latest \
             --seeds 20261010 20261011 20261012 \
             --epochs 24 --batch-size 128 --learning-rate 0.025 \
-            --input-edges 16 --output-edges 12 \
+            --input-edges 18 --output-edges 13 \
             --rewire-fractions 0.125 0.25 0.375 --rewire-start 2 --rewire-every 1 \
             2>&1 | tee experiments/dynamic-sparse-neuron-lm/latest/terminal.log
           python - <<'PY'
