@@ -42,6 +42,8 @@ public final class SuperNeuronV2 {
     private final double[] lastInputGradient;
     private final double[] outputBias;
     private final double[] state;
+    // Per-hidden-unit eligibility trace for delayed scalar reward; no sequence tape.
+    private final double[] eligibilityTrace;
 
     // One-step cache used by trainClass(); deliberately bounded.
     private final double[] lastInput;
@@ -77,6 +79,7 @@ public final class SuperNeuronV2 {
         lastInputGradient = new double[inputCount];
         outputBias = new double[outputCount];
         state = new double[hiddenSize];
+        eligibilityTrace = new double[hiddenSize];
         lastInput = new double[inputCount];
         lastGate = new double[inputCount];
         lastHidden = new double[hiddenSize];
@@ -123,6 +126,8 @@ public final class SuperNeuronV2 {
             lastHidden[h] = Math.tanh(clamp(sum, -12.0, 12.0));
         }
         System.arraycopy(lastHidden, 0, state, 0, hiddenSize);
+        for (int h = 0; h < hiddenSize; h++)
+            eligibilityTrace[h] = clamp(0.9 * eligibilityTrace[h] + lastHidden[h], -10.0, 10.0);
 
         // Factorized output head: hidden -> compact rank -> token/class scores.
         // This reduces output-head parameters from O(vocabulary * hidden) to
@@ -244,6 +249,7 @@ public final class SuperNeuronV2 {
 
     /** Reset only recurrent working state; learned parameters remain unchanged. */
     public void resetState() {
+        Arrays.fill(eligibilityTrace, 0.0);
         Arrays.fill(state, 0.0);
         Arrays.fill(lastPreviousState, 0.0);
         Arrays.fill(lastHidden, 0.0);
@@ -251,6 +257,89 @@ public final class SuperNeuronV2 {
         Arrays.fill(lastGate, 0.0);
         Arrays.fill(lastProbabilities, 1.0 / outputCount);
         hasForward = false;
+    }
+
+    /**
+     * Apply delayed scalar reward through local eligibility traces. This update is
+     * confined to this SuperNeuronV2 instance and does not traverse a neuron pool.
+     */
+    public void applyReward(double reward, double learningRate) {
+        if (!Double.isFinite(reward) || reward < -1.0 || reward > 1.0)
+            throw new IllegalArgumentException("reward must be finite and in [-1, 1]");
+        if (!Double.isFinite(learningRate) || learningRate <= 0.0 || learningRate > 0.02)
+            throw new IllegalArgumentException("learningRate must be in (0, 0.02]");
+        for (int h = 0; h < hiddenSize; h++) {
+            recurrentScale[h] = clamp(recurrentScale[h]
+                    + learningRate * reward * eligibilityTrace[h], -1.0, 1.0);
+            double trace = learningRate * reward * eligibilityTrace[h];
+            for (int p = 0; p < inputCount; p++) {
+                int index = p * hiddenSize + h;
+                inputProjection[index] = clamp(inputProjection[index]
+                        + trace * lastInput[p], -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
+            }
+        }
+    }
+
+    /** Copy learned genes only; recurrent state and eligibility traces are reset. */
+    public void copyLearnedParametersFrom(SuperNeuronV2 source) {
+        requireSameShape(source);
+        System.arraycopy(source.inputProjection, 0, inputProjection, 0, inputProjection.length);
+        System.arraycopy(source.gateWeight, 0, gateWeight, 0, gateWeight.length);
+        System.arraycopy(source.gateBias, 0, gateBias, 0, gateBias.length);
+        System.arraycopy(source.recurrentScale, 0, recurrentScale, 0, recurrentScale.length);
+        System.arraycopy(source.hiddenToOutputRank, 0, hiddenToOutputRank, 0, hiddenToOutputRank.length);
+        System.arraycopy(source.outputEmbedding, 0, outputEmbedding, 0, outputEmbedding.length);
+        System.arraycopy(source.outputBias, 0, outputBias, 0, outputBias.length);
+        resetState();
+    }
+
+    /** Uniform gene crossover between two compatible individuals. */
+    public void crossoverWith(SuperNeuronV2 other, Random random) {
+        requireSameShape(other);
+        if (random == null) throw new IllegalArgumentException("random cannot be null");
+        crossoverArray(inputProjection, other.inputProjection, random);
+        crossoverArray(gateWeight, other.gateWeight, random);
+        crossoverArray(gateBias, other.gateBias, random);
+        crossoverArray(recurrentScale, other.recurrentScale, random);
+        crossoverArray(hiddenToOutputRank, other.hiddenToOutputRank, random);
+        crossoverArray(outputEmbedding, other.outputEmbedding, random);
+        crossoverArray(outputBias, other.outputBias, random);
+        resetState();
+    }
+
+    /** Bounded Gaussian mutation used by the population-level evolutionary layer. */
+    public void mutateParameters(Random random, double mutationRate, double sigma) {
+        if (random == null) throw new IllegalArgumentException("random cannot be null");
+        if (!Double.isFinite(mutationRate) || mutationRate < 0.0 || mutationRate > 1.0)
+            throw new IllegalArgumentException("mutationRate must be in [0, 1]");
+        if (!Double.isFinite(sigma) || sigma < 0.0 || sigma > 1.0)
+            throw new IllegalArgumentException("sigma must be in [0, 1]");
+        mutateArray(inputProjection, random, mutationRate, sigma, -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
+        mutateArray(gateWeight, random, mutationRate, sigma, -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
+        mutateArray(gateBias, random, mutationRate, sigma, -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
+        mutateArray(recurrentScale, random, mutationRate, sigma, -1.0, 1.0);
+        mutateArray(hiddenToOutputRank, random, mutationRate, sigma, -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
+        mutateArray(outputEmbedding, random, mutationRate, sigma, -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
+        mutateArray(outputBias, random, mutationRate, sigma, -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
+        resetState();
+    }
+
+    private void requireSameShape(SuperNeuronV2 other) {
+        if (other == null || inputCount != other.inputCount || hiddenSize != other.hiddenSize
+                || outputCount != other.outputCount || outputRank != other.outputRank)
+            throw new IllegalArgumentException("individual shape mismatch");
+    }
+
+    private static void crossoverArray(double[] target, double[] other, Random random) {
+        for (int i = 0; i < target.length; i++) if (random.nextBoolean()) target[i] = other[i];
+    }
+
+    private static void mutateArray(double[] values, Random random, double rate, double sigma,
+                                    double min, double max) {
+        for (int i = 0; i < values.length; i++) {
+            if (random.nextDouble() < rate)
+                values[i] = clamp(values[i] + random.nextGaussian() * sigma, min, max);
+        }
     }
 
     public int getInputCount() { return inputCount; }
@@ -281,7 +370,7 @@ public final class SuperNeuronV2 {
                 + state.length + lastInput.length + lastGate.length
                 + lastHidden.length + lastPreviousState.length + lastProbabilities.length
                 + lastLatent.length + latentGradient.length + hiddenGradient.length
-                + gateGradientScratch.length + lastInputGradient.length;
+                + gateGradientScratch.length + lastInputGradient.length + eligibilityTrace.length;
         return doubles * Double.BYTES;
     }
 
@@ -302,6 +391,7 @@ public final class SuperNeuronV2 {
         putArray(root, "outputEmbedding", outputEmbedding);
         putArray(root, "outputBias", outputBias);
         putArray(root, "state", state);
+        putArray(root, "eligibilityTrace", eligibilityTrace);
         return root;
     }
 
@@ -322,6 +412,7 @@ public final class SuperNeuronV2 {
         readArray(root, "outputEmbedding", result.outputEmbedding);
         readArray(root, "outputBias", result.outputBias);
         readArray(root, "state", result.state);
+        if (root.has("eligibilityTrace")) readArray(root, "eligibilityTrace", result.eligibilityTrace);
         result.forwardSteps = Math.max(0L, root.optLong("forwardSteps", 0L));
         result.trainSteps = Math.max(0L, root.optLong("trainSteps", 0L));
         result.resetTransientCache();
