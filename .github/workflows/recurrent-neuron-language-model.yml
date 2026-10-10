@@ -74,17 +74,7 @@ jobs:
               --model "experiments/recurrent-neuron-lm/latest/seed-$seed/model.json" \
               --prompt "Alice " --max-chars 80 --seed "$seed" \
               --output "experiments/recurrent-neuron-lm/latest/seed-$seed/inference-smoke.txt"
-            python - "$seed" <<'PY'
-            import json, sys
-            from pathlib import Path
-            root = Path("experiments/recurrent-neuron-lm/latest") / f"seed-{sys.argv[1]}"
-            summary = json.loads((root / "summary.json").read_text())
-            actual = (root / "inference-smoke.txt").read_text().rstrip("\\n")
-            expected = summary["generation_sample"][:len("Alice ") + 80]
-            if actual != expected:
-                raise SystemExit("exported inference differs from in-training generation sample")
-            print("INFERENCE_ROUNDTRIP_OK", sys.argv[1])
-            PY
+            python -c 'import json,sys; from pathlib import Path; root=Path("experiments/recurrent-neuron-lm/latest") / f"seed-{sys.argv[1]}"; summary=json.loads((root / "summary.json").read_text()); actual=(root / "inference-smoke.txt").read_text().rstrip("\\n"); expected=summary["generation_sample"][:len("Alice ") + 80]; assert actual == expected, "exported inference differs from in-training generation sample"; print("INFERENCE_ROUNDTRIP_OK", sys.argv[1])' "$seed"
           done
       - name: Aggregate and validate metrics
         shell: bash
