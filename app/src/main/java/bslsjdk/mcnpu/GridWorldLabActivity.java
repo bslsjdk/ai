@@ -755,7 +755,8 @@ public final class GridWorldLabActivity extends Activity {
         report.put("candidateMapsPerSecond", lastTrainingEpisodesPerSecond);
         report.put("environmentStepsPerSecond", lastTrainingStepsPerSecond);
         report.put("autosaveError", lastAutosaveError);
-        writeAtomic(new File(evo16Directory(), "evo16_report.json"), report.toString(2));
+        latestReportText = report.toString(2);
+        writeAtomic(new File(evo16Directory(), "evo16_report.json"), latestReportText);
     }
 
     /**
