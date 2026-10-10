@@ -6,10 +6,10 @@
   "context_characters": 64,
   "vocabulary_size": 76,
   "unigram_baseline_heldout_loss": 3.170140011296197,
-  "final_heldout_loss": 2.520259856386358,
-  "final_heldout_bits_per_char": 3.63596639656013,
+  "final_heldout_loss": 2.520259864827705,
+  "final_heldout_bits_per_char": 3.635966408738419,
   "final_heldout_char_accuracy": 0.3254270105801812,
-  "wall_seconds": 15.049,
+  "wall_seconds": 19.937,
   "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
   "settings": {
     "epochs": 8,
@@ -21,14 +21,14 @@
   "history": [
     {
       "epoch": 1,
-      "heldout_loss": 2.8781896366567565,
-      "heldout_bits_per_char": 4.15234991554271,
+      "heldout_loss": 2.8781896197740635,
+      "heldout_bits_per_char": 4.152349891186133,
       "heldout_char_accuracy": 0.24085471267547195
     },
     {
       "epoch": 2,
-      "heldout_loss": 2.650265306879414,
-      "heldout_bits_per_char": 3.8235246152749975,
+      "heldout_loss": 2.65026533431379,
+      "heldout_bits_per_char": 3.823524654854436,
       "heldout_char_accuracy": 0.3021921028974483
     },
     {
@@ -39,14 +39,14 @@
     },
     {
       "epoch": 4,
-      "heldout_loss": 2.5608223646757606,
-      "heldout_bits_per_char": 3.6944857261152686,
+      "heldout_loss": 2.5608223815584537,
+      "heldout_bits_per_char": 3.6944857504718462,
       "heldout_char_accuracy": 0.3216928289883134
     },
     {
       "epoch": 5,
-      "heldout_loss": 2.5410220383130433,
-      "heldout_bits_per_char": 3.6659198934637933,
+      "heldout_loss": 2.541022036202707,
+      "heldout_bits_per_char": 3.6659198904192216,
       "heldout_char_accuracy": 0.322315192586958
     },
     {
@@ -57,14 +57,14 @@
     },
     {
       "epoch": 7,
-      "heldout_loss": 2.5283513070142054,
-      "heldout_bits_per_char": 3.6476398922545235,
+      "heldout_loss": 2.5283512985728587,
+      "heldout_bits_per_char": 3.6476398800762344,
       "heldout_char_accuracy": 0.3204481017910241
     },
     {
       "epoch": 8,
-      "heldout_loss": 2.520259856386358,
-      "heldout_bits_per_char": 3.63596639656013,
+      "heldout_loss": 2.520259864827705,
+      "heldout_bits_per_char": 3.635966408738419,
       "heldout_char_accuracy": 0.3254270105801812
     }
   ],

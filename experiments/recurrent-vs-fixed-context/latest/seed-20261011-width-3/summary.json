@@ -6,10 +6,10 @@
   "context_characters": 64,
   "vocabulary_size": 76,
   "unigram_baseline_heldout_loss": 3.170140011296197,
-  "final_heldout_loss": 2.5095623594853453,
-  "final_heldout_bits_per_char": 3.6205331708311137,
+  "final_heldout_loss": 2.509562391140395,
+  "final_heldout_bits_per_char": 3.6205332164996973,
   "final_heldout_char_accuracy": 0.3163681626443538,
-  "wall_seconds": 14.998,
+  "wall_seconds": 20.019,
   "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
   "settings": {
     "epochs": 8,
@@ -21,50 +21,50 @@
   "history": [
     {
       "epoch": 1,
-      "heldout_loss": 2.737130669140814,
-      "heldout_bits_per_char": 3.9488448426345424,
+      "heldout_loss": 2.7371306796924975,
+      "heldout_bits_per_char": 3.948844857857404,
       "heldout_char_accuracy": 0.2580734389046401
     },
     {
       "epoch": 2,
-      "heldout_loss": 2.5974828942865185,
-      "heldout_bits_per_char": 3.7473756903810718,
+      "heldout_loss": 2.5974828837348354,
+      "heldout_bits_per_char": 3.747375675158211,
       "heldout_char_accuracy": 0.28953737639167415
     },
     {
       "epoch": 3,
-      "heldout_loss": 2.5637251791490097,
-      "heldout_bits_per_char": 3.698673602160446,
+      "heldout_loss": 2.5637252044730494,
+      "heldout_bits_per_char": 3.698673638695312,
       "heldout_char_accuracy": 0.30744761773044743
     },
     {
       "epoch": 4,
-      "heldout_loss": 2.542088965427891,
-      "heldout_bits_per_char": 3.667459143921374,
+      "heldout_loss": 2.542088982310584,
+      "heldout_bits_per_char": 3.6674591682779516,
       "heldout_char_accuracy": 0.3158841020676302
     },
     {
       "epoch": 5,
-      "heldout_loss": 2.529449304615377,
-      "heldout_bits_per_char": 3.6492239679486413,
+      "heldout_loss": 2.5294493067257138,
+      "heldout_bits_per_char": 3.649223970993214,
       "heldout_char_accuracy": 0.31609155660051175
     },
     {
       "epoch": 6,
-      "heldout_loss": 2.521826118694517,
-      "heldout_bits_per_char": 3.6382260354248417,
+      "heldout_loss": 2.5218261018118238,
+      "heldout_bits_per_char": 3.6382260110682645,
       "heldout_char_accuracy": 0.31581495055666964
     },
     {
       "epoch": 7,
-      "heldout_loss": 2.5146585016954277,
-      "heldout_bits_per_char": 3.627885349925265,
+      "heldout_loss": 2.514658467930041,
+      "heldout_bits_per_char": 3.627885301212109,
       "heldout_char_accuracy": 0.31519258695802504
     },
     {
       "epoch": 8,
-      "heldout_loss": 2.5095623594853453,
-      "heldout_bits_per_char": 3.6205331708311137,
+      "heldout_loss": 2.509562391140395,
+      "heldout_bits_per_char": 3.6205332164996973,
       "heldout_char_accuracy": 0.3163681626443538
     }
   ],
