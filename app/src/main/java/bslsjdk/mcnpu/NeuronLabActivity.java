@@ -239,13 +239,13 @@ public final class NeuronLabActivity extends Activity {
 
     private String pageForNavIndex(int index) {
         switch (index) {
-            case 1: return "autotest";
-            case 2: return "neurons";
-            case 3: return "runtime";
+            case 1: return "train";
+            case 2: return "run";
+            case 3: return "neurons";
             case 4: return "network";
-            case 5: return "train";
-            case 6: return "run";
-            case 7: return "data";
+            case 5: return "data";
+            case 6: return "autotest";
+            case 7: return "runtime";
             default: return "home";
         }
     }
