@@ -34,6 +34,7 @@ public final class SparseDiffusionMobileModel {
     private float[] lastLogits;
     private int lastChosen = -1;
     private java.util.List<LearningTrace> lastTrace = new java.util.ArrayList<>();
+    private java.util.List<String> diffusionTrace = new java.util.ArrayList<>();
     private long learningUpdates = 0;
     private String baseModelFingerprint = "";
     private float[] baseDecoderWeight;
@@ -209,6 +210,7 @@ public final class SparseDiffusionMobileModel {
         float[] pooledForLearning = new float[width];
         float[] survivalMix = new float[vocab];
         float survival = 1f;
+        diffusionTrace.clear();
         float[] neighbors = w("neighbors");
         for (int step = 0; step < maxSteps; step++) {
             int[] active = topK(energy, activeK);
@@ -259,9 +261,25 @@ public final class SparseDiffusionMobileModel {
             pooledForLearning = pooled.clone();
             float halt = sigmoidScalar(linear(pooled, "halt_head.weight", "halt_head.bias")[0]);
             if (step == 0) halt = 0f;
+            StringBuilder trace = new StringBuilder();
+            trace.append("扩散步 ").append(step + 1)
+                    .append(" / ").append(maxSteps)
+                    .append("\n活跃更新节点：");
+            int shown = 0;
+            for (int id : candidates) {
+                if (shown++ >= Math.min(8, candidates.length)) break;
+                if (shown > 1) trace.append(", ");
+                trace.append(id);
+            }
+            trace.append("\n能量总和：").append(String.format(java.util.Locale.ROOT, "%.5f", energySum))
+                    .append(" · 状态平均变化：").append(String.format(java.util.Locale.ROOT, "%.6f", deltaMean))
+                    .append("\n停止概率：").append(String.format(java.util.Locale.ROOT, "%.2f%%", halt * 100f));
+            boolean willStop = step + 1 >= 2 && halt >= 0.80f && deltaMean <= 0.025f;
+            trace.append("\n本步决策：").append(willStop ? "满足停止条件" : "继续扩散");
+            diffusionTrace.add(trace.toString());
             for (int v = 0; v < vocab; v++) survivalMix[v] += survival * halt * lastLogits[v];
             survival *= (1f - halt);
-            if (step + 1 >= 2 && halt >= 0.80f && deltaMean <= 0.025f) break;
+            if (willStop) break;
         }
         if (lastLogits == null) throw new IllegalStateException("model produced no diffusion steps");
         for (int v = 0; v < vocab; v++) survivalMix[v] += survival * lastLogits[v];
@@ -457,6 +475,21 @@ public final class SparseDiffusionMobileModel {
         if (residentState != null) Arrays.fill(residentState, 0f);
         if (residentEnergy != null) Arrays.fill(residentEnergy, 0f);
         lastTrace.clear();
+    }
+
+    public synchronized String getLastDiffusionTraceText() {
+        if (diffusionTrace.isEmpty()) return "还没有扩散记录。输入提示词并执行前向计算后，这里会显示真实记录的每一步。";
+        StringBuilder out = new StringBuilder();
+        for (String step : diffusionTrace) {
+            if (out.length() > 0) out.append("\n\n");
+            out.append(step);
+        }
+        return out.toString();
+    }
+
+    public synchronized String getModelSummary() {
+        return loaded ? "神经元 " + neurons + " · 宽度 " + width + " · 每步激活上限 " + activeK
+                + " · 每节点出边 " + fanout + " · 最大扩散步数 " + maxSteps : "模型尚未加载";
     }
 
     public synchronized long getLearningUpdates() { return learningUpdates; }
