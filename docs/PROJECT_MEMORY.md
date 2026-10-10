@@ -298,13 +298,13 @@ Ornith-1.5-9B-MLX-4bit：
 用户明确要求优先解决神经元训练过慢的问题。唯一工作仓库仍是 `bslsjdk/ai`，当前分支 `feat/mobile-neuron-unit-runtime`；禁止操作独立仓库 `bslsjdk/mcnpu`。
 
 ### 当前执行事实
-- 当前分支训练优化提交链：`153e087f484fe29d667e6912a8ea3e2e0fc6fb05`（复用梯度/输出暂存）、`8ced871552216ddd232c07730453c710208aad5c`（复用 MSE 输出缓冲）、`560048dbef1e6b244f427b06c8da7cd3cb58590c`（报告 epoch/s 与样本遍历/s）、`7ab2858fce2146fd18a9f05c88c239f07fa0d215`（网格世界缓存地图投影并处理 replay 更新）。
+- 当前分支训练优化提交链：`153e087f484fe29d667e6912a8ea3e2e0fc6fb05`（复用梯度/输出暂存）、`8ced871552216ddd232c07730453c710208aad5c`（复用 MSE 输出缓冲）、`560048dbef1e6b244f427b06c8da7cd3cb58590c`（报告 epoch/s 与样本遍历/s）、`7ab2858fce2146fd18a9f05c88c239f07fa0d215`（网格世界缓存地图投影并处理 replay 更新）、`9c9b327191365e2ebdaacca45d7c8c482d409d79`（只遍历活动墙权重）、`406d33f3edfe627bdec133647b513ce45ae7c2bb`（复用训练期间的状态向量、地图特征、墙索引、地图投影和历史列表）。
 - `NeuronWorkspace.applyAdamEpoch` 之前每个 epoch 分配整套梯度矩阵，每个样本又分配输出数组、delta 数组和 `ForwardResult`。现已改为跨 epoch 复用梯度矩阵、输出暂存和输出 delta 暂存；每轮先清零梯度缓冲，保证不累积上一轮梯度。
 - GPU 混合训练输入与转置权重 staging 数组现在按尺寸复用，避免每个 epoch 重复分配。
 - 数值计算顺序和 full-batch Adam 更新时机保持不变；当前改动主要降低 Java 分配与 GC 压力，尚无真机测速，不能声称已经提速多少。
 - `NeuronWorkspace` 的 GLES 3.1 路径只计算隐藏层输入投影的一部分；输出投影、反向传播、梯度累计与 Adam 更新仍在 CPU。只有训练样本数、输入维度、隐藏神经元数量、工作集上限满足条件，且数值误差合格、实测至少快 10% 时才启用 GPU。
 - 小数据/低输入维度时 GPU dispatch 和数据搬运可能比 CPU 更慢，必须保留 CPU 回退，不能为了显示“GPU”而强制使用。
-- `GridWorldLabActivity.QNet` 的 TD/BPTT 训练仍然是 Java CPU 路径；不要把 `HeterogeneousNeuronRuntime` 的神经元池路由 GPU/NPU 测试误报成该 QNet 的硬件训练加速。当前已新增每局固定地图墙特征的输入投影缓存；主训练更新和跨地图 replay 更新都会增量维护缓存，每 64 步重新计算以限制浮点漂移。这是 CPU 算法优化，不是 GPU/NPU 加速。
+- `GridWorldLabActivity.QNet` 的 TD/BPTT 训练仍然是 Java CPU 路径；不要把 `HeterogeneousNeuronRuntime` 的神经元池路由 GPU/NPU 测试误报成该 QNet 的硬件训练加速。当前已新增每局固定地图墙特征的输入投影缓存；主训练更新和跨地图 replay 更新都会增量维护缓存，每 64 步重新计算以限制浮点漂移。主训练更新还只遍历活动墙权重，状态向量、地图特征、墙索引、地图投影和历史列表均在训练任务内复用。这些是 CPU 热路径/GC 优化，不是 GPU/NPU 加速。
 - GitHub Actions 对训练优化提交链持续触发新 run；请检查分支最新 HEAD 对应的 run，而不是只看旧 SHA 的 run。最新代码 build 成功前不能声称 CI 已通过。
 - 运行时内存硬上限仍为 4 GiB。所有后续训练优化必须有界、可取消，并避免为 GPU staging 或 batch 训练制造无界缓存。
 
