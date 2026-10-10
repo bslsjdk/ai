@@ -44,11 +44,11 @@ jobs:
               text = r.read().decode("utf-8", errors="replace")
           start = text.find("*** START OF THE PROJECT GUTENBERG EBOOK")
           if start >= 0:
-              text = text[text.find("\\n", start)+1:]
+              text = text[text.find("\n", start)+1:]
           end = text.find("*** END OF THE PROJECT GUTENBERG EBOOK")
           if end >= 0:
               text = text[:end]
-          text = text.replace("\\r\\n", "\\n").replace("\\r", "\\n")
+          text = text.replace("\r\n", "\n").replace("\r", "\n")
           Path("experiments/ngram-alpha-sensitivity/latest/alice.txt").write_text(text, encoding="utf-8")
           print("CORPUS_CHARACTERS", len(text))
           PY
@@ -57,9 +57,9 @@ jobs:
         run: |
           set -euo pipefail
           python -m py_compile scripts/run_real_text_baselines.py scripts/run_ngram_alpha_sensitivity.py
-          python scripts/run_ngram_alpha_sensitivity.py \\
-            --text-file experiments/ngram-alpha-sensitivity/latest/alice.txt \\
-            --output-file experiments/ngram-alpha-sensitivity/latest/summary.json \\
+          python scripts/run_ngram_alpha_sensitivity.py \
+            --text-file experiments/ngram-alpha-sensitivity/latest/alice.txt \
+            --output-file experiments/ngram-alpha-sensitivity/latest/summary.json \
             2>&1 | tee experiments/ngram-alpha-sensitivity/latest/terminal.log
       - name: Commit sensitivity results
         if: success()
