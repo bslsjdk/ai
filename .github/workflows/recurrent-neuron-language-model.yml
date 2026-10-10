@@ -119,22 +119,20 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add experiments/recurrent-neuron-lm/latest
-          if git diff --cached --quiet; then
-            echo "No recurrent LM artifacts to commit."
-          else
+          REPORT_DIR="experiments/recurrent-neuron-lm/latest"
+          BACKUP_DIR="$(mktemp -d)"
+          cp -a "$REPORT_DIR/." "$BACKUP_DIR/"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "${GITHUB_REF_NAME}"
+            git reset --hard "origin/${GITHUB_REF_NAME}"
+            mkdir -p "$REPORT_DIR"
+            cp -a "$BACKUP_DIR/." "$REPORT_DIR/"
+            git add "$REPORT_DIR"
+            if git diff --cached --quiet; then echo "No changed recurrent artifacts"; exit 0; fi
             git commit -m "Record recurrent neuron language-model experiment [skip ci]"
-            for attempt in 1 2 3 4 5; do
-              git fetch origin "${GITHUB_REF_NAME}"
-              if git rebase "origin/${GITHUB_REF_NAME}"; then
-                if git push origin "HEAD:${GITHUB_REF_NAME}"; then
-                  exit 0
-                fi
-              else
-                git rebase --abort || true
-              fi
-              sleep 2
-            done
-            echo "Could not push experiment artifacts after retries" >&2
-            exit 1
-          fi
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then rm -rf "$BACKUP_DIR"; exit 0; fi
+            sleep 2
+          done
+          rm -rf "$BACKUP_DIR"
+          echo "Could not push recurrent artifacts after retries" >&2
+          exit 1
