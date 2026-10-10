@@ -1,0 +1,91 @@
+name: AIMENG terminal grid-world benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      episodes:
+        description: Training episodes per seed
+        required: true
+        default: "5000"
+  push:
+    branches:
+      - feat/mobile-neuron-unit-runtime
+      - main
+    paths:
+      - "scripts/test_neural_gridworld.py"
+      - "scripts/run_gridworld_benchmark_suite.py"
+      - ".github/workflows/gridworld-terminal-benchmark.yml"
+    paths-ignore:
+      - "experiments/gridworld/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aimeng-terminal-benchmark-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Run CPU-only benchmark in terminal
+        id: benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p experiments/gridworld/latest
+          EPISODES="${{ inputs.episodes || '5000' }}"
+          if ! [[ "$EPISODES" =~ ^[0-9]+$ ]] || [ "$EPISODES" -lt 100 ] || [ "$EPISODES" -gt 20000 ]; then
+            echo "episodes must be an integer in [100, 20000]" | tee experiments/gridworld/latest/terminal.log
+            echo 2 > experiments/gridworld/latest/exit_code.txt
+            exit 0
+          fi
+          set +e
+          python3 -m py_compile scripts/test_neural_gridworld.py scripts/run_gridworld_benchmark_suite.py 2>&1 | tee experiments/gridworld/latest/terminal.log
+          COMPILE_STATUS=${PIPESTATUS[0]}
+          if [ "$COMPILE_STATUS" -eq 0 ]; then
+            python3 scripts/run_gridworld_benchmark_suite.py "$EPISODES" experiments/gridworld/latest/results 2>&1 | tee -a experiments/gridworld/latest/terminal.log
+            STATUS=${PIPESTATUS[0]}
+          else
+            STATUS="$COMPILE_STATUS"
+          fi
+          set -e
+          echo "$STATUS" > experiments/gridworld/latest/exit_code.txt
+          echo "benchmark_exit_code=$STATUS" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Commit logs, reports, and checkpoints back to this branch
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add experiments/gridworld/latest
+          if git diff --cached --quiet; then
+            echo "No benchmark output was produced."
+          else
+            git commit -m "Record terminal grid-world benchmark results [skip ci]"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      - name: Fail the run if the benchmark failed its learning checks
+        if: always()
+        shell: bash
+        run: |
+          code="$(cat experiments/gridworld/latest/exit_code.txt 2>/dev/null || echo 99)"
+          echo "Benchmark exit code: $code"
+          test "$code" = "0"
