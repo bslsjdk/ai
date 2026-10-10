@@ -535,36 +535,56 @@ public final class GridWorldLabActivity extends Activity {
         return x;
     }
 
-    private int greedyEvo16Steps(EvoNet16 candidate, MapData map) {
-        int p = map.start, last = -1;
+    private static final class Evo16EpisodeResult {
+        final int steps;
+        final boolean success;
+        final int potentialDelta;
+        Evo16EpisodeResult(int steps, boolean success, int potentialDelta) {
+            this.steps = steps; this.success = success; this.potentialDelta = potentialDelta;
+        }
+    }
+
+    private Evo16EpisodeResult runEvo16Episode(EvoNet16 candidate, MapData map) {
+        int p = map.start, last = -1, potentialDelta = 0;
         int[] distances = distanceMap(map);
         Set<Integer> seen = new HashSet<>();
         for (int step = 1; step <= MAX_STEPS; step++) {
+            int oldDistance = distances[p];
             int action = candidate.choose(evo16Observe(p, map.goal, map.walls, distances, last));
             Transition tr = transition(p, action, map);
+            int nextDistance = distances[tr.next];
+            if (oldDistance >= 0 && nextDistance >= 0) potentialDelta += oldDistance - nextDistance;
             p = tr.next;
             last = action;
-            if (tr.done) return step;
-            if (!seen.add(p * 4 + action)) return -1;
+            if (tr.done) return new Evo16EpisodeResult(step, true, potentialDelta);
+            if (!seen.add(p * 4 + action)) return new Evo16EpisodeResult(step, false, potentialDelta);
         }
-        return -1;
+        return new Evo16EpisodeResult(MAX_STEPS, false, potentialDelta);
+    }
+
+    private int greedyEvo16Steps(EvoNet16 candidate, MapData map) {
+        Evo16EpisodeResult result = runEvo16Episode(candidate, map);
+        return result.success ? result.steps : -1;
     }
 
     private EvolutionScore scoreEvo16(EvoNet16 candidate, List<MapData> maps) {
         int wins = 0, fastWins = 0;
-        long stepsTotal = 0L, score = 0L;
+        long stepsTotal = 0L, shapedProgress = 0L;
         for (MapData map : maps) {
-            int steps = greedyEvo16Steps(candidate, map);
+            Evo16EpisodeResult result = runEvo16Episode(candidate, map);
             int shortest = shortestDistance(map);
-            if (steps > 0) {
+            shapedProgress += result.potentialDelta;
+            if (result.success) {
                 wins++;
-                stepsTotal += steps;
-                if (steps <= shortest * FAST_STEP_FACTOR + FAST_STEP_ALLOWANCE) fastWins++;
+                stepsTotal += result.steps;
+                if (result.steps <= shortest * FAST_STEP_FACTOR + FAST_STEP_ALLOWANCE) fastWins++;
             } else {
                 stepsTotal += MAX_STEPS;
             }
         }
-        score = wins * 100000L + fastWins * 1000L - stepsTotal;
+        // BFS distance-delta shaping gives non-winning candidates a graded signal;
+        // it is not an action label and never supplies a teacher action.
+        long score = wins * 100000L + fastWins * 1000L + shapedProgress * 10L - stepsTotal;
         return new EvolutionScore(score, wins, fastWins, stepsTotal);
     }
 
