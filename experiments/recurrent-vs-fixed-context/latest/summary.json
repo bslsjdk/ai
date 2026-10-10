@@ -18,18 +18,18 @@
     "fixed_context_width_2": {
       "runs": 3,
       "mean_parameters": 9958,
-      "mean_heldout_loss": 2.6566228395048803,
-      "mean_bits_per_char": 3.832696596066048,
+      "mean_heldout_loss": 2.656622854277237,
+      "mean_bits_per_char": 3.832696617378053,
       "mean_char_accuracy": 0.2762833367909089,
-      "mean_wall_seconds": 17.51066666666667
+      "mean_wall_seconds": 13.366999999999999
     },
     "fixed_context_width_3": {
       "runs": 3,
       "mean_parameters": 14899,
-      "mean_heldout_loss": 2.5148073367040644,
-      "mean_bits_per_char": 3.6281000734541355,
+      "mean_heldout_loss": 2.514807323338599,
+      "mean_bits_per_char": 3.6281000541718447,
       "mean_char_accuracy": 0.32143927344812484,
-      "mean_wall_seconds": 19.740333333333332
+      "mean_wall_seconds": 15.000666666666667
     }
   },
   "runs": [
@@ -37,10 +37,10 @@
       "seed": 20261010,
       "hidden": 2,
       "parameters": 9958,
-      "loss": 2.6831277306911963,
-      "bits_per_char": 3.870935071139847,
+      "loss": 2.6831277243601863,
+      "bits_per_char": 3.8709350620061302,
       "accuracy": 0.2776433165064657,
-      "seconds": 17.51,
+      "seconds": 13.434,
       "baseline_loss": 3.170140011296197,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
     },
@@ -48,10 +48,10 @@
       "seed": 20261010,
       "hidden": 3,
       "parameters": 14899,
-      "loss": 2.520259864827705,
-      "bits_per_char": 3.635966408738419,
+      "loss": 2.520259856386358,
+      "bits_per_char": 3.63596639656013,
       "accuracy": 0.3254270105801812,
-      "seconds": 19.674,
+      "seconds": 14.995,
       "baseline_loss": 3.170140011296197,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
     },
@@ -62,7 +62,7 @@
       "loss": 2.6285895749944084,
       "bits_per_char": 3.7922531443768612,
       "accuracy": 0.27937210428047854,
-      "seconds": 17.538,
+      "seconds": 13.198,
       "baseline_loss": 3.170140011296197,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
     },
@@ -70,10 +70,10 @@
       "seed": 20261011,
       "hidden": 3,
       "parameters": 14899,
-      "loss": 2.509562391140395,
-      "bits_per_char": 3.6205332164996973,
+      "loss": 2.5095623594853453,
+      "bits_per_char": 3.6205331708311137,
       "accuracy": 0.3163681626443538,
-      "seconds": 19.729,
+      "seconds": 14.976,
       "baseline_loss": 3.170140011296197,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
     },
@@ -81,10 +81,10 @@
       "seed": 20261012,
       "hidden": 2,
       "parameters": 9958,
-      "loss": 2.6581512128290368,
-      "bits_per_char": 3.834901572681435,
+      "loss": 2.6581512634771163,
+      "bits_per_char": 3.834901645751168,
       "accuracy": 0.27183458958578244,
-      "seconds": 17.484,
+      "seconds": 13.469,
       "baseline_loss": 3.170140011296197,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
     },
@@ -95,7 +95,7 @@
       "loss": 2.5145997541440934,
       "bits_per_char": 3.6278005951242904,
       "accuracy": 0.3225226471198396,
-      "seconds": 19.818,
+      "seconds": 15.031,
       "baseline_loss": 3.170140011296197,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
     }
