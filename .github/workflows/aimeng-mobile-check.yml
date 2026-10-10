@@ -9,6 +9,8 @@ on:
       - "app/src/main/java/bslsjdk/ornithnpu/SparseDiffusion*.java"
       - "app/src/main/AndroidManifest.xml"
       - "app/src/main/res/layout/activity_chat.xml"
+      - "app/src/test/**"
+      - "app/build.gradle"
       - ".github/workflows/aimeng-mobile-check.yml"
 
 permissions:
@@ -31,4 +33,6 @@ jobs:
         with:
           gradle-version: "8.13"
       - name: Compile Java and Android resources
-        run: gradle :app:compileReleaseJavaWithJavac --no-daemon --stacktrace
+        run: |
+          gradle :app:compileReleaseJavaWithJavac --no-daemon --stacktrace
+          gradle :app:testDebugUnitTest --no-daemon --stacktrace
