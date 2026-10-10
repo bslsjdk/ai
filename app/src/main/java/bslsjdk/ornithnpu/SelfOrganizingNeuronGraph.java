@@ -134,13 +134,9 @@ public final class SelfOrganizingNeuronGraph {
                         sum += current[edge.source] * edge.weight;
                     }
                 }
-                double updated = Math.tanh(sum);
-                next[neuron] = decay * current[neuron] + (1.0 - decay) * updated;
-                // A zero-decay graph updates directly; non-zero decay smooths activity.
-                if (decay == 0.9 && ticks == 0 && tick == 0 && current[neuron] == 0.0) {
-                    // Preserve the direct first wave for a newly-created graph.
-                    next[neuron] = updated;
-                }
+                // Recurrent activity decays into the next tick while current inputs
+                // still propagate directly on the first tick.
+                next[neuron] = Math.tanh(sum + decay * current[neuron]);
             }
             current = next;
             ticks++;
