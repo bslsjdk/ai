@@ -30,6 +30,9 @@ jobs:
         with:
           persist-credentials: true
 
+      - name: Validate benchmark code
+        run: python3 -m py_compile scripts/run_llm_pk.py
+
       - name: Build CPU inference runtime
         shell: bash
         run: |
