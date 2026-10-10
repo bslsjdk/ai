@@ -265,7 +265,16 @@ public final class GridWorldLabActivity extends Activity {
                         double replayTarget = replay.dones[ri] ? replay.rewards[ri]
                                 : replay.rewards[ri] + 0.92 * net.maxQ(replay.nextStates[ri]);
                         Forward replayForward = net.forward(replay.states[ri]);
-                        net.update(replay.states[ri], replayForward, replay.actions[ri], replayTarget);
+                        // Replay can come from another map. Keep the current episode's
+                        // cached map projection coherent by accounting for overlapping walls.
+                        int replayWallOverlap = 0;
+                        double[] replayState = replay.states[ri];
+                        for (int cell = 0; cell < MAP_FEATURES; cell++) {
+                            if (wallFeatures[cell] != 0.0
+                                    && replayState[BASE_FEATURES + cell] != 0.0) replayWallOverlap++;
+                        }
+                        net.update(replayState, replayForward, replay.actions[ri], replayTarget,
+                                mapProjection, replayWallOverlap);
                         replayUpdates++;
                     }
                     pos = tr.next;
