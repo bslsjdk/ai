@@ -126,7 +126,7 @@ jobs:
           print("RECURRENT_NEURON_LM_MULTISEED " + json.dumps(report, ensure_ascii=False, sort_keys=True))
           PY
       - name: Commit model checkpoints and reports
-        if: always()
+        if: success()
         shell: bash
         run: |
           set -euo pipefail
