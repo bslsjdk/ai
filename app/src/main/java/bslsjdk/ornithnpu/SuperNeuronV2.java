@@ -84,8 +84,11 @@ public final class SuperNeuronV2 {
         for (int i = 0; i < inputProjection.length; i++)
             inputProjection[i] = (random.nextDouble() * 2.0 - 1.0) * inputScale;
         double outputScale = 1.0 / Math.sqrt(hiddenSize);
-        for (int i = 0; i < outputWeight.length; i++)
-            outputWeight[i] = (random.nextDouble() * 2.0 - 1.0) * outputScale;
+        for (int i = 0; i < hiddenToOutputRank.length; i++)
+            hiddenToOutputRank[i] = (random.nextDouble() * 2.0 - 1.0) * outputScale;
+        double embeddingScale = 1.0 / Math.sqrt(outputRank);
+        for (int i = 0; i < outputEmbedding.length; i++)
+            outputEmbedding[i] = (random.nextDouble() * 2.0 - 1.0) * embeddingScale;
         for (int h = 0; h < hiddenSize; h++)
             recurrentScale[h] = (random.nextDouble() * 2.0 - 1.0) * 0.1;
         Arrays.fill(gateWeight, 1.0);
@@ -251,7 +254,7 @@ public final class SuperNeuronV2 {
     /** Approximate parameter + recurrent-state bytes, excluding JVM object overhead. */
     public long estimatedStorageBytes() {
         long doubles = (long) inputProjection.length + gateWeight.length + gateBias.length
-                + recurrentScale.length + outputWeight.length + outputBias.length
+                + recurrentScale.length + hiddenToOutputRank.length + outputEmbedding.length + outputBias.length
                 + state.length + lastInput.length + lastGate.length
                 + lastHidden.length + lastPreviousState.length + lastProbabilities.length;
         return doubles * Double.BYTES;
