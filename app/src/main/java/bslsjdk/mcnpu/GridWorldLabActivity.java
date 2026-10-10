@@ -452,8 +452,8 @@ public final class GridWorldLabActivity extends Activity {
                     if (validation.score > bestValidation) {
                         bestValidation = validation.score;
                         validationChampion = generationBest.copy(System.nanoTime());
+                        addEvo16BankCandidate(validationChampion, bestValidation);
                     }
-                    addEvo16BankCandidate(validationChampion, bestValidation);
                     evo16 = validationChampion;
                     evo16BestValidationScore = bestValidation;
                     saveEvo16Checkpoint();
@@ -540,7 +540,7 @@ public final class GridWorldLabActivity extends Activity {
         int[] distances = distanceMap(map);
         Set<Integer> seen = new HashSet<>();
         for (int step = 1; step <= MAX_STEPS; step++) {
-            int action = argmax(candidate.forward(evo16Observe(p, map.goal, map.walls, distances, last)));
+            int action = candidate.choose(evo16Observe(p, map.goal, map.walls, distances, last));
             Transition tr = transition(p, action, map);
             p = tr.next;
             last = action;
