@@ -34,6 +34,27 @@ final class EvoNet16 {
         }
     }
 
+    private final double[] hiddenScratch = new double[256];
+    private final double[] qScratch = new double[ACTIONS];
+
+    int choose(double[] x) {
+        if (x == null || x.length != INPUTS) throw new IllegalArgumentException("EvoNet16 expects 16 inputs");
+        for (int j = 0; j < hidden; j++) {
+            double v = b1[j];
+            for (int i = 0; i < INPUTS; i++) v += w1[j][i] * x[i];
+            hiddenScratch[j] = Math.max(0.0, v);
+        }
+        int best = 0;
+        double bestValue = Double.NEGATIVE_INFINITY;
+        for (int a = 0; a < ACTIONS; a++) {
+            double v = b2[a];
+            for (int j = 0; j < hidden; j++) v += w2[a][j] * hiddenScratch[j];
+            qScratch[a] = v;
+            if (v > bestValue) { bestValue = v; best = a; }
+        }
+        return best;
+    }
+
     double[] forward(double[] x) {
         if (x == null || x.length != INPUTS) throw new IllegalArgumentException("EvoNet16 expects 16 inputs");
         double[] h = new double[hidden];
