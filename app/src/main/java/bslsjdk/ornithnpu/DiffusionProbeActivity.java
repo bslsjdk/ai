@@ -22,7 +22,7 @@ public final class DiffusionProbeActivity extends Activity {
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private SparseDiffusionMobileModel model;
     private EditText input;
-    private TextView status, output, config;
+    private TextView status, output, config, trace;
     private Button run;
     private int dp(int n) { return (int)(n * getResources().getDisplayMetrics().density + 0.5f); }
     private LinearLayout.LayoutParams gap() { LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1,-2); p.bottomMargin=dp(9); return p; }
@@ -37,7 +37,9 @@ public final class DiffusionProbeActivity extends Activity {
         input=new EditText(this); input.setMinLines(2); input.setHint("输入提示文字，例如：你好"); root.addView(input,gap());
         run=new Button(this); run.setText("执行一次完整前向计算"); run.setEnabled(false); run.setOnClickListener(v->probe()); root.addView(run,gap());
         output=card("计算后的候选字符分布显示在这里。"); root.addView(output,gap());
-        root.addView(card("这些概率来自模型真实 logits。它们能显示当前输入下模型倾向输出什么，但不是自然语言思维解释。逐扩散步的节点激活/消息能量还需要在模型 forward 中额外记录，本页不会伪造那些数据。"),gap());
+        root.addView(card("逐步扩散轨迹"),gap());
+        trace=card("执行前向计算后，这里会列出实际记录的活跃节点、能量、状态变化和停止决策。"); root.addView(trace,gap());
+        root.addView(card("轨迹来自模型 forward 的实际记录，不是对模型心理活动的自然语言解释。它显示算法如何路由和停止，不意味着模型具有人类意识。"),gap());
         setContentView(sc); load();
     }
     private void load() {
@@ -47,7 +49,7 @@ public final class DiffusionProbeActivity extends Activity {
             JSONObject r=new JSONObject(new String(Files.readAllBytes(f.toPath()),StandardCharsets.UTF_8));
             JSONObject c=r.getJSONObject("config");
             String info="神经元 "+c.optInt("neurons")+" · 宽度 "+c.optInt("width")+"\n每步激活上限 "+c.optInt("active_k")+" · 每节点出边 "+c.optInt("fanout")+"\n最大扩散步数 "+c.optInt("max_steps");
-            SparseDiffusionMobileModel m=new SparseDiffusionMobileModel();m.load(f);model=m;
+            SparseDiffusionMobileModel m=new SparseDiffusionMobileModel();m.load(f);m.loadLearningState(new File(getFilesDir(),"aimeng-learning-state.json"));m.loadRuntimeState(new File(getFilesDir(),"aimeng-neuron-residual.bin"));model=m;
             long pss=Debug.getPss()/1024L;
             runOnUiThread(()->{config.setText(info);status.setText("模型就绪 · "+model.backendStatus()+" · PSS "+pss+" MiB");run.setEnabled(true);});
         }catch(Throwable e){runOnUiThread(()->status.setText("加载失败："+e.getClass().getSimpleName()+" "+String.valueOf(e.getMessage())));}});
@@ -65,7 +67,8 @@ public final class DiffusionProbeActivity extends Activity {
                 String token=tokens.optString(best,"?").replace("\n","换行符").replace("\t","制表符");
                 s.append(rank+1).append(". ").append(token).append("  ").append(String.format(Locale.ROOT,"%.2f%%",100*probs[best]/Math.max(sum,1e-30))).append("\n");}
             long ms=(System.nanoTime()-start)/1_000_000L,pss=Debug.getPss()/1024L;
-            runOnUiThread(()->{output.setText(s.toString());status.setText("完成 · "+ms+" ms · "+model.backendStatus()+" · PSS "+pss+" MiB");run.setEnabled(true);});
+            String traceText=model.getLastDiffusionTraceText();
+            runOnUiThread(()->{output.setText(s.toString());trace.setText(traceText);status.setText("完成 · "+ms+" ms · "+model.backendStatus()+" · PSS "+pss+" MiB");run.setEnabled(true);});
         }catch(Throwable e){runOnUiThread(()->{status.setText("计算失败："+e.getClass().getSimpleName()+" "+String.valueOf(e.getMessage()));run.setEnabled(true);});}}
         );
     }
