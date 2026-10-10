@@ -176,7 +176,6 @@ def main():
     ap.add_argument("--steps-per-epoch", type=int, default=400)
     ap.add_argument("--batch-size", type=int, default=256)
     ap.add_argument("--learning-rate", type=float, default=0.001)
-    ap.add_argument("--ngram-alpha", type=float, default=0.1)
     args = ap.parse_args()
 
     text = args.text_file.read_text(encoding="utf-8", errors="replace").replace("\r\n", "\n").replace("\r", "\n")
