@@ -239,7 +239,7 @@ public final class SparseDiffusionActivity extends Activity {
                 long pssMiB = Debug.getPss() / 1024L;
                 runOnUiThread(() -> {
                     status.setText("AIMENG 模型导入成功 · 本地学习 " + model.getLearningUpdates()
-                            + " 次 · 进程 PSS 约 " + pssMiB + " MiB · CPU 推理");
+                            + " 次 · 进程 PSS 约 " + pssMiB + " MiB · " + model.backendStatus());
                     setBusy(false, null);
                     setModelActionsEnabled(true);
                     result.setText("模型已就绪。输入提示词后点击“在手机本地生成”。");
@@ -290,7 +290,7 @@ public final class SparseDiffusionActivity extends Activity {
         if (p.trim().isEmpty() || n < 1 || n > 200) {
             status.setText("请输入提示词，生成字符数必须是 1 到 200"); return;
         }
-        setBusy(true, "手机 CPU 正在执行 AIMENG 神经元推理…");
+        setBusy(true, "正在执行 AIMENG 神经元推理… " + model.backendStatus());
         worker.execute(() -> {
             long t = System.nanoTime();
             try {
@@ -299,7 +299,7 @@ public final class SparseDiffusionActivity extends Activity {
                 long pssMiB = Debug.getPss() / 1024L;
                 runOnUiThread(() -> {
                     result.setText(text);
-                    status.setText("本地 CPU 推理完成 · " + ms + " ms · 进程 PSS 约 " + pssMiB
+                    status.setText("本地推理完成 · " + ms + " ms · " + model.backendStatus() + " · 进程 PSS 约 " + pssMiB
                             + " MiB · 当前仅测得进程 PSS，仍需实机压力测试");
                     setBusy(false, null);
                     setModelActionsEnabled(true);
