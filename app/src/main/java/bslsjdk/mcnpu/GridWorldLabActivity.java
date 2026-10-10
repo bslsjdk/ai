@@ -526,6 +526,13 @@ public final class GridWorldLabActivity extends Activity {
 
     private double[] evo16Observe(int pos, int target, Set<Integer> mapWalls, int[] distances, int lastAction) {
         double[] x = new double[EvoNet16.INPUTS];
+        evo16ObserveInto(x, pos, target, mapWalls, distances, lastAction);
+        return x;
+    }
+
+    private void evo16ObserveInto(double[] x, int pos, int target, Set<Integer> mapWalls,
+                                  int[] distances, int lastAction) {
+        java.util.Arrays.fill(x, 0.0);
         int px = pos % SIZE, py = pos / SIZE;
         int gx = target % SIZE, gy = target / SIZE;
         x[0] = (gx - px) / (double)(SIZE - 1);
@@ -541,7 +548,6 @@ public final class GridWorldLabActivity extends Activity {
             }
         }
         if (lastAction >= 0 && lastAction < 4) x[12 + lastAction] = 1.0;
-        return x;
     }
 
     private static final class Evo16EpisodeResult {
@@ -556,10 +562,12 @@ public final class GridWorldLabActivity extends Activity {
     private Evo16EpisodeResult runEvo16Episode(EvoNet16 candidate, MapData map) {
         int p = map.start, last = -1, potentialDelta = 0;
         int[] distances = distanceMap(map);
+        double[] features = new double[EvoNet16.INPUTS];
         Set<Integer> seen = new HashSet<>();
         for (int step = 1; step <= MAX_STEPS; step++) {
             int oldDistance = distances[p];
-            int action = candidate.choose(evo16Observe(p, map.goal, map.walls, distances, last));
+            evo16ObserveInto(features, p, map.goal, map.walls, distances, last);
+            int action = candidate.choose(features);
             Transition tr = transition(p, action, map);
             int nextDistance = distances[tr.next];
             if (oldDistance >= 0 && nextDistance >= 0) potentialDelta += oldDistance - nextDistance;
