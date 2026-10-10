@@ -99,7 +99,7 @@ public final class SparseDiffusionActivity extends Activity {
         root.addView(pickButton, spaced());
 
         TextView guide = new TextView(this);
-        guide.setText("这里不需要 Ornith-1.5-9B，也不接受 .pth / .safetensors。\n\n优先导入 .aimg 手机运行包。云端若只产出 mobile_diffusion.json，可在 AIMENG 仓库运行 scripts/pack_mobile_aimg.py 将它打包为 .aimg。旧版 JSON 仍兼容。\n\n注意：AIMG 只是统一交付格式，不会凭空提升模型能力；当前模型仍是链路测试级，需要继续训练和真机验证。");
+        guide.setText("这里不需要 Ornith-1.5-9B，也不接受 .pth / .safetensors。\n\n优先导入训练工作流生成的 mobile_diffusion.aimg。旧版 mobile_diffusion.json 仍兼容。若手里只有 JSON，在 AIMENG 仓库运行：python scripts/pack_mobile_aimg.py --input mobile_diffusion.json --output mobile_diffusion.aimg。\n\n注意：AIMG 只是统一交付格式，不会凭空提升模型能力；当前模型仍需检查生成样本并进行真机验证。");
         guide.setTextSize(13);
         guide.setTextColor(Color.rgb(75, 85, 99));
         guide.setAutoLinkMask(Linkify.WEB_URLS);
