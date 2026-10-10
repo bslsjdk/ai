@@ -21,6 +21,11 @@ def load_model(path):
     bh = np.asarray([u["bias"] for u in units], dtype=np.float32)
     wy = np.stack([np.asarray(u["output_weights"], dtype=np.float32) for u in units], axis=0)
     by = np.asarray(data["output_bias"], dtype=np.float32)
+    enabled = np.asarray([bool(u.get("enabled", True)) for u in units], dtype=np.float32)
+    wx *= enabled[None, :]
+    wh *= enabled[:, None] * enabled[None, :]
+    bh *= enabled
+    wy *= enabled[:, None]
     if wx.shape != (vocab_size, hidden) or wh.shape != (hidden, hidden):
         raise ValueError(f"invalid input/recurrent weight shapes: wx={wx.shape}, wh={wh.shape}")
     if wy.shape != (hidden, vocab_size) or by.shape != (vocab_size,):
