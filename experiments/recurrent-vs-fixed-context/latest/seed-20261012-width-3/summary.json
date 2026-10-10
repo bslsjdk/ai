@@ -9,7 +9,7 @@
   "final_heldout_loss": 2.5145997541440934,
   "final_heldout_bits_per_char": 3.6278005951242904,
   "final_heldout_char_accuracy": 0.3225226471198396,
-  "wall_seconds": 15.031,
+  "wall_seconds": 14.834,
   "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
   "settings": {
     "epochs": 8,
