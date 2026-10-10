@@ -170,7 +170,7 @@ public final class VnWaveField {
                 + nextEnergy.length + nextPhase.length + nextActivation.length
                 + incoming.length + phaseTorque.length)
                 + selected.length
-                + 16L * edgeCount;
+                + 16L * edgeFrom.length;
     }
 
     private int selectActiveSources(double[] seed) {
