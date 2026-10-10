@@ -161,7 +161,7 @@ public final class NeuronLabActivity extends Activity {
         header.setOrientation(LinearLayout.VERTICAL);
         header.setPadding(dp(18), dp(12), dp(18), dp(10));
         header.setBackgroundColor(Color.WHITE);
-        header.addView(label("AIMENG · 神经元工作台", 23, true));
+        header.addView(label("AIMENG 超级神经元实验室", 23, true));
         TextView subtitle = label("独立神经元单元 · 本地训练 · 评分筛选 · 单个/批量保存", 12, false);
         subtitle.setTextColor(0xFF667085);
         header.addView(subtitle, params(-1, -2, 0, 3, 0, 0));
