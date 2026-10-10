@@ -214,7 +214,7 @@ python scripts/run_recurrent_neuron_lm.py \
 
 ### RNN 收敛诊断
 
-新增工作流 `.github/workflows/recurrent-neuron-convergence.yml`，使用相同语料哈希、三个固定种子和原 RNN 的每轮更新设置，将训练上限扩展到 40 轮，并报告第 30/40 轮验证损失、最佳验证轮次及第 36 到 40 轮的变化。它是独立的收敛诊断，不是计算量匹配的直接 PK；若第 40 轮验证损失仍下降，不能声称已经收敛。工作流运行链接：https://github.com/bslsjdk/ai/actions/runs/38080098241
+新增工作流 `.github/workflows/recurrent-neuron-convergence.yml`，使用相同语料哈希、三个固定种子和原 RNN 的每轮更新设置，将训练上限扩展到 40 轮，并报告第 30/40 轮验证损失、最佳验证轮次及第 36 到 40 轮的变化。它是独立的收敛诊断，不是计算量匹配的直接 PK；若第 40 轮验证损失仍下降，不能声称已经收敛。工作流运行链接：https://github.com/bslsjdk/ai/actions/runs/38080171000
 
 ### 当前结论
 
