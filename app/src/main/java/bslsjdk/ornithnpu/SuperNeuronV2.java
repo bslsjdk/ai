@@ -21,6 +21,8 @@ import java.util.Random;
 public final class SuperNeuronV2 {
     public static final String FORMAT = "aimeng-super-neuron-v2/v1";
     private static final double MAX_ABS_PARAMETER = 4.0;
+    private static final int INTERNAL_MICRO_STEPS = 3;
+    private static final double ELIGIBILITY_DECAY = 0.9;
 
     private final int inputCount;
     private final int hiddenSize;
@@ -32,6 +34,9 @@ public final class SuperNeuronV2 {
     private final double[] gateBias;
     // Diagonal recurrent connection: O(hiddenSize), not O(hiddenSize^2).
     private final double[] recurrentScale;
+    // Bounded online eligibility traces: no sequence tape and no full BPTT.
+    private final double[] inputProjectionEligibility;
+    private final double[] recurrentEligibility;
     private final int outputRank;
     private final double[] hiddenToOutputRank; // [hiddenSize * outputRank]
     private final double[] outputEmbedding; // [outputCount * outputRank]
@@ -67,6 +72,8 @@ public final class SuperNeuronV2 {
         gateWeight = new double[inputCount];
         gateBias = new double[inputCount];
         recurrentScale = new double[hiddenSize];
+        inputProjectionEligibility = new double[inputCount * hiddenSize];
+        recurrentEligibility = new double[hiddenSize];
         outputRank = Math.min(32, hiddenSize);
         hiddenToOutputRank = new double[hiddenSize * outputRank];
         outputEmbedding = new double[outputCount * outputRank];
@@ -116,13 +123,32 @@ public final class SuperNeuronV2 {
             lastGate[p] = sigmoid(z);
         }
 
-        for (int h = 0; h < hiddenSize; h++) {
-            double sum = recurrentScale[h] * state[h];
-            for (int p = 0; p < inputCount; p++)
-                sum += inputs[p] * lastGate[p] * inputProjection[p * hiddenSize + h];
-            lastHidden[h] = Math.tanh(clamp(sum, -12.0, 12.0));
+        // Three bounded internal recurrent micro-steps per external token.
+        // The diagonal recurrence keeps storage O(hiddenSize), not O(hiddenSize^2).
+        for (int step = 0; step < INTERNAL_MICRO_STEPS; step++) {
+            for (int h = 0; h < hiddenSize; h++) {
+                double sum = recurrentScale[h] * state[h];
+                for (int p = 0; p < inputCount; p++)
+                    sum += inputs[p] * lastGate[p] * inputProjection[p * hiddenSize + h];
+                lastHidden[h] = Math.tanh(clamp(sum, -12.0, 12.0));
+            }
+            System.arraycopy(lastHidden, 0, state, 0, hiddenSize);
         }
-        System.arraycopy(lastHidden, 0, state, 0, hiddenSize);
+        // Online eligibility is updated once per external token, without retaining
+        // a history of activations. It is used by applyReward() for local credit.
+        for (int p = 0; p < inputCount; p++) {
+            double gatedInput = lastInput[p] * lastGate[p];
+            for (int h = 0; h < hiddenSize; h++) {
+                int index = p * hiddenSize + h;
+                inputProjectionEligibility[index] = clamp(
+                        ELIGIBILITY_DECAY * inputProjectionEligibility[index]
+                                + gatedInput * lastHidden[h], -10.0, 10.0);
+            }
+        }
+        for (int h = 0; h < hiddenSize; h++) {
+            recurrentEligibility[h] = clamp(ELIGIBILITY_DECAY * recurrentEligibility[h]
+                    + lastPreviousState[h] * lastHidden[h], -10.0, 10.0);
+        }
 
         // Factorized output head: hidden -> compact rank -> token/class scores.
         // This reduces output-head parameters from O(vocabulary * hidden) to
@@ -242,7 +268,28 @@ public final class SuperNeuronV2 {
         return loss;
     }
 
-    /** Reset only recurrent working state; learned parameters remain unchanged. */
+    /**
+     * Apply a scalar reward through this neuron's bounded local eligibility traces.
+     * Positive reward reinforces recent local activity; negative reward weakens it.
+     * This does not run backpropagation through time or retain an activation graph.
+     */
+    public void applyReward(double reward, double learningRate) {
+        if (!Double.isFinite(reward)) throw new IllegalArgumentException("reward must be finite");
+        if (!Double.isFinite(learningRate) || learningRate < 0.0 || learningRate > 0.01)
+            throw new IllegalArgumentException("reward learningRate must be in [0, 0.01]");
+        double boundedReward = clamp(reward, -1.0, 1.0);
+        for (int i = 0; i < inputProjection.length; i++) {
+            inputProjection[i] = clamp(inputProjection[i]
+                    + learningRate * boundedReward * inputProjectionEligibility[i],
+                    -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
+        }
+        for (int h = 0; h < hiddenSize; h++) {
+            recurrentScale[h] = clamp(recurrentScale[h]
+                    + learningRate * boundedReward * recurrentEligibility[h], -1.0, 1.0);
+        }
+    }
+
+    /** Reset recurrent working state; learned parameters remain unchanged. */
     public void resetState() {
         Arrays.fill(state, 0.0);
         Arrays.fill(lastPreviousState, 0.0);
@@ -277,7 +324,8 @@ public final class SuperNeuronV2 {
     /** Approximate parameter + recurrent-state bytes, excluding JVM object overhead. */
     public long estimatedStorageBytes() {
         long doubles = (long) inputProjection.length + gateWeight.length + gateBias.length
-                + recurrentScale.length + hiddenToOutputRank.length + outputEmbedding.length + outputBias.length
+                + recurrentScale.length + inputProjectionEligibility.length + recurrentEligibility.length
+                + hiddenToOutputRank.length + outputEmbedding.length + outputBias.length
                 + state.length + lastInput.length + lastGate.length
                 + lastHidden.length + lastPreviousState.length + lastProbabilities.length
                 + lastLatent.length + latentGradient.length + hiddenGradient.length
@@ -297,6 +345,10 @@ public final class SuperNeuronV2 {
         putArray(root, "gateWeight", gateWeight);
         putArray(root, "gateBias", gateBias);
         putArray(root, "recurrentScale", recurrentScale);
+        putArray(root, "inputProjectionEligibility", inputProjectionEligibility);
+        putArray(root, "recurrentEligibility", recurrentEligibility);
+        root.put("internalMicroSteps", INTERNAL_MICRO_STEPS);
+        root.put("eligibilityDecay", ELIGIBILITY_DECAY);
         root.put("outputRank", outputRank);
         putArray(root, "hiddenToOutputRank", hiddenToOutputRank);
         putArray(root, "outputEmbedding", outputEmbedding);
@@ -316,6 +368,10 @@ public final class SuperNeuronV2 {
         readArray(root, "gateWeight", result.gateWeight);
         readArray(root, "gateBias", result.gateBias);
         readArray(root, "recurrentScale", result.recurrentScale);
+        if (root.has("inputProjectionEligibility"))
+            readArray(root, "inputProjectionEligibility", result.inputProjectionEligibility);
+        if (root.has("recurrentEligibility"))
+            readArray(root, "recurrentEligibility", result.recurrentEligibility);
         if (root.optInt("outputRank", result.outputRank) != result.outputRank)
             throw new IllegalArgumentException("checkpoint outputRank mismatch");
         readArray(root, "hiddenToOutputRank", result.hiddenToOutputRank);
