@@ -83,7 +83,14 @@ public final class SuperNeuronV2 {
 
     /** Run one step and return a defensive copy of next-token/class probabilities. */
     public double[] forward(double[] inputs) {
+        return forwardInto(inputs, new double[outputCount]);
+    }
+
+    /** Allocation-conscious API for token loops: caller owns the output buffer. */
+    public double[] forwardInto(double[] inputs, double[] outputBuffer) {
         validateInputs(inputs);
+        if (outputBuffer == null || outputBuffer.length != outputCount)
+            throw new IllegalArgumentException("output buffer length must equal outputCount");
         System.arraycopy(inputs, 0, lastInput, 0, inputCount);
         System.arraycopy(state, 0, lastPreviousState, 0, hiddenSize);
 
@@ -131,7 +138,8 @@ public final class SuperNeuronV2 {
         }
         hasForward = true;
         forwardSteps++;
-        return Arrays.copyOf(lastProbabilities, outputCount);
+        System.arraycopy(lastProbabilities, 0, outputBuffer, 0, outputCount);
+        return outputBuffer;
     }
 
     /**
@@ -221,6 +229,14 @@ public final class SuperNeuronV2 {
     public int getOutputCount() { return outputCount; }
     public long getForwardSteps() { return forwardSteps; }
     public long getTrainSteps() { return trainSteps; }
+    public int getOutputRank() { return outputRank; }
+
+    /** Number of learned scalar parameters, excluding runtime state and caches. */
+    public long getParameterCount() {
+        return (long) inputProjection.length + gateWeight.length + gateBias.length
+                + recurrentScale.length + hiddenToOutputRank.length
+                + outputEmbedding.length + outputBias.length;
+    }
 
     /** Approximate parameter + recurrent-state bytes, excluding JVM object overhead. */
     public long estimatedStorageBytes() {
