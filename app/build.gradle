@@ -25,9 +25,9 @@ android {
             }
         }
     }
-    // Stable update signing is enabled when the repository's protected Actions
-    // secrets provide the dedicated test keystore. Never reuse the production
-    // Ornith/MCNPU signing key for this separate experimental package.
+    // Stable update signing uses the dedicated PUBLIC test keystore loaded by the
+    // AIMENG debug workflow. This key is intentionally public and ONLY for the
+    // isolated .aimengdebug package. Never use it for production or Ornith/MCNPU.
     def aimengKeystorePath = System.getenv("AIMENG_KEYSTORE_PATH")
     def aimengKeystoreExists = aimengKeystorePath != null && file(aimengKeystorePath).isFile()
     signingConfigs {
