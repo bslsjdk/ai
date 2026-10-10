@@ -124,12 +124,13 @@ public final class SparseDiffusionMobileModel {
         lastTrace = new java.util.ArrayList<>();
         Random rng = new Random();
         for (int i = 0; i < count; i++) {
-            int from = Math.max(0, out.length() - contextLength);
-            String context = out.substring(from);
-            int[] ids = new int[context.length()];
-            for (int j = 0; j < context.length(); j++) {
-                Integer id = stoi.get(context.substring(j, j + 1));
-                ids[j] = id == null ? 0 : id;
+            int[] codePoints = out.codePoints().toArray();
+            int from = Math.max(0, codePoints.length - contextLength);
+            int[] ids = new int[codePoints.length - from];
+            for (int j = from; j < codePoints.length; j++) {
+                String token = new String(Character.toChars(codePoints[j]));
+                Integer id = stoi.get(token);
+                ids[j - from] = id == null ? 0 : id;
             }
             float[] logits = forward(ids);
             int next = sample(logits, 0.8f, rng);
@@ -249,21 +250,36 @@ public final class SparseDiffusionMobileModel {
 
 
 
+    public synchronized float[] debugLogits(String prompt) {
+        if (!loaded) throw new IllegalStateException("model not loaded");
+        if (prompt == null || prompt.isEmpty()) throw new IllegalArgumentException("empty prompt");
+        int[] codePoints = prompt.codePoints().toArray();
+        int from = Math.max(0, codePoints.length - contextLength);
+        int[] ids = new int[codePoints.length - from];
+        for (int i = from; i < codePoints.length; i++) {
+            Integer id = stoi.get(new String(Character.toChars(codePoints[i])));
+            ids[i - from] = id == null ? 0 : id;
+        }
+        return forward(ids).clone();
+    }
+
     public synchronized int learnFromText(String text, File stateFile) throws Exception {
         if (!loaded) throw new IllegalStateException("model not loaded");
         if (text == null || text.length() < 2) throw new IllegalArgumentException("need at least two characters");
-        if (text.length() > 512) text = text.substring(0, 512);
+        int[] codePoints = text.codePoints().toArray();
+        if (codePoints.length > 512) codePoints = Arrays.copyOf(codePoints, 512);
         int examples = 0;
         float[] matrix = w("decoder.weight");
         float[] bias = w("decoder.bias");
         float lr = 0.01f / Math.max(1, Math.min(64, text.length() - 1));
-        for (int pos = 1; pos < text.length(); pos++) {
-            Integer targetValue = stoi.get(text.substring(pos, pos + 1));
+        for (int pos = 1; pos < codePoints.length; pos++) {
+            Integer targetValue = stoi.get(new String(Character.toChars(codePoints[pos])));
             if (targetValue == null || targetValue < 0 || targetValue >= itos.length) continue;
             int start = Math.max(0, pos - contextLength);
             int[] ids = new int[pos - start];
             for (int j = start; j < pos; j++) {
-                Integer id = stoi.get(text.substring(j, j + 1));
+                String token = new String(Character.toChars(codePoints[j]));
+                Integer id = stoi.get(token);
                 ids[j - start] = id == null ? 0 : id;
             }
             float[] logits = forward(ids);
