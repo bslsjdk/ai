@@ -55,7 +55,7 @@ public final class SparseDiffusionMobileModel {
         if (file == null || !file.isFile() || file.length() <= 0 || file.length() > 32L * 1024 * 1024) {
             throw new IllegalArgumentException("portable model file missing or exceeds 32 MiB");
         }
-        JSONObject root = new JSONObject(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
+        JSONObject root = new JSONObject(new String(AimengModelFormat.readJsonBytes(file), StandardCharsets.UTF_8));
         if (!"aimeng-mobile-diffusion-json-v1".equals(root.optString("format"))) {
             throw new IllegalArgumentException("unsupported mobile model format");
         }
