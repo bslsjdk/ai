@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Debug;
 import android.widget.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -108,7 +109,8 @@ public final class SparseDiffusionActivity extends Activity {
                 }
                 model.load(file);
                 model.loadLearningState(new File(getFilesDir(), "aimeng-learning-state.json"));
-                runOnUiThread(() -> { status.setText("模型已加载 · 本地学习记录 " + model.getLearningUpdates() + " 次"); run.setEnabled(true); learnTextButton.setEnabled(true); resetButton.setEnabled(true); });
+                long pssMiB = Debug.getPss() / 1024L;
+                runOnUiThread(() -> { status.setText("模型已加载 · 本地学习记录 " + model.getLearningUpdates() + " 次 · 进程 PSS 约 " + pssMiB + " MiB"); run.setEnabled(true); learnTextButton.setEnabled(true); resetButton.setEnabled(true); });
             } catch (Throwable e) {
                 runOnUiThread(() -> status.setText("加载失败：" + e.getClass().getSimpleName() + ": " + e.getMessage()));
             }
@@ -130,9 +132,10 @@ public final class SparseDiffusionActivity extends Activity {
             try {
                 String text = model.generate(p, n);
                 long ms = (System.nanoTime() - t) / 1_000_000;
+                long pssMiB = Debug.getPss() / 1024L;
                 runOnUiThread(() -> {
                     result.setText(text);
-                    status.setText("本地 CPU 推理完成 · " + ms + " ms · 可给本次结果奖励或惩罚");
+                    status.setText("本地 CPU 推理完成 · " + ms + " ms · 进程 PSS 约 " + pssMiB + " MiB · 可奖励或惩罚");
                     run.setEnabled(true);
                     rewardButton.setEnabled(model.canGiveFeedback());
                     punishButton.setEnabled(model.canGiveFeedback());
