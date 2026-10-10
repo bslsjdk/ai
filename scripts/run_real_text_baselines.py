@@ -27,15 +27,17 @@ def encode(text, vocab):
 
 
 def make_examples(all_ids, start, end, context):
-    # Predict targets [start, end), using preceding characters as context.
-    positions = np.arange(context, dtype=np.int32)
     targets = np.arange(max(start, context), end, dtype=np.int32)
+    return make_examples_at_positions(all_ids, targets, context)
+
+
+def make_examples_at_positions(all_ids, targets, context):
+    targets = np.asarray(targets, dtype=np.int32)
     x = np.stack([all_ids[t-context:t] for t in targets])
-    y = all_ids[targets]
-    return x, y
+    return x, all_ids[targets]
 
 
-def ngram_baselines(train_ids, all_ids, test_start, vocab_size, orders=(2, 3, 4, 5), alpha=0.1):
+def ngram_baselines(train_ids, all_ids, test_positions, vocab_size, orders=(2, 3, 4, 5), alpha=0.1):
     counts_by_order = {}
     totals_by_order = {}
     for order in orders:
@@ -63,10 +65,10 @@ def ngram_baselines(train_ids, all_ids, test_start, vocab_size, orders=(2, 3, 4,
         return (c + alpha * lower) / (total + alpha)
 
     results = {}
-    test_ids = all_ids[test_start:]
+    test_ids = all_ids[test_positions]
     losses, correct = {n: 0.0 for n in orders}, {n: 0 for n in orders}
-    for offset, token_value in enumerate(test_ids):
-        t = test_start + offset
+    for t, token_value in zip(test_positions, test_ids):
+        t = int(t)
         token = int(token_value)
         for order in orders:
             context = all_ids[max(0, t-order+1):t]
@@ -83,7 +85,7 @@ def ngram_baselines(train_ids, all_ids, test_start, vocab_size, orders=(2, 3, 4,
     for order in orders:
         results[str(order)] = {
             "order": order, "context_characters": order - 1, "alpha": alpha,
-            "test_characters": n, "test_loss": losses[order] / n,
+            "test_characters_scored": n, "test_loss": losses[order] / n,
             "test_bits_per_char": losses[order] / n / math.log(2),
             "test_char_accuracy": correct[order] / n,
         }
@@ -168,7 +170,7 @@ def main():
     ap.add_argument("--ngram-alpha", type=float, default=0.1)
     args = ap.parse_args()
 
-    text = args.text_file.read_text(encoding="utf-8", errors="replace").replace("\r\n", "\n")
+    text = args.text_file.read_text(encoding="utf-8", errors="replace").replace("\r\n", "\n").replace("\r", "\n")
     train_text, val_text, test_text = split_text(text)
     chars = sorted(set(train_text))
     if "\ufffd" not in chars:
@@ -178,16 +180,22 @@ def main():
     train_end, val_end = len(train_text), len(train_text)+len(val_text)
     train_ids = all_ids[:train_end]
     val_x, val_y = make_examples(all_ids, train_end, val_end, args.context)
-    test_x, test_y = make_examples(all_ids, val_end, len(all_ids), args.context)
+    # Match the recurrent model's test-target protocol: 64-character chunks,
+    # each predicts the next 64 characters, omitting the incomplete tail.
+    recurrent_context = 64
+    test_positions = np.concatenate([
+        np.arange(val_end + start + 1, val_end + start + recurrent_context + 1, dtype=np.int32)
+        for start in range(0, len(test_text) - recurrent_context, recurrent_context)
+    ])
+    test_x, test_y = make_examples_at_positions(all_ids, test_positions, args.context)
     train_positions = np.arange(args.context, train_end, dtype=np.int32)
-    test_start = val_end
     data_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
 
     print("NGRAM_START "+json.dumps({"orders":[2,3,4,5],"alpha":args.ngram_alpha,
                                      "train":len(train_text),"validation":len(val_text),
                                      "test":len(test_text)},sort_keys=True),flush=True)
     ngram_started = time.perf_counter()
-    ngram = ngram_baselines(train_ids, all_ids, test_start, len(vocab), alpha=args.ngram_alpha)
+    ngram = ngram_baselines(train_ids, all_ids, test_positions, len(vocab), alpha=args.ngram_alpha)
     ngram_seconds = time.perf_counter()-ngram_started
     for order, row in ngram.items():
         print("NGRAM_RESULT "+json.dumps(row,sort_keys=True),flush=True)
@@ -245,8 +253,10 @@ def main():
         "dataset":"Project Gutenberg Alice's Adventures in Wonderland, chronological split",
         "dataset_sha256":data_hash,
         "split":{"train_fraction":0.85,"validation_fraction":0.05,"test_fraction":0.10,
+                 "test_target_alignment":"same 64-character chunk targets as the recurrent model; incomplete final chunk omitted",
                  "train_characters":len(train_text),"validation_characters":len(val_text),
-                 "test_characters":len(test_text),"vocabulary_size":len(vocab)},
+                 "test_characters":len(test_text),"test_characters_scored":len(test_positions),
+                 "vocabulary_size":len(vocab)},
         "ngram":{"smoothing":"recursive Dirichlet interpolation; unigram base uses additive smoothing",
                  "alpha":args.ngram_alpha,"wall_seconds":round(ngram_seconds,3),
                  "orders":ngram},
