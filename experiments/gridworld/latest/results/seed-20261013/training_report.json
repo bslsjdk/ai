@@ -1,0 +1,279 @@
+{
+  "actions": [
+    "up",
+    "right",
+    "down",
+    "left"
+  ],
+  "algorithm": "neural Q-learning, epsilon-greedy, TD(0)",
+  "benchmarkSeed": 20261013,
+  "bfsOracle": {
+    "episodes": 18,
+    "mean_steps_success": 4.5,
+    "note": "BFS oracle upper bound; not a learned model",
+    "success_rate": 1.0,
+    "successes": 18
+  },
+  "episodesTrained": 5000,
+  "evaluationScope": "same fixed map; all valid start cells; not held-out-map generalization",
+  "finalEvaluation": {
+    "episodes": 18,
+    "mean_optimality_ratio": 1.0,
+    "mean_steps_success": 3.9285714285714284,
+    "success_rate": 0.7777777777777778,
+    "successes": 14
+  },
+  "format": "aimeng-gridworld-training-report/v1",
+  "goal": [
+    4,
+    4
+  ],
+  "history": [
+    {
+      "episode": 250,
+      "episodeReward": -3.31,
+      "episodes": 18,
+      "epsilon": 0.952,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 3.0,
+      "success_rate": 0.2777777777777778,
+      "successes": 5
+    },
+    {
+      "episode": 500,
+      "episodeReward": 0.03499999999999992,
+      "episodes": 18,
+      "epsilon": 0.904,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 2.909090909090909,
+      "success_rate": 0.6111111111111112,
+      "successes": 11
+    },
+    {
+      "episode": 750,
+      "episodeReward": -0.2649999999999997,
+      "episodes": 18,
+      "epsilon": 0.856,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 3.7857142857142856,
+      "success_rate": 0.7777777777777778,
+      "successes": 14
+    },
+    {
+      "episode": 1000,
+      "episodeReward": -3.3100000000000005,
+      "episodes": 18,
+      "epsilon": 0.808,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 2.909090909090909,
+      "success_rate": 0.6111111111111112,
+      "successes": 11
+    },
+    {
+      "episode": 1250,
+      "episodeReward": -2.8350000000000004,
+      "episodes": 18,
+      "epsilon": 0.76,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 2.909090909090909,
+      "success_rate": 0.6111111111111112,
+      "successes": 11
+    },
+    {
+      "episode": 1500,
+      "episodeReward": 0.735,
+      "episodes": 18,
+      "epsilon": 0.712,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 3.7857142857142856,
+      "success_rate": 0.7777777777777778,
+      "successes": 14
+    },
+    {
+      "episode": 1750,
+      "episodeReward": 0.975,
+      "episodes": 18,
+      "epsilon": 0.6639999999999999,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 3.7857142857142856,
+      "success_rate": 0.7777777777777778,
+      "successes": 14
+    },
+    {
+      "episode": 2000,
+      "episodeReward": 0.45999999999999985,
+      "episodes": 18,
+      "epsilon": 0.616,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 3.7857142857142856,
+      "success_rate": 0.7777777777777778,
+      "successes": 14
+    },
+    {
+      "episode": 2250,
+      "episodeReward": -0.23499999999999988,
+      "episodes": 18,
+      "epsilon": 0.5680000000000001,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 3.7857142857142856,
+      "success_rate": 0.7777777777777778,
+      "successes": 14
+    },
+    {
+      "episode": 2500,
+      "episodeReward": 0.6799999999999999,
+      "episodes": 18,
+      "epsilon": 0.52,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 3.0,
+      "success_rate": 0.6111111111111112,
+      "successes": 11
+    },
+    {
+      "episode": 2750,
+      "episodeReward": -0.1850000000000005,
+      "episodes": 18,
+      "epsilon": 0.472,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 3.6923076923076925,
+      "success_rate": 0.7222222222222222,
+      "successes": 13
+    },
+    {
+      "episode": 3000,
+      "episodeReward": 0.029999999999999916,
+      "episodes": 18,
+      "epsilon": 0.42400000000000004,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 3.6923076923076925,
+      "success_rate": 0.7222222222222222,
+      "successes": 13
+    },
+    {
+      "episode": 3250,
+      "episodeReward": 0.635,
+      "episodes": 18,
+      "epsilon": 0.376,
+      "mean_optimality_ratio": 0.9351290684624018,
+      "mean_steps_success": 5.166666666666667,
+      "success_rate": 1.0,
+      "successes": 18
+    },
+    {
+      "episode": 3500,
+      "episodeReward": 0.925,
+      "episodes": 18,
+      "epsilon": 0.32799999999999996,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 3.6923076923076925,
+      "success_rate": 0.7222222222222222,
+      "successes": 13
+    },
+    {
+      "episode": 3750,
+      "episodeReward": 0.925,
+      "episodes": 18,
+      "epsilon": 0.28,
+      "mean_optimality_ratio": 0.9351290684624018,
+      "mean_steps_success": 5.166666666666667,
+      "success_rate": 1.0,
+      "successes": 18
+    },
+    {
+      "episode": 4000,
+      "episodeReward": 0.855,
+      "episodes": 18,
+      "epsilon": 0.23199999999999998,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 3.6923076923076925,
+      "success_rate": 0.7222222222222222,
+      "successes": 13
+    },
+    {
+      "episode": 4250,
+      "episodeReward": 0.925,
+      "episodes": 18,
+      "epsilon": 0.18400000000000005,
+      "mean_optimality_ratio": 0.9351290684624018,
+      "mean_steps_success": 5.166666666666667,
+      "success_rate": 1.0,
+      "successes": 18
+    },
+    {
+      "episode": 4500,
+      "episodeReward": 0.9,
+      "episodes": 18,
+      "epsilon": 0.136,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 3.6923076923076925,
+      "success_rate": 0.7222222222222222,
+      "successes": 13
+    },
+    {
+      "episode": 4750,
+      "episodeReward": 0.825,
+      "episodes": 18,
+      "epsilon": 0.08799999999999997,
+      "mean_optimality_ratio": 0.9351290684624018,
+      "mean_steps_success": 5.166666666666667,
+      "success_rate": 1.0,
+      "successes": 18
+    },
+    {
+      "episode": 5000,
+      "episodeReward": 0.875,
+      "episodes": 18,
+      "epsilon": 0.040000000000000036,
+      "mean_optimality_ratio": 1.0,
+      "mean_steps_success": 3.9285714285714284,
+      "success_rate": 0.7777777777777778,
+      "successes": 14
+    }
+  ],
+  "initialEvaluation": {
+    "episodes": 18,
+    "mean_optimality_ratio": 1.0,
+    "mean_steps_success": 2.0,
+    "success_rate": 0.16666666666666666,
+    "successes": 3
+  },
+  "mapSize": [
+    5,
+    5
+  ],
+  "note": "Pure-Python MLP benchmark; not an Android runtime result.",
+  "parameterCount": 212,
+  "randomBaseline": {
+    "episodes": 18,
+    "mean_steps_success": 17.88888888888889,
+    "success_rate": 0.5,
+    "successes": 9
+  },
+  "seed": 20261013,
+  "walls": [
+    [
+      1,
+      0
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      1,
+      3
+    ],
+    [
+      2,
+      3
+    ],
+    [
+      3,
+      1
+    ],
+    [
+      3,
+      2
+    ]
+  ]
+}

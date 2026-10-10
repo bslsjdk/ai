@@ -1,0 +1,15 @@
+AIMENG_GRIDWORLD_SUITE/v1
+episodes_per_seed=5000 seeds=[20261009, 20261010, 20261011, 20261012, 20261013] map=5x5 starts=18
+parameter_count=212 network=8-16-4 activation=ReLU algorithm=epsilon-greedy+TD(0)
+evaluation=deterministic, exploration_off, same_map_all_valid_start_cells
+random_baseline={"episodes": 18, "mean_steps_success": 17.88888888888889, "success_rate": 0.5, "successes": 9}
+bfs_oracle={"episodes": 18, "mean_steps_success": 4.5, "note": "BFS oracle upper bound; not a learned model", "success_rate": 1.0, "successes": 18}
+SEED_RESULT {"final": {"episodes": 18, "mean_optimality_ratio": 0.9351290684624018, "mean_steps_success": 5.166666666666667, "success_rate": 1.0, "successes": 18}, "initial": {"episodes": 18, "mean_optimality_ratio": 1.0, "mean_steps_success": 1.6666666666666667, "success_rate": 0.16666666666666666, "successes": 3}, "seconds": 4.319, "seed": 20261009, "success_delta": 0.833333}
+SEED_RESULT {"final": {"episodes": 18, "mean_optimality_ratio": 0.9351290684624018, "mean_steps_success": 5.166666666666667, "success_rate": 1.0, "successes": 18}, "initial": {"episodes": 18, "mean_optimality_ratio": 1.0, "mean_steps_success": 2.5, "success_rate": 0.2222222222222222, "successes": 4}, "seconds": 4.54, "seed": 20261010, "success_delta": 0.777778}
+SEED_RESULT {"final": {"episodes": 18, "mean_optimality_ratio": 0.9351290684624018, "mean_steps_success": 5.166666666666667, "success_rate": 1.0, "successes": 18}, "initial": {"episodes": 18, "mean_optimality_ratio": 0.0, "mean_steps_success": 0.0, "success_rate": 0.0, "successes": 0}, "seconds": 4.523, "seed": 20261011, "success_delta": 1.0}
+SEED_RESULT {"final": {"episodes": 18, "mean_optimality_ratio": 1.0, "mean_steps_success": 3.6923076923076925, "success_rate": 0.7222222222222222, "successes": 13}, "initial": {"episodes": 18, "mean_optimality_ratio": 0.0, "mean_steps_success": 0.0, "success_rate": 0.0, "successes": 0}, "seconds": 4.337, "seed": 20261012, "success_delta": 0.722222}
+SEED_RESULT {"final": {"episodes": 18, "mean_optimality_ratio": 1.0, "mean_steps_success": 3.9285714285714284, "success_rate": 0.7777777777777778, "successes": 14}, "initial": {"episodes": 18, "mean_optimality_ratio": 1.0, "mean_steps_success": 2.0, "success_rate": 0.16666666666666666, "successes": 3}, "seconds": 4.337, "seed": 20261013, "success_delta": 0.611111}
+SUITE_SUMMARY {"finalSuccessRateMax": 1.0, "finalSuccessRateMean": 0.9, "finalSuccessRateMin": 0.7222222222222222, "finalSuccessRateStdev": 0.12372809695177826, "initialSuccessRateMean": 0.1111111111111111, "seedCount": 5, "seedsImproved": 5}
+SUMMARY_PATH=experiments/gridworld/latest/results/summary.json
+TOTAL_SECONDS=22.057
+PASS: multi-seed learning smoke benchmark met thresholds
