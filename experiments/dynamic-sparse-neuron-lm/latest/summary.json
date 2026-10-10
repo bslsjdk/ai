@@ -69,35 +69,35 @@
       "mean_parameters": 1570.0,
       "mean_heldout_loss": 2.094281315803528,
       "mean_heldout_accuracy": 0.5062785388127854,
-      "mean_wall_seconds": 1.8675666666666668
+      "mean_wall_seconds": 1.8432000000000002
     },
     "dense_parameter_matched": {
       "runs": 3,
       "mean_parameters": 1569.0,
       "mean_heldout_loss": 1.1934901873270671,
       "mean_heldout_accuracy": 0.7236729452054794,
-      "mean_wall_seconds": 1.2499333333333333
+      "mean_wall_seconds": 1.2358666666666667
     },
     "dynamic_sparse_f0_125": {
       "runs": 3,
       "mean_parameters": 1570.0,
       "mean_heldout_loss": 1.2974471251169841,
       "mean_heldout_accuracy": 0.7062642694063926,
-      "mean_wall_seconds": 2.0261666666666667
+      "mean_wall_seconds": 1.9479
     },
     "dynamic_sparse_f0_25": {
       "runs": 3,
       "mean_parameters": 1570.0,
       "mean_heldout_loss": 1.4005165894826253,
       "mean_heldout_accuracy": 0.6791523972602739,
-      "mean_wall_seconds": 1.9607666666666665
+      "mean_wall_seconds": 1.958
     },
     "dynamic_sparse_f0_375": {
       "runs": 3,
       "mean_parameters": 1570.0,
       "mean_heldout_loss": 1.7012087106704712,
       "mean_heldout_accuracy": 0.5821917808219178,
-      "mean_wall_seconds": 1.9781000000000002
+      "mean_wall_seconds": 1.9389333333333332
     }
   },
   "runs": [
@@ -108,7 +108,7 @@
       "parameter_count": 1570,
       "heldout_loss": 2.1088478565216064,
       "heldout_accuracy": 0.480736301369863,
-      "wall_seconds": 1.9091,
+      "wall_seconds": 1.9873,
       "history": [
         {
           "epoch": 1,
@@ -239,7 +239,7 @@
       "parameter_count": 1569,
       "heldout_loss": 1.1979544162750244,
       "heldout_accuracy": 0.7403681506849316,
-      "wall_seconds": 1.2541,
+      "wall_seconds": 1.2276,
       "history": [
         {
           "epoch": 1,
@@ -370,7 +370,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.3299041986465454,
       "heldout_accuracy": 0.7026969178082192,
-      "wall_seconds": 2.1762,
+      "wall_seconds": 1.9814,
       "unit_details": [
         {
           "id": "neuron-006",
@@ -2464,6 +2464,7 @@
         }
       ],
       "rewire_fraction": 0.125,
+      "checkpoint_file": "model-seed-20261010-rewire-0_125.json",
       "target_sparse_parameter_count": 1570,
       "parameter_difference_vs_sparse_pct": 0.0
     },
@@ -2474,7 +2475,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.441727876663208,
       "heldout_accuracy": 0.6652397260273972,
-      "wall_seconds": 1.9811,
+      "wall_seconds": 1.9546,
       "unit_details": [
         {
           "id": "neuron-018",
@@ -4568,6 +4569,7 @@
         }
       ],
       "rewire_fraction": 0.25,
+      "checkpoint_file": "model-seed-20261010-rewire-0_25.json",
       "target_sparse_parameter_count": 1570,
       "parameter_difference_vs_sparse_pct": 0.0
     },
@@ -4578,7 +4580,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.650926947593689,
       "heldout_accuracy": 0.613013698630137,
-      "wall_seconds": 2.0688,
+      "wall_seconds": 1.9842,
       "unit_details": [
         {
           "id": "neuron-006",
@@ -6672,6 +6674,7 @@
         }
       ],
       "rewire_fraction": 0.375,
+      "checkpoint_file": "model-seed-20261010-rewire-0_375.json",
       "target_sparse_parameter_count": 1570,
       "parameter_difference_vs_sparse_pct": 0.0
     },
@@ -6682,7 +6685,7 @@
       "parameter_count": 1570,
       "heldout_loss": 2.2069761753082275,
       "heldout_accuracy": 0.4700342465753425,
-      "wall_seconds": 1.8297,
+      "wall_seconds": 1.8001,
       "history": [
         {
           "epoch": 1,
@@ -6813,7 +6816,7 @@
       "parameter_count": 1569,
       "heldout_loss": 1.2309768199920654,
       "heldout_accuracy": 0.712970890410959,
-      "wall_seconds": 1.2473,
+      "wall_seconds": 1.2445,
       "history": [
         {
           "epoch": 1,
@@ -6944,7 +6947,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.27273690700531,
       "heldout_accuracy": 0.6971318493150684,
-      "wall_seconds": 1.947,
+      "wall_seconds": 1.9207,
       "unit_details": [
         {
           "id": "neuron-031",
@@ -9038,6 +9041,7 @@
         }
       ],
       "rewire_fraction": 0.125,
+      "checkpoint_file": "model-seed-20261011-rewire-0_125.json",
       "target_sparse_parameter_count": 1570,
       "parameter_difference_vs_sparse_pct": 0.0
     },
@@ -9048,7 +9052,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.3887505531311035,
       "heldout_accuracy": 0.6723030821917808,
-      "wall_seconds": 1.9676,
+      "wall_seconds": 1.9226,
       "unit_details": [
         {
           "id": "neuron-044",
@@ -11142,6 +11146,7 @@
         }
       ],
       "rewire_fraction": 0.25,
+      "checkpoint_file": "model-seed-20261011-rewire-0_25.json",
       "target_sparse_parameter_count": 1570,
       "parameter_difference_vs_sparse_pct": 0.0
     },
@@ -11152,7 +11157,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.7941442728042603,
       "heldout_accuracy": 0.5295376712328768,
-      "wall_seconds": 1.9448,
+      "wall_seconds": 1.9279,
       "unit_details": [
         {
           "id": "neuron-005",
@@ -13246,6 +13251,7 @@
         }
       ],
       "rewire_fraction": 0.375,
+      "checkpoint_file": "model-seed-20261011-rewire-0_375.json",
       "target_sparse_parameter_count": 1570,
       "parameter_difference_vs_sparse_pct": 0.0
     },
@@ -13256,7 +13262,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.9670199155807495,
       "heldout_accuracy": 0.5680650684931506,
-      "wall_seconds": 1.8639,
+      "wall_seconds": 1.7422,
       "history": [
         {
           "epoch": 1,
@@ -13387,7 +13393,7 @@
       "parameter_count": 1569,
       "heldout_loss": 1.1515393257141113,
       "heldout_accuracy": 0.717679794520548,
-      "wall_seconds": 1.2484,
+      "wall_seconds": 1.2355,
       "history": [
         {
           "epoch": 1,
@@ -13518,7 +13524,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.2897002696990967,
       "heldout_accuracy": 0.7189640410958904,
-      "wall_seconds": 1.9553,
+      "wall_seconds": 1.9416,
       "unit_details": [
         {
           "id": "neuron-036",
@@ -15612,6 +15618,7 @@
         }
       ],
       "rewire_fraction": 0.125,
+      "checkpoint_file": "model-seed-20261012-rewire-0_125.json",
       "target_sparse_parameter_count": 1570,
       "parameter_difference_vs_sparse_pct": 0.0
     },
@@ -15622,7 +15629,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.3710713386535645,
       "heldout_accuracy": 0.6999143835616438,
-      "wall_seconds": 1.9336,
+      "wall_seconds": 1.9968,
       "unit_details": [
         {
           "id": "neuron-035",
@@ -17716,6 +17723,7 @@
         }
       ],
       "rewire_fraction": 0.25,
+      "checkpoint_file": "model-seed-20261012-rewire-0_25.json",
       "target_sparse_parameter_count": 1570,
       "parameter_difference_vs_sparse_pct": 0.0
     },
@@ -17726,7 +17734,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.6585549116134644,
       "heldout_accuracy": 0.6040239726027398,
-      "wall_seconds": 1.9207,
+      "wall_seconds": 1.9047,
       "unit_details": [
         {
           "id": "neuron-023",
@@ -19820,6 +19828,7 @@
         }
       ],
       "rewire_fraction": 0.375,
+      "checkpoint_file": "model-seed-20261012-rewire-0_375.json",
       "target_sparse_parameter_count": 1570,
       "parameter_difference_vs_sparse_pct": 0.0
     }

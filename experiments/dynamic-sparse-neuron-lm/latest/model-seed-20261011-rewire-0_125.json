@@ -1,0 +1,6470 @@
+{
+  "format": "aimeng-dynamic-sparse-neuron-checkpoint/v1",
+  "seed": 20261011,
+  "rewire_fraction": 0.125,
+  "context_characters": 8,
+  "vocabulary": [
+    "\n",
+    " ",
+    "+",
+    ".",
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    ":",
+    "=",
+    "a",
+    "c",
+    "d",
+    "e",
+    "f",
+    "h",
+    "i",
+    "l",
+    "m",
+    "n",
+    "o",
+    "p",
+    "q",
+    "r",
+    "s",
+    "t",
+    "u",
+    "w"
+  ],
+  "parameter_count": 1570,
+  "hidden_units": 48,
+  "units": [
+    {
+      "id": "neuron-000",
+      "enabled": true,
+      "bias": -0.011182994581758976,
+      "input_edges": [
+        {
+          "feature_index": 4,
+          "weight": 0.15388017892837524
+        },
+        {
+          "feature_index": 32,
+          "weight": 0.37841805815696716
+        },
+        {
+          "feature_index": 35,
+          "weight": 0.1617146134376526
+        },
+        {
+          "feature_index": 65,
+          "weight": 0.4887079894542694
+        },
+        {
+          "feature_index": 69,
+          "weight": -0.17351625859737396
+        },
+        {
+          "feature_index": 118,
+          "weight": -7.439500041073188e-05
+        },
+        {
+          "feature_index": 134,
+          "weight": 0.5735495686531067
+        },
+        {
+          "feature_index": 160,
+          "weight": 0.3249451518058777
+        },
+        {
+          "feature_index": 173,
+          "weight": -0.6406179666519165
+        },
+        {
+          "feature_index": 186,
+          "weight": 0.39688804745674133
+        },
+        {
+          "feature_index": 202,
+          "weight": -0.45803070068359375
+        },
+        {
+          "feature_index": 229,
+          "weight": 0.28434571623802185
+        },
+        {
+          "feature_index": 231,
+          "weight": -0.15857860445976257
+        },
+        {
+          "feature_index": 239,
+          "weight": -1.0846397876739502
+        },
+        {
+          "feature_index": 243,
+          "weight": -0.39569714665412903
+        },
+        {
+          "feature_index": 244,
+          "weight": -0.0002866934519261122
+        },
+        {
+          "feature_index": 266,
+          "weight": 0.10432303696870804
+        },
+        {
+          "feature_index": 268,
+          "weight": 0.41763511300086975
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": 0.30722638964653015
+        },
+        {
+          "token_id": 1,
+          "weight": 1.5863640308380127
+        },
+        {
+          "token_id": 5,
+          "weight": -0.6605765223503113
+        },
+        {
+          "token_id": 6,
+          "weight": -0.304266095161438
+        },
+        {
+          "token_id": 7,
+          "weight": -6.378626130754128e-05
+        },
+        {
+          "token_id": 12,
+          "weight": 0.02538258209824562
+        },
+        {
+          "token_id": 13,
+          "weight": -0.3025278151035309
+        },
+        {
+          "token_id": 19,
+          "weight": 1.5027573681436479e-05
+        },
+        {
+          "token_id": 20,
+          "weight": -0.16349880397319794
+        },
+        {
+          "token_id": 21,
+          "weight": -0.40728744864463806
+        },
+        {
+          "token_id": 23,
+          "weight": 0.7988129258155823
+        },
+        {
+          "token_id": 32,
+          "weight": 0.5196390151977539
+        },
+        {
+          "token_id": 33,
+          "weight": 0.22836177051067352
+        }
+      ]
+    },
+    {
+      "id": "neuron-001",
+      "enabled": true,
+      "bias": 0.045273225754499435,
+      "input_edges": [
+        {
+          "feature_index": 10,
+          "weight": -0.10048919171094894
+        },
+        {
+          "feature_index": 35,
+          "weight": 0.24980731308460236
+        },
+        {
+          "feature_index": 50,
+          "weight": -0.6252874732017517
+        },
+        {
+          "feature_index": 69,
+          "weight": 0.12038606405258179
+        },
+        {
+          "feature_index": 98,
+          "weight": -0.08960282057523727
+        },
+        {
+          "feature_index": 103,
+          "weight": 0.20400312542915344
+        },
+        {
+          "feature_index": 120,
+          "weight": -0.47571253776550293
+        },
+        {
+          "feature_index": 124,
+          "weight": 0.0766419842839241
+        },
+        {
+          "feature_index": 125,
+          "weight": 0.22849053144454956
+        },
+        {
+          "feature_index": 152,
+          "weight": 0.5341987013816833
+        },
+        {
+          "feature_index": 165,
+          "weight": -0.09852225333452225
+        },
+        {
+          "feature_index": 205,
+          "weight": 0.00014473542978521436
+        },
+        {
+          "feature_index": 221,
+          "weight": 0.18789918720722198
+        },
+        {
+          "feature_index": 240,
+          "weight": 0.12905724346637726
+        },
+        {
+          "feature_index": 241,
+          "weight": 0.6157713532447815
+        },
+        {
+          "feature_index": 257,
+          "weight": -0.34920570254325867
+        },
+        {
+          "feature_index": 262,
+          "weight": 0.09318877011537552
+        },
+        {
+          "feature_index": 265,
+          "weight": 0.00013207584561314434
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": 0.6409441828727722
+        },
+        {
+          "token_id": 1,
+          "weight": -1.4295131222752389e-05
+        },
+        {
+          "token_id": 2,
+          "weight": -0.7035415768623352
+        },
+        {
+          "token_id": 6,
+          "weight": 0.461904376745224
+        },
+        {
+          "token_id": 9,
+          "weight": 0.22184133529663086
+        },
+        {
+          "token_id": 16,
+          "weight": -0.4993763864040375
+        },
+        {
+          "token_id": 19,
+          "weight": -0.00012538195005618036
+        },
+        {
+          "token_id": 22,
+          "weight": -0.312269926071167
+        },
+        {
+          "token_id": 23,
+          "weight": 0.5189820528030396
+        },
+        {
+          "token_id": 24,
+          "weight": 0.04567089304327965
+        },
+        {
+          "token_id": 26,
+          "weight": 0.172647625207901
+        },
+        {
+          "token_id": 28,
+          "weight": -0.7897877097129822
+        },
+        {
+          "token_id": 29,
+          "weight": -0.24430552124977112
+        }
+      ]
+    },
+    {
+      "id": "neuron-002",
+      "enabled": true,
+      "bias": -0.10184149444103241,
+      "input_edges": [
+        {
+          "feature_index": 3,
+          "weight": -0.17912907898426056
+        },
+        {
+          "feature_index": 16,
+          "weight": -0.30368030071258545
+        },
+        {
+          "feature_index": 26,
+          "weight": -0.08196751028299332
+        },
+        {
+          "feature_index": 35,
+          "weight": 0.34940120577812195
+        },
+        {
+          "feature_index": 57,
+          "weight": -0.3037049174308777
+        },
+        {
+          "feature_index": 61,
+          "weight": -0.3438859283924103
+        },
+        {
+          "feature_index": 91,
+          "weight": -0.43847790360450745
+        },
+        {
+          "feature_index": 103,
+          "weight": 9.917229181155562e-05
+        },
+        {
+          "feature_index": 105,
+          "weight": 0.19926977157592773
+        },
+        {
+          "feature_index": 129,
+          "weight": -0.07736651599407196
+        },
+        {
+          "feature_index": 148,
+          "weight": -0.032848913222551346
+        },
+        {
+          "feature_index": 153,
+          "weight": -0.00010074104648083448
+        },
+        {
+          "feature_index": 177,
+          "weight": 0.034812867641448975
+        },
+        {
+          "feature_index": 187,
+          "weight": -0.07995934039354324
+        },
+        {
+          "feature_index": 200,
+          "weight": 0.2641485929489136
+        },
+        {
+          "feature_index": 209,
+          "weight": -0.10132424533367157
+        },
+        {
+          "feature_index": 236,
+          "weight": 0.07913629710674286
+        },
+        {
+          "feature_index": 263,
+          "weight": 0.05818583443760872
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -7.643448770977557e-05
+        },
+        {
+          "token_id": 3,
+          "weight": 0.319514662027359
+        },
+        {
+          "token_id": 6,
+          "weight": 0.16668912768363953
+        },
+        {
+          "token_id": 7,
+          "weight": 0.1068638265132904
+        },
+        {
+          "token_id": 8,
+          "weight": 0.15000638365745544
+        },
+        {
+          "token_id": 11,
+          "weight": -0.15743179619312286
+        },
+        {
+          "token_id": 14,
+          "weight": 0.16131682693958282
+        },
+        {
+          "token_id": 16,
+          "weight": 3.8131944165797904e-05
+        },
+        {
+          "token_id": 22,
+          "weight": -0.758484959602356
+        },
+        {
+          "token_id": 24,
+          "weight": -0.1957731544971466
+        },
+        {
+          "token_id": 25,
+          "weight": -0.08109881728887558
+        },
+        {
+          "token_id": 26,
+          "weight": 0.12548847496509552
+        },
+        {
+          "token_id": 31,
+          "weight": -0.5163581967353821
+        }
+      ]
+    },
+    {
+      "id": "neuron-003",
+      "enabled": true,
+      "bias": -0.22541667520999908,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": -3.100194953731261e-05
+        },
+        {
+          "feature_index": 22,
+          "weight": -0.02538539655506611
+        },
+        {
+          "feature_index": 34,
+          "weight": 0.301925927400589
+        },
+        {
+          "feature_index": 56,
+          "weight": -0.491610586643219
+        },
+        {
+          "feature_index": 96,
+          "weight": 0.19080065190792084
+        },
+        {
+          "feature_index": 105,
+          "weight": -0.486937016248703
+        },
+        {
+          "feature_index": 130,
+          "weight": 0.07677845656871796
+        },
+        {
+          "feature_index": 132,
+          "weight": 0.026102600619196892
+        },
+        {
+          "feature_index": 137,
+          "weight": 0.6132258176803589
+        },
+        {
+          "feature_index": 138,
+          "weight": 0.0929279625415802
+        },
+        {
+          "feature_index": 139,
+          "weight": -0.04234043508768082
+        },
+        {
+          "feature_index": 146,
+          "weight": 0.07251468300819397
+        },
+        {
+          "feature_index": 208,
+          "weight": 0.13493019342422485
+        },
+        {
+          "feature_index": 211,
+          "weight": 0.09942804276943207
+        },
+        {
+          "feature_index": 238,
+          "weight": -7.328210631385446e-05
+        },
+        {
+          "feature_index": 241,
+          "weight": 0.8087460398674011
+        },
+        {
+          "feature_index": 249,
+          "weight": -0.13933973014354706
+        },
+        {
+          "feature_index": 261,
+          "weight": -0.11119687557220459
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": 1.1652759313583374
+        },
+        {
+          "token_id": 1,
+          "weight": -0.056407712399959564
+        },
+        {
+          "token_id": 3,
+          "weight": -0.2588512599468231
+        },
+        {
+          "token_id": 6,
+          "weight": 0.14683817327022552
+        },
+        {
+          "token_id": 7,
+          "weight": 0.15618851780891418
+        },
+        {
+          "token_id": 14,
+          "weight": -0.10106618702411652
+        },
+        {
+          "token_id": 15,
+          "weight": 5.0087302952306345e-05
+        },
+        {
+          "token_id": 16,
+          "weight": 0.30164778232574463
+        },
+        {
+          "token_id": 17,
+          "weight": -0.8694968819618225
+        },
+        {
+          "token_id": 19,
+          "weight": -2.1329497030819766e-05
+        },
+        {
+          "token_id": 27,
+          "weight": 0.29642197489738464
+        },
+        {
+          "token_id": 28,
+          "weight": 0.30403581261634827
+        },
+        {
+          "token_id": 32,
+          "weight": -0.26794931292533875
+        }
+      ]
+    },
+    {
+      "id": "neuron-004",
+      "enabled": true,
+      "bias": -0.24763961136341095,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": -8.177669224096462e-05
+        },
+        {
+          "feature_index": 17,
+          "weight": 0.02808857150375843
+        },
+        {
+          "feature_index": 20,
+          "weight": 0.11948519200086594
+        },
+        {
+          "feature_index": 21,
+          "weight": -0.2789771258831024
+        },
+        {
+          "feature_index": 31,
+          "weight": -0.08099741488695145
+        },
+        {
+          "feature_index": 35,
+          "weight": 5.06886062794365e-05
+        },
+        {
+          "feature_index": 42,
+          "weight": 0.08566102385520935
+        },
+        {
+          "feature_index": 74,
+          "weight": 0.10519218444824219
+        },
+        {
+          "feature_index": 101,
+          "weight": 0.1744244396686554
+        },
+        {
+          "feature_index": 125,
+          "weight": 0.5442351698875427
+        },
+        {
+          "feature_index": 151,
+          "weight": 0.38785406947135925
+        },
+        {
+          "feature_index": 166,
+          "weight": 0.5376165509223938
+        },
+        {
+          "feature_index": 169,
+          "weight": 0.07864495366811752
+        },
+        {
+          "feature_index": 171,
+          "weight": 0.31491342186927795
+        },
+        {
+          "feature_index": 182,
+          "weight": -0.0649680346250534
+        },
+        {
+          "feature_index": 214,
+          "weight": 0.06729832291603088
+        },
+        {
+          "feature_index": 232,
+          "weight": 0.18696841597557068
+        },
+        {
+          "feature_index": 235,
+          "weight": -0.1153043657541275
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -4.667970642913133e-05
+        },
+        {
+          "token_id": 3,
+          "weight": 1.1974800825119019
+        },
+        {
+          "token_id": 4,
+          "weight": -0.24190692603588104
+        },
+        {
+          "token_id": 5,
+          "weight": 0.2906246781349182
+        },
+        {
+          "token_id": 6,
+          "weight": -0.10086355358362198
+        },
+        {
+          "token_id": 7,
+          "weight": -2.8007058062939905e-05
+        },
+        {
+          "token_id": 8,
+          "weight": -0.23508641123771667
+        },
+        {
+          "token_id": 13,
+          "weight": 0.18634746968746185
+        },
+        {
+          "token_id": 17,
+          "weight": -0.27882516384124756
+        },
+        {
+          "token_id": 20,
+          "weight": -0.35891035199165344
+        },
+        {
+          "token_id": 27,
+          "weight": -0.12208320200443268
+        },
+        {
+          "token_id": 29,
+          "weight": -0.20261892676353455
+        },
+        {
+          "token_id": 31,
+          "weight": 0.2977023124694824
+        }
+      ]
+    },
+    {
+      "id": "neuron-005",
+      "enabled": true,
+      "bias": 0.27794453501701355,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": -0.190366730093956
+        },
+        {
+          "feature_index": 27,
+          "weight": 0.12762197852134705
+        },
+        {
+          "feature_index": 40,
+          "weight": -0.2976330816745758
+        },
+        {
+          "feature_index": 48,
+          "weight": 0.07695823162794113
+        },
+        {
+          "feature_index": 84,
+          "weight": -0.30564507842063904
+        },
+        {
+          "feature_index": 89,
+          "weight": -0.23717662692070007
+        },
+        {
+          "feature_index": 137,
+          "weight": 7.127593562472612e-05
+        },
+        {
+          "feature_index": 139,
+          "weight": 0.17518848180770874
+        },
+        {
+          "feature_index": 164,
+          "weight": -0.08831906318664551
+        },
+        {
+          "feature_index": 166,
+          "weight": -0.5705997943878174
+        },
+        {
+          "feature_index": 171,
+          "weight": -0.5332439541816711
+        },
+        {
+          "feature_index": 189,
+          "weight": 0.792940616607666
+        },
+        {
+          "feature_index": 205,
+          "weight": 2.7159783257957315e-06
+        },
+        {
+          "feature_index": 209,
+          "weight": -0.4641072452068329
+        },
+        {
+          "feature_index": 234,
+          "weight": 0.2390134036540985
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.7768053412437439
+        },
+        {
+          "feature_index": 255,
+          "weight": 0.7133549451828003
+        },
+        {
+          "feature_index": 261,
+          "weight": 0.7612879276275635
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -0.8988261222839355
+        },
+        {
+          "token_id": 3,
+          "weight": -1.516608476638794
+        },
+        {
+          "token_id": 5,
+          "weight": 0.5765727758407593
+        },
+        {
+          "token_id": 6,
+          "weight": 3.442211163928732e-05
+        },
+        {
+          "token_id": 7,
+          "weight": 9.082742326427251e-05
+        },
+        {
+          "token_id": 8,
+          "weight": -0.05462639406323433
+        },
+        {
+          "token_id": 9,
+          "weight": 0.21459461748600006
+        },
+        {
+          "token_id": 15,
+          "weight": -0.19860200583934784
+        },
+        {
+          "token_id": 16,
+          "weight": 1.2779653072357178
+        },
+        {
+          "token_id": 22,
+          "weight": -0.14469346404075623
+        },
+        {
+          "token_id": 30,
+          "weight": 0.14007164537906647
+        },
+        {
+          "token_id": 31,
+          "weight": -0.2515997588634491
+        },
+        {
+          "token_id": 32,
+          "weight": 0.45802798867225647
+        }
+      ]
+    },
+    {
+      "id": "neuron-006",
+      "enabled": true,
+      "bias": 0.06740868091583252,
+      "input_edges": [
+        {
+          "feature_index": 29,
+          "weight": -0.0848451554775238
+        },
+        {
+          "feature_index": 35,
+          "weight": 0.21280066668987274
+        },
+        {
+          "feature_index": 37,
+          "weight": 0.054513297975063324
+        },
+        {
+          "feature_index": 80,
+          "weight": 0.05813765525817871
+        },
+        {
+          "feature_index": 89,
+          "weight": 0.12113731354475021
+        },
+        {
+          "feature_index": 99,
+          "weight": -0.6360908150672913
+        },
+        {
+          "feature_index": 111,
+          "weight": -0.02932126447558403
+        },
+        {
+          "feature_index": 155,
+          "weight": -0.00012939906446263194
+        },
+        {
+          "feature_index": 156,
+          "weight": -0.038642767816782
+        },
+        {
+          "feature_index": 159,
+          "weight": -0.03396269679069519
+        },
+        {
+          "feature_index": 195,
+          "weight": 0.08637434244155884
+        },
+        {
+          "feature_index": 205,
+          "weight": 0.5501182079315186
+        },
+        {
+          "feature_index": 209,
+          "weight": -0.05450647324323654
+        },
+        {
+          "feature_index": 232,
+          "weight": 0.04846948757767677
+        },
+        {
+          "feature_index": 239,
+          "weight": 6.942974141566083e-05
+        },
+        {
+          "feature_index": 244,
+          "weight": 0.08135844767093658
+        },
+        {
+          "feature_index": 257,
+          "weight": 0.27214422821998596
+        },
+        {
+          "feature_index": 269,
+          "weight": 0.18366047739982605
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -0.05218135565519333
+        },
+        {
+          "token_id": 2,
+          "weight": -0.618381142616272
+        },
+        {
+          "token_id": 4,
+          "weight": 6.615340680582449e-05
+        },
+        {
+          "token_id": 6,
+          "weight": 2.0728621166199446e-05
+        },
+        {
+          "token_id": 9,
+          "weight": -0.06696700304746628
+        },
+        {
+          "token_id": 12,
+          "weight": 0.3475663959980011
+        },
+        {
+          "token_id": 14,
+          "weight": -0.2848164737224579
+        },
+        {
+          "token_id": 17,
+          "weight": -0.20047061145305634
+        },
+        {
+          "token_id": 24,
+          "weight": -0.5608214139938354
+        },
+        {
+          "token_id": 25,
+          "weight": 0.287994921207428
+        },
+        {
+          "token_id": 28,
+          "weight": 0.45051851868629456
+        },
+        {
+          "token_id": 31,
+          "weight": -0.2901950776576996
+        },
+        {
+          "token_id": 33,
+          "weight": 0.09671629965305328
+        }
+      ]
+    },
+    {
+      "id": "neuron-007",
+      "enabled": true,
+      "bias": -0.0036623391788452864,
+      "input_edges": [
+        {
+          "feature_index": 17,
+          "weight": 0.04103393107652664
+        },
+        {
+          "feature_index": 25,
+          "weight": -0.09232953190803528
+        },
+        {
+          "feature_index": 33,
+          "weight": -0.02924688346683979
+        },
+        {
+          "feature_index": 37,
+          "weight": -0.17570260167121887
+        },
+        {
+          "feature_index": 57,
+          "weight": -0.00011969872139161453
+        },
+        {
+          "feature_index": 62,
+          "weight": -0.07353031635284424
+        },
+        {
+          "feature_index": 96,
+          "weight": -0.09049686789512634
+        },
+        {
+          "feature_index": 103,
+          "weight": 4.0375194657826796e-05
+        },
+        {
+          "feature_index": 120,
+          "weight": 0.4096032977104187
+        },
+        {
+          "feature_index": 135,
+          "weight": 0.08446265757083893
+        },
+        {
+          "feature_index": 153,
+          "weight": -0.19640100002288818
+        },
+        {
+          "feature_index": 155,
+          "weight": 0.1495491862297058
+        },
+        {
+          "feature_index": 197,
+          "weight": 0.0935337096452713
+        },
+        {
+          "feature_index": 206,
+          "weight": -0.02764725126326084
+        },
+        {
+          "feature_index": 227,
+          "weight": -0.33313655853271484
+        },
+        {
+          "feature_index": 257,
+          "weight": 0.09180718660354614
+        },
+        {
+          "feature_index": 268,
+          "weight": -0.1565699428319931
+        },
+        {
+          "feature_index": 271,
+          "weight": -0.1042066439986229
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": 0.014031755737960339
+        },
+        {
+          "token_id": 5,
+          "weight": -1.6627838704152964e-05
+        },
+        {
+          "token_id": 6,
+          "weight": -0.11501113325357437
+        },
+        {
+          "token_id": 9,
+          "weight": -0.12363239377737045
+        },
+        {
+          "token_id": 10,
+          "weight": -0.18195703625679016
+        },
+        {
+          "token_id": 12,
+          "weight": 0.19276122748851776
+        },
+        {
+          "token_id": 16,
+          "weight": 0.1889582872390747
+        },
+        {
+          "token_id": 18,
+          "weight": 0.062100280076265335
+        },
+        {
+          "token_id": 22,
+          "weight": -0.21935760974884033
+        },
+        {
+          "token_id": 25,
+          "weight": 3.028169521712698e-05
+        },
+        {
+          "token_id": 28,
+          "weight": 0.41493070125579834
+        },
+        {
+          "token_id": 31,
+          "weight": -0.45245417952537537
+        },
+        {
+          "token_id": 32,
+          "weight": -0.30785807967185974
+        }
+      ]
+    },
+    {
+      "id": "neuron-008",
+      "enabled": true,
+      "bias": -0.08476123958826065,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": 0.6011437177658081
+        },
+        {
+          "feature_index": 10,
+          "weight": 0.07185085117816925
+        },
+        {
+          "feature_index": 20,
+          "weight": -0.03715590760111809
+        },
+        {
+          "feature_index": 35,
+          "weight": -0.2549343407154083
+        },
+        {
+          "feature_index": 53,
+          "weight": -0.256359726190567
+        },
+        {
+          "feature_index": 69,
+          "weight": -0.5078932046890259
+        },
+        {
+          "feature_index": 103,
+          "weight": 0.2294619232416153
+        },
+        {
+          "feature_index": 120,
+          "weight": 0.14244262874126434
+        },
+        {
+          "feature_index": 142,
+          "weight": -0.04975580424070358
+        },
+        {
+          "feature_index": 205,
+          "weight": 2.4972346182039473e-06
+        },
+        {
+          "feature_index": 207,
+          "weight": 6.459548603743315e-05
+        },
+        {
+          "feature_index": 220,
+          "weight": 0.29381731152534485
+        },
+        {
+          "feature_index": 239,
+          "weight": -0.5346507430076599
+        },
+        {
+          "feature_index": 249,
+          "weight": -0.11553122848272324
+        },
+        {
+          "feature_index": 253,
+          "weight": -0.12134645134210587
+        },
+        {
+          "feature_index": 257,
+          "weight": 0.30196282267570496
+        },
+        {
+          "feature_index": 260,
+          "weight": 0.1782040297985077
+        },
+        {
+          "feature_index": 271,
+          "weight": 0.1674290895462036
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -0.2332088202238083
+        },
+        {
+          "token_id": 5,
+          "weight": -4.529850048129447e-05
+        },
+        {
+          "token_id": 6,
+          "weight": -0.3284061849117279
+        },
+        {
+          "token_id": 7,
+          "weight": -0.12517477571964264
+        },
+        {
+          "token_id": 13,
+          "weight": 0.08565185964107513
+        },
+        {
+          "token_id": 16,
+          "weight": -0.39209651947021484
+        },
+        {
+          "token_id": 17,
+          "weight": 0.7751642465591431
+        },
+        {
+          "token_id": 20,
+          "weight": -0.43956661224365234
+        },
+        {
+          "token_id": 23,
+          "weight": 6.93166657583788e-05
+        },
+        {
+          "token_id": 24,
+          "weight": 0.2518504858016968
+        },
+        {
+          "token_id": 26,
+          "weight": -0.05917883291840553
+        },
+        {
+          "token_id": 27,
+          "weight": -0.43631476163864136
+        },
+        {
+          "token_id": 28,
+          "weight": 0.7287680506706238
+        }
+      ]
+    },
+    {
+      "id": "neuron-009",
+      "enabled": true,
+      "bias": -0.19100654125213623,
+      "input_edges": [
+        {
+          "feature_index": 24,
+          "weight": 0.29218944907188416
+        },
+        {
+          "feature_index": 42,
+          "weight": 0.2125057429075241
+        },
+        {
+          "feature_index": 45,
+          "weight": 0.12249001860618591
+        },
+        {
+          "feature_index": 100,
+          "weight": 0.6294581890106201
+        },
+        {
+          "feature_index": 103,
+          "weight": -5.788717680843547e-05
+        },
+        {
+          "feature_index": 132,
+          "weight": 0.6175206303596497
+        },
+        {
+          "feature_index": 158,
+          "weight": 0.18662329018115997
+        },
+        {
+          "feature_index": 170,
+          "weight": 0.3893710672855377
+        },
+        {
+          "feature_index": 171,
+          "weight": -0.6272146105766296
+        },
+        {
+          "feature_index": 173,
+          "weight": 0.033897515386343
+        },
+        {
+          "feature_index": 186,
+          "weight": -0.3226308524608612
+        },
+        {
+          "feature_index": 205,
+          "weight": -3.5906676203012466e-05
+        },
+        {
+          "feature_index": 208,
+          "weight": 0.04965231940150261
+        },
+        {
+          "feature_index": 232,
+          "weight": 0.18189303576946259
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.3025861084461212
+        },
+        {
+          "feature_index": 261,
+          "weight": 0.6300402879714966
+        },
+        {
+          "feature_index": 264,
+          "weight": 0.5257158279418945
+        },
+        {
+          "feature_index": 270,
+          "weight": 0.8380186557769775
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -1.2434942722320557
+        },
+        {
+          "token_id": 4,
+          "weight": 0.05601523071527481
+        },
+        {
+          "token_id": 5,
+          "weight": 2.851648059731815e-05
+        },
+        {
+          "token_id": 6,
+          "weight": 6.218827184056863e-05
+        },
+        {
+          "token_id": 10,
+          "weight": 0.1834065020084381
+        },
+        {
+          "token_id": 12,
+          "weight": -0.06021825224161148
+        },
+        {
+          "token_id": 13,
+          "weight": -0.08570544421672821
+        },
+        {
+          "token_id": 15,
+          "weight": -0.3192281723022461
+        },
+        {
+          "token_id": 20,
+          "weight": 0.8167418241500854
+        },
+        {
+          "token_id": 22,
+          "weight": 0.10260983556509018
+        },
+        {
+          "token_id": 23,
+          "weight": 0.4839116632938385
+        },
+        {
+          "token_id": 25,
+          "weight": -0.254949152469635
+        },
+        {
+          "token_id": 30,
+          "weight": 1.1900928020477295
+        }
+      ]
+    },
+    {
+      "id": "neuron-010",
+      "enabled": true,
+      "bias": 0.15026722848415375,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": -2.5397499484824948e-05
+        },
+        {
+          "feature_index": 7,
+          "weight": 0.13524313271045685
+        },
+        {
+          "feature_index": 28,
+          "weight": 0.35771816968917847
+        },
+        {
+          "feature_index": 71,
+          "weight": 0.21531960368156433
+        },
+        {
+          "feature_index": 80,
+          "weight": -0.08195177465677261
+        },
+        {
+          "feature_index": 96,
+          "weight": -0.08552815765142441
+        },
+        {
+          "feature_index": 103,
+          "weight": 1.0361014574300498e-05
+        },
+        {
+          "feature_index": 104,
+          "weight": -0.14301687479019165
+        },
+        {
+          "feature_index": 111,
+          "weight": 0.06794034689664841
+        },
+        {
+          "feature_index": 132,
+          "weight": -0.5083646178245544
+        },
+        {
+          "feature_index": 168,
+          "weight": -0.33723321557044983
+        },
+        {
+          "feature_index": 171,
+          "weight": 0.7660517692565918
+        },
+        {
+          "feature_index": 175,
+          "weight": -0.09762973338365555
+        },
+        {
+          "feature_index": 194,
+          "weight": -0.6062401533126831
+        },
+        {
+          "feature_index": 200,
+          "weight": 0.12695199251174927
+        },
+        {
+          "feature_index": 262,
+          "weight": -0.1250537931919098
+        },
+        {
+          "feature_index": 264,
+          "weight": -0.25772684812545776
+        },
+        {
+          "feature_index": 265,
+          "weight": -0.07884376496076584
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -3.895865302183665e-05
+        },
+        {
+          "token_id": 3,
+          "weight": 0.8118023872375488
+        },
+        {
+          "token_id": 5,
+          "weight": 0.01611478626728058
+        },
+        {
+          "token_id": 7,
+          "weight": 0.11225316673517227
+        },
+        {
+          "token_id": 12,
+          "weight": -0.16931995749473572
+        },
+        {
+          "token_id": 17,
+          "weight": -0.19177736341953278
+        },
+        {
+          "token_id": 20,
+          "weight": -1.3146467208862305
+        },
+        {
+          "token_id": 22,
+          "weight": 4.886416718363762e-05
+        },
+        {
+          "token_id": 24,
+          "weight": 0.24136900901794434
+        },
+        {
+          "token_id": 28,
+          "weight": 0.16779254376888275
+        },
+        {
+          "token_id": 29,
+          "weight": -0.18353889882564545
+        },
+        {
+          "token_id": 30,
+          "weight": -0.12006664276123047
+        },
+        {
+          "token_id": 32,
+          "weight": 0.6522802710533142
+        }
+      ]
+    },
+    {
+      "id": "neuron-011",
+      "enabled": true,
+      "bias": -0.19306933879852295,
+      "input_edges": [
+        {
+          "feature_index": 8,
+          "weight": 0.059525035321712494
+        },
+        {
+          "feature_index": 37,
+          "weight": 0.1671023964881897
+        },
+        {
+          "feature_index": 46,
+          "weight": -0.1210285872220993
+        },
+        {
+          "feature_index": 60,
+          "weight": 0.00018526523490436375
+        },
+        {
+          "feature_index": 88,
+          "weight": 0.00017544663569424301
+        },
+        {
+          "feature_index": 99,
+          "weight": 0.07228756695985794
+        },
+        {
+          "feature_index": 125,
+          "weight": -0.40473470091819763
+        },
+        {
+          "feature_index": 150,
+          "weight": -0.0810401663184166
+        },
+        {
+          "feature_index": 171,
+          "weight": -0.29191187024116516
+        },
+        {
+          "feature_index": 172,
+          "weight": -0.2210167795419693
+        },
+        {
+          "feature_index": 181,
+          "weight": 0.22606472671031952
+        },
+        {
+          "feature_index": 198,
+          "weight": 0.4794562757015228
+        },
+        {
+          "feature_index": 221,
+          "weight": 0.6887914538383484
+        },
+        {
+          "feature_index": 239,
+          "weight": -0.7819564342498779
+        },
+        {
+          "feature_index": 254,
+          "weight": 0.6965324878692627
+        },
+        {
+          "feature_index": 260,
+          "weight": -0.10012941807508469
+        },
+        {
+          "feature_index": 265,
+          "weight": 0.7702313661575317
+        },
+        {
+          "feature_index": 270,
+          "weight": 0.22197802364826202
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 5,
+          "weight": -0.5369586944580078
+        },
+        {
+          "token_id": 6,
+          "weight": -0.422434538602829
+        },
+        {
+          "token_id": 7,
+          "weight": -7.358404400292784e-05
+        },
+        {
+          "token_id": 12,
+          "weight": 0.1110820472240448
+        },
+        {
+          "token_id": 14,
+          "weight": 0.18173962831497192
+        },
+        {
+          "token_id": 15,
+          "weight": -0.48324161767959595
+        },
+        {
+          "token_id": 17,
+          "weight": 0.29452618956565857
+        },
+        {
+          "token_id": 19,
+          "weight": -0.23198635876178741
+        },
+        {
+          "token_id": 23,
+          "weight": 1.5881274938583374
+        },
+        {
+          "token_id": 25,
+          "weight": 0.7073123455047607
+        },
+        {
+          "token_id": 26,
+          "weight": -0.2297542691230774
+        },
+        {
+          "token_id": 27,
+          "weight": -2.0574405425577424e-05
+        },
+        {
+          "token_id": 29,
+          "weight": 0.28157615661621094
+        }
+      ]
+    },
+    {
+      "id": "neuron-012",
+      "enabled": true,
+      "bias": -0.044920872896909714,
+      "input_edges": [
+        {
+          "feature_index": 19,
+          "weight": -0.27528613805770874
+        },
+        {
+          "feature_index": 32,
+          "weight": -0.15614266693592072
+        },
+        {
+          "feature_index": 35,
+          "weight": -0.06856774538755417
+        },
+        {
+          "feature_index": 39,
+          "weight": -0.14902304112911224
+        },
+        {
+          "feature_index": 103,
+          "weight": 0.36445140838623047
+        },
+        {
+          "feature_index": 106,
+          "weight": 0.033994946628808975
+        },
+        {
+          "feature_index": 130,
+          "weight": -0.08237999677658081
+        },
+        {
+          "feature_index": 138,
+          "weight": -0.30047932267189026
+        },
+        {
+          "feature_index": 208,
+          "weight": -0.13488174974918365
+        },
+        {
+          "feature_index": 220,
+          "weight": -0.4064216613769531
+        },
+        {
+          "feature_index": 238,
+          "weight": 0.00011208150681341067
+        },
+        {
+          "feature_index": 239,
+          "weight": -0.3982299268245697
+        },
+        {
+          "feature_index": 242,
+          "weight": 0.03794232755899429
+        },
+        {
+          "feature_index": 250,
+          "weight": -0.13279233872890472
+        },
+        {
+          "feature_index": 254,
+          "weight": 0.9162685871124268
+        },
+        {
+          "feature_index": 260,
+          "weight": 0.04467802122235298
+        },
+        {
+          "feature_index": 265,
+          "weight": 0.0001442683715140447
+        },
+        {
+          "feature_index": 269,
+          "weight": 0.051934052258729935
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -0.14365126192569733
+        },
+        {
+          "token_id": 4,
+          "weight": 0.1203913539648056
+        },
+        {
+          "token_id": 5,
+          "weight": 0.17784035205841064
+        },
+        {
+          "token_id": 7,
+          "weight": -3.853451562463306e-05
+        },
+        {
+          "token_id": 15,
+          "weight": -0.30136752128601074
+        },
+        {
+          "token_id": 19,
+          "weight": -0.39842864871025085
+        },
+        {
+          "token_id": 21,
+          "weight": 0.2887345254421234
+        },
+        {
+          "token_id": 22,
+          "weight": -8.825524855637923e-05
+        },
+        {
+          "token_id": 23,
+          "weight": 0.6569027304649353
+        },
+        {
+          "token_id": 24,
+          "weight": 0.18731620907783508
+        },
+        {
+          "token_id": 25,
+          "weight": 0.7543555498123169
+        },
+        {
+          "token_id": 26,
+          "weight": 0.26561057567596436
+        },
+        {
+          "token_id": 31,
+          "weight": 0.7721694707870483
+        }
+      ]
+    },
+    {
+      "id": "neuron-013",
+      "enabled": true,
+      "bias": -0.31132981181144714,
+      "input_edges": [
+        {
+          "feature_index": 18,
+          "weight": 0.06734538823366165
+        },
+        {
+          "feature_index": 23,
+          "weight": 0.7257769703865051
+        },
+        {
+          "feature_index": 62,
+          "weight": 0.028841156512498856
+        },
+        {
+          "feature_index": 95,
+          "weight": 0.06201956793665886
+        },
+        {
+          "feature_index": 99,
+          "weight": 0.324508935213089
+        },
+        {
+          "feature_index": 103,
+          "weight": -0.297994464635849
+        },
+        {
+          "feature_index": 121,
+          "weight": 0.3129158318042755
+        },
+        {
+          "feature_index": 125,
+          "weight": -0.5678932666778564
+        },
+        {
+          "feature_index": 142,
+          "weight": -0.129622220993042
+        },
+        {
+          "feature_index": 156,
+          "weight": 0.20137420296669006
+        },
+        {
+          "feature_index": 172,
+          "weight": 0.07621247321367264
+        },
+        {
+          "feature_index": 184,
+          "weight": -0.056475456804037094
+        },
+        {
+          "feature_index": 202,
+          "weight": -0.28414151072502136
+        },
+        {
+          "feature_index": 204,
+          "weight": 0.3912799656391144
+        },
+        {
+          "feature_index": 207,
+          "weight": -0.00014088426542002708
+        },
+        {
+          "feature_index": 238,
+          "weight": -0.00013916361785959452
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.4081462621688843
+        },
+        {
+          "feature_index": 250,
+          "weight": -0.08231037855148315
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": -0.1585393249988556
+        },
+        {
+          "token_id": 1,
+          "weight": 0.20528070628643036
+        },
+        {
+          "token_id": 2,
+          "weight": 1.0821001529693604
+        },
+        {
+          "token_id": 3,
+          "weight": -0.5265035033226013
+        },
+        {
+          "token_id": 4,
+          "weight": -0.15186309814453125
+        },
+        {
+          "token_id": 6,
+          "weight": -0.010665884241461754
+        },
+        {
+          "token_id": 7,
+          "weight": 0.3291266858577728
+        },
+        {
+          "token_id": 13,
+          "weight": -0.14803440868854523
+        },
+        {
+          "token_id": 14,
+          "weight": -0.3388199806213379
+        },
+        {
+          "token_id": 17,
+          "weight": -4.969865040038712e-05
+        },
+        {
+          "token_id": 21,
+          "weight": 0.7445940375328064
+        },
+        {
+          "token_id": 23,
+          "weight": -2.762301664915867e-05
+        },
+        {
+          "token_id": 31,
+          "weight": -0.8703903555870056
+        }
+      ]
+    },
+    {
+      "id": "neuron-014",
+      "enabled": true,
+      "bias": -0.04720763489603996,
+      "input_edges": [
+        {
+          "feature_index": 3,
+          "weight": 0.23783305287361145
+        },
+        {
+          "feature_index": 23,
+          "weight": -0.2257804274559021
+        },
+        {
+          "feature_index": 68,
+          "weight": 0.4223683178424835
+        },
+        {
+          "feature_index": 82,
+          "weight": -0.050340570509433746
+        },
+        {
+          "feature_index": 102,
+          "weight": 0.366292268037796
+        },
+        {
+          "feature_index": 103,
+          "weight": -0.4755572974681854
+        },
+        {
+          "feature_index": 108,
+          "weight": 0.15526165068149567
+        },
+        {
+          "feature_index": 133,
+          "weight": 8.372415322810411e-05
+        },
+        {
+          "feature_index": 149,
+          "weight": 0.15787822008132935
+        },
+        {
+          "feature_index": 150,
+          "weight": 0.07322296500205994
+        },
+        {
+          "feature_index": 151,
+          "weight": -0.09767407178878784
+        },
+        {
+          "feature_index": 157,
+          "weight": 8.64607936819084e-05
+        },
+        {
+          "feature_index": 171,
+          "weight": 0.7052181959152222
+        },
+        {
+          "feature_index": 201,
+          "weight": -0.10894917696714401
+        },
+        {
+          "feature_index": 215,
+          "weight": -0.04685588553547859
+        },
+        {
+          "feature_index": 223,
+          "weight": 0.26575979590415955
+        },
+        {
+          "feature_index": 239,
+          "weight": -0.4943666458129883
+        },
+        {
+          "feature_index": 263,
+          "weight": 0.12196122854948044
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": 0.21806225180625916
+        },
+        {
+          "token_id": 1,
+          "weight": -0.017604991793632507
+        },
+        {
+          "token_id": 7,
+          "weight": -5.9475813031895086e-05
+        },
+        {
+          "token_id": 8,
+          "weight": -0.24704207479953766
+        },
+        {
+          "token_id": 14,
+          "weight": -0.06968273967504501
+        },
+        {
+          "token_id": 15,
+          "weight": -0.2671649754047394
+        },
+        {
+          "token_id": 16,
+          "weight": -4.625347719411366e-05
+        },
+        {
+          "token_id": 18,
+          "weight": 0.3487311005592346
+        },
+        {
+          "token_id": 24,
+          "weight": 0.8565360307693481
+        },
+        {
+          "token_id": 26,
+          "weight": -0.3938056528568268
+        },
+        {
+          "token_id": 30,
+          "weight": 0.2169434279203415
+        },
+        {
+          "token_id": 31,
+          "weight": -0.20799663662910461
+        },
+        {
+          "token_id": 32,
+          "weight": 0.9656625390052795
+        }
+      ]
+    },
+    {
+      "id": "neuron-015",
+      "enabled": true,
+      "bias": 0.13130173087120056,
+      "input_edges": [
+        {
+          "feature_index": 15,
+          "weight": -0.10526368767023087
+        },
+        {
+          "feature_index": 86,
+          "weight": -0.5050076842308044
+        },
+        {
+          "feature_index": 117,
+          "weight": -0.3932796120643616
+        },
+        {
+          "feature_index": 122,
+          "weight": -0.1901179403066635
+        },
+        {
+          "feature_index": 125,
+          "weight": 0.21330447494983673
+        },
+        {
+          "feature_index": 132,
+          "weight": -0.29781824350357056
+        },
+        {
+          "feature_index": 165,
+          "weight": 0.06940045207738876
+        },
+        {
+          "feature_index": 166,
+          "weight": -0.40195512771606445
+        },
+        {
+          "feature_index": 171,
+          "weight": -0.11111845076084137
+        },
+        {
+          "feature_index": 205,
+          "weight": 0.6714501976966858
+        },
+        {
+          "feature_index": 211,
+          "weight": -0.20908744633197784
+        },
+        {
+          "feature_index": 217,
+          "weight": -0.25801700353622437
+        },
+        {
+          "feature_index": 234,
+          "weight": 0.00011811195145128295
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.3579823076725006
+        },
+        {
+          "feature_index": 241,
+          "weight": -0.9180826544761658
+        },
+        {
+          "feature_index": 243,
+          "weight": 0.00010697801189962775
+        },
+        {
+          "feature_index": 245,
+          "weight": 0.25995907187461853
+        },
+        {
+          "feature_index": 248,
+          "weight": 0.1530793458223343
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": -1.4232275485992432
+        },
+        {
+          "token_id": 1,
+          "weight": 0.32951900362968445
+        },
+        {
+          "token_id": 4,
+          "weight": 0.5201976299285889
+        },
+        {
+          "token_id": 5,
+          "weight": 0.695182204246521
+        },
+        {
+          "token_id": 6,
+          "weight": 0.4144560694694519
+        },
+        {
+          "token_id": 7,
+          "weight": 0.4109542965888977
+        },
+        {
+          "token_id": 9,
+          "weight": 7.71304767113179e-05
+        },
+        {
+          "token_id": 10,
+          "weight": 0.24684670567512512
+        },
+        {
+          "token_id": 13,
+          "weight": 6.506461068056524e-05
+        },
+        {
+          "token_id": 16,
+          "weight": -0.16203929483890533
+        },
+        {
+          "token_id": 30,
+          "weight": 0.10418833792209625
+        },
+        {
+          "token_id": 31,
+          "weight": 0.053442150354385376
+        },
+        {
+          "token_id": 32,
+          "weight": -0.3971518874168396
+        }
+      ]
+    },
+    {
+      "id": "neuron-016",
+      "enabled": true,
+      "bias": -0.1033257395029068,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": 2.2944434022065252e-05
+        },
+        {
+          "feature_index": 10,
+          "weight": 0.054855410009622574
+        },
+        {
+          "feature_index": 12,
+          "weight": 0.04544956982135773
+        },
+        {
+          "feature_index": 18,
+          "weight": -0.06633701920509338
+        },
+        {
+          "feature_index": 54,
+          "weight": -0.064290851354599
+        },
+        {
+          "feature_index": 100,
+          "weight": -0.41046878695487976
+        },
+        {
+          "feature_index": 116,
+          "weight": -0.04290758818387985
+        },
+        {
+          "feature_index": 123,
+          "weight": 0.05103054270148277
+        },
+        {
+          "feature_index": 132,
+          "weight": 0.4995633065700531
+        },
+        {
+          "feature_index": 137,
+          "weight": 0.08465027809143066
+        },
+        {
+          "feature_index": 152,
+          "weight": -0.17521080374717712
+        },
+        {
+          "feature_index": 156,
+          "weight": 0.13182882964611053
+        },
+        {
+          "feature_index": 169,
+          "weight": 0.17884883284568787
+        },
+        {
+          "feature_index": 205,
+          "weight": -0.4009658694267273
+        },
+        {
+          "feature_index": 234,
+          "weight": -6.431448855437338e-05
+        },
+        {
+          "feature_index": 239,
+          "weight": -0.6426852941513062
+        },
+        {
+          "feature_index": 241,
+          "weight": 0.8880605697631836
+        },
+        {
+          "feature_index": 243,
+          "weight": -0.07954505831003189
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": 1.3248999118804932
+        },
+        {
+          "token_id": 1,
+          "weight": 5.7973957154899836e-05
+        },
+        {
+          "token_id": 6,
+          "weight": -0.704220175743103
+        },
+        {
+          "token_id": 7,
+          "weight": -0.5025790333747864
+        },
+        {
+          "token_id": 8,
+          "weight": -0.24887433648109436
+        },
+        {
+          "token_id": 10,
+          "weight": -5.85699817747809e-05
+        },
+        {
+          "token_id": 11,
+          "weight": 0.017332773655653
+        },
+        {
+          "token_id": 15,
+          "weight": -0.12440182268619537
+        },
+        {
+          "token_id": 17,
+          "weight": 0.3942711651325226
+        },
+        {
+          "token_id": 20,
+          "weight": 0.3583161532878876
+        },
+        {
+          "token_id": 26,
+          "weight": -0.1350146234035492
+        },
+        {
+          "token_id": 29,
+          "weight": 0.1873355656862259
+        },
+        {
+          "token_id": 33,
+          "weight": -0.051413632929325104
+        }
+      ]
+    },
+    {
+      "id": "neuron-017",
+      "enabled": true,
+      "bias": -0.17907115817070007,
+      "input_edges": [
+        {
+          "feature_index": 0,
+          "weight": 0.00016301822324749082
+        },
+        {
+          "feature_index": 1,
+          "weight": -0.49125856161117554
+        },
+        {
+          "feature_index": 3,
+          "weight": 0.7395520210266113
+        },
+        {
+          "feature_index": 34,
+          "weight": 0.789265513420105
+        },
+        {
+          "feature_index": 69,
+          "weight": 0.36858925223350525
+        },
+        {
+          "feature_index": 83,
+          "weight": 0.388927698135376
+        },
+        {
+          "feature_index": 86,
+          "weight": 0.0001525419793324545
+        },
+        {
+          "feature_index": 97,
+          "weight": 0.1733764410018921
+        },
+        {
+          "feature_index": 120,
+          "weight": 0.5832350254058838
+        },
+        {
+          "feature_index": 129,
+          "weight": 0.10343242436647415
+        },
+        {
+          "feature_index": 140,
+          "weight": -0.0992172509431839
+        },
+        {
+          "feature_index": 205,
+          "weight": -0.5258201956748962
+        },
+        {
+          "feature_index": 207,
+          "weight": 0.5727764964103699
+        },
+        {
+          "feature_index": 232,
+          "weight": 0.42808887362480164
+        },
+        {
+          "feature_index": 239,
+          "weight": -0.4693601429462433
+        },
+        {
+          "feature_index": 247,
+          "weight": 0.0750567838549614
+        },
+        {
+          "feature_index": 257,
+          "weight": -0.3138793706893921
+        },
+        {
+          "feature_index": 264,
+          "weight": 0.36677414178848267
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": 0.17403250932693481
+        },
+        {
+          "token_id": 2,
+          "weight": -0.3283877372741699
+        },
+        {
+          "token_id": 4,
+          "weight": 0.04487379267811775
+        },
+        {
+          "token_id": 6,
+          "weight": -7.274877862073481e-05
+        },
+        {
+          "token_id": 8,
+          "weight": -0.2524871826171875
+        },
+        {
+          "token_id": 13,
+          "weight": -0.23109833896160126
+        },
+        {
+          "token_id": 16,
+          "weight": 1.890085220336914
+        },
+        {
+          "token_id": 20,
+          "weight": 0.580217719078064
+        },
+        {
+          "token_id": 22,
+          "weight": -0.18986304104328156
+        },
+        {
+          "token_id": 24,
+          "weight": 0.9112346172332764
+        },
+        {
+          "token_id": 26,
+          "weight": -0.19395343959331512
+        },
+        {
+          "token_id": 31,
+          "weight": 0.00021433334040921181
+        },
+        {
+          "token_id": 33,
+          "weight": 0.14658035337924957
+        }
+      ]
+    },
+    {
+      "id": "neuron-018",
+      "enabled": true,
+      "bias": -0.2010248303413391,
+      "input_edges": [
+        {
+          "feature_index": 5,
+          "weight": 0.10464292764663696
+        },
+        {
+          "feature_index": 16,
+          "weight": 0.00014149602793622762
+        },
+        {
+          "feature_index": 44,
+          "weight": -0.17892912030220032
+        },
+        {
+          "feature_index": 50,
+          "weight": 0.33884796500205994
+        },
+        {
+          "feature_index": 63,
+          "weight": 0.11833830177783966
+        },
+        {
+          "feature_index": 103,
+          "weight": 5.544521991396323e-05
+        },
+        {
+          "feature_index": 114,
+          "weight": -0.21535690128803253
+        },
+        {
+          "feature_index": 132,
+          "weight": 0.2074473798274994
+        },
+        {
+          "feature_index": 137,
+          "weight": 0.11264217644929886
+        },
+        {
+          "feature_index": 152,
+          "weight": -0.31506654620170593
+        },
+        {
+          "feature_index": 177,
+          "weight": 0.2787395715713501
+        },
+        {
+          "feature_index": 189,
+          "weight": -0.18984651565551758
+        },
+        {
+          "feature_index": 205,
+          "weight": 0.22480295598506927
+        },
+        {
+          "feature_index": 210,
+          "weight": 0.10317761451005936
+        },
+        {
+          "feature_index": 224,
+          "weight": -0.17914347350597382
+        },
+        {
+          "feature_index": 233,
+          "weight": -0.06013200432062149
+        },
+        {
+          "feature_index": 239,
+          "weight": -0.6724421381950378
+        },
+        {
+          "feature_index": 241,
+          "weight": 0.8695945739746094
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": 1.2334342002868652
+        },
+        {
+          "token_id": 5,
+          "weight": -0.4298781752586365
+        },
+        {
+          "token_id": 6,
+          "weight": -0.21507291495800018
+        },
+        {
+          "token_id": 7,
+          "weight": -0.28307679295539856
+        },
+        {
+          "token_id": 8,
+          "weight": -0.09289559721946716
+        },
+        {
+          "token_id": 14,
+          "weight": 0.1772422045469284
+        },
+        {
+          "token_id": 15,
+          "weight": -0.3786157965660095
+        },
+        {
+          "token_id": 16,
+          "weight": -0.2839609384536743
+        },
+        {
+          "token_id": 22,
+          "weight": -0.00010195083450525999
+        },
+        {
+          "token_id": 25,
+          "weight": 0.5244095921516418
+        },
+        {
+          "token_id": 27,
+          "weight": -2.818406755977776e-05
+        },
+        {
+          "token_id": 28,
+          "weight": 0.546788215637207
+        },
+        {
+          "token_id": 32,
+          "weight": 0.09635493159294128
+        }
+      ]
+    },
+    {
+      "id": "neuron-019",
+      "enabled": true,
+      "bias": 0.3914329409599304,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": 7.457893661921844e-05
+        },
+        {
+          "feature_index": 35,
+          "weight": 0.3817007541656494
+        },
+        {
+          "feature_index": 41,
+          "weight": 0.16949260234832764
+        },
+        {
+          "feature_index": 50,
+          "weight": 0.3826914429664612
+        },
+        {
+          "feature_index": 62,
+          "weight": -0.2133750021457672
+        },
+        {
+          "feature_index": 89,
+          "weight": 0.30599382519721985
+        },
+        {
+          "feature_index": 93,
+          "weight": -0.1479361206293106
+        },
+        {
+          "feature_index": 136,
+          "weight": 0.4179644286632538
+        },
+        {
+          "feature_index": 171,
+          "weight": 4.2841107642743737e-05
+        },
+        {
+          "feature_index": 173,
+          "weight": -0.799900472164154
+        },
+        {
+          "feature_index": 186,
+          "weight": 0.16967786848545074
+        },
+        {
+          "feature_index": 204,
+          "weight": -0.7979450821876526
+        },
+        {
+          "feature_index": 205,
+          "weight": 0.29607391357421875
+        },
+        {
+          "feature_index": 210,
+          "weight": 0.2546207010746002
+        },
+        {
+          "feature_index": 250,
+          "weight": 0.16008178889751434
+        },
+        {
+          "feature_index": 264,
+          "weight": -0.12304868549108505
+        },
+        {
+          "feature_index": 265,
+          "weight": -0.40807047486305237
+        },
+        {
+          "feature_index": 268,
+          "weight": 0.20595517754554749
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": 0.8680110573768616
+        },
+        {
+          "token_id": 3,
+          "weight": 5.162250090506859e-05
+        },
+        {
+          "token_id": 4,
+          "weight": 4.442664794623852e-05
+        },
+        {
+          "token_id": 7,
+          "weight": 0.14745394885540009
+        },
+        {
+          "token_id": 16,
+          "weight": -0.22138480842113495
+        },
+        {
+          "token_id": 18,
+          "weight": -0.6922916173934937
+        },
+        {
+          "token_id": 19,
+          "weight": 0.5872962474822998
+        },
+        {
+          "token_id": 21,
+          "weight": -1.2540215253829956
+        },
+        {
+          "token_id": 26,
+          "weight": -0.2516661286354065
+        },
+        {
+          "token_id": 29,
+          "weight": -0.5815640687942505
+        },
+        {
+          "token_id": 30,
+          "weight": 0.26227691769599915
+        },
+        {
+          "token_id": 31,
+          "weight": -0.06370887160301208
+        },
+        {
+          "token_id": 33,
+          "weight": -0.3374389410018921
+        }
+      ]
+    },
+    {
+      "id": "neuron-020",
+      "enabled": true,
+      "bias": -0.6676887273788452,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": -0.00010532009036978707
+        },
+        {
+          "feature_index": 6,
+          "weight": 0.08553288131952286
+        },
+        {
+          "feature_index": 76,
+          "weight": -0.13280096650123596
+        },
+        {
+          "feature_index": 84,
+          "weight": -0.3021285831928253
+        },
+        {
+          "feature_index": 86,
+          "weight": 0.5243020057678223
+        },
+        {
+          "feature_index": 93,
+          "weight": 0.5686879754066467
+        },
+        {
+          "feature_index": 101,
+          "weight": 0.052326906472444534
+        },
+        {
+          "feature_index": 103,
+          "weight": 7.929195271572098e-05
+        },
+        {
+          "feature_index": 108,
+          "weight": -0.1117541715502739
+        },
+        {
+          "feature_index": 119,
+          "weight": -0.150360107421875
+        },
+        {
+          "feature_index": 123,
+          "weight": 0.04927292466163635
+        },
+        {
+          "feature_index": 137,
+          "weight": 0.21505151689052582
+        },
+        {
+          "feature_index": 140,
+          "weight": -0.09810758382081985
+        },
+        {
+          "feature_index": 154,
+          "weight": -0.1470770537853241
+        },
+        {
+          "feature_index": 171,
+          "weight": -0.12946443259716034
+        },
+        {
+          "feature_index": 205,
+          "weight": 0.5567283630371094
+        },
+        {
+          "feature_index": 242,
+          "weight": -0.08200767636299133
+        },
+        {
+          "feature_index": 257,
+          "weight": 0.3851749002933502
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -8.356462058145553e-05
+        },
+        {
+          "token_id": 6,
+          "weight": 6.813694926677272e-05
+        },
+        {
+          "token_id": 8,
+          "weight": 0.18587730824947357
+        },
+        {
+          "token_id": 9,
+          "weight": 0.2876630425453186
+        },
+        {
+          "token_id": 14,
+          "weight": 0.6239099502563477
+        },
+        {
+          "token_id": 17,
+          "weight": -0.239651158452034
+        },
+        {
+          "token_id": 19,
+          "weight": -0.5291959047317505
+        },
+        {
+          "token_id": 23,
+          "weight": -0.2575019896030426
+        },
+        {
+          "token_id": 25,
+          "weight": 0.5770763158798218
+        },
+        {
+          "token_id": 27,
+          "weight": 0.33845165371894836
+        },
+        {
+          "token_id": 28,
+          "weight": 0.9986996054649353
+        },
+        {
+          "token_id": 32,
+          "weight": -0.0375797413289547
+        },
+        {
+          "token_id": 33,
+          "weight": 0.4513835310935974
+        }
+      ]
+    },
+    {
+      "id": "neuron-021",
+      "enabled": true,
+      "bias": -0.008008148521184921,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": 3.690094672492705e-05
+        },
+        {
+          "feature_index": 12,
+          "weight": 0.07534502446651459
+        },
+        {
+          "feature_index": 35,
+          "weight": 7.596921204822138e-05
+        },
+        {
+          "feature_index": 65,
+          "weight": 0.1649969220161438
+        },
+        {
+          "feature_index": 69,
+          "weight": 0.44090721011161804
+        },
+        {
+          "feature_index": 80,
+          "weight": 0.04171275347471237
+        },
+        {
+          "feature_index": 102,
+          "weight": -0.0353747233748436
+        },
+        {
+          "feature_index": 111,
+          "weight": -0.049778424203395844
+        },
+        {
+          "feature_index": 130,
+          "weight": -0.06242132559418678
+        },
+        {
+          "feature_index": 132,
+          "weight": 0.31948530673980713
+        },
+        {
+          "feature_index": 161,
+          "weight": 0.05438610538840294
+        },
+        {
+          "feature_index": 170,
+          "weight": 0.4048565924167633
+        },
+        {
+          "feature_index": 171,
+          "weight": 0.3217441141605377
+        },
+        {
+          "feature_index": 197,
+          "weight": -0.0847378671169281
+        },
+        {
+          "feature_index": 205,
+          "weight": -0.3867930471897125
+        },
+        {
+          "feature_index": 220,
+          "weight": 0.5002490282058716
+        },
+        {
+          "feature_index": 228,
+          "weight": -0.2649098336696625
+        },
+        {
+          "feature_index": 239,
+          "weight": -0.6933290362358093
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": 0.3321560323238373
+        },
+        {
+          "token_id": 2,
+          "weight": -0.3648490309715271
+        },
+        {
+          "token_id": 3,
+          "weight": 0.3616570830345154
+        },
+        {
+          "token_id": 5,
+          "weight": -2.48801752604777e-05
+        },
+        {
+          "token_id": 7,
+          "weight": -6.715476047247648e-05
+        },
+        {
+          "token_id": 9,
+          "weight": -0.5608803629875183
+        },
+        {
+          "token_id": 13,
+          "weight": -0.4724329113960266
+        },
+        {
+          "token_id": 18,
+          "weight": 1.1090962886810303
+        },
+        {
+          "token_id": 19,
+          "weight": 0.01628164015710354
+        },
+        {
+          "token_id": 20,
+          "weight": 0.3905889093875885
+        },
+        {
+          "token_id": 26,
+          "weight": -0.4512474536895752
+        },
+        {
+          "token_id": 27,
+          "weight": -0.28884896636009216
+        },
+        {
+          "token_id": 28,
+          "weight": -0.40862685441970825
+        }
+      ]
+    },
+    {
+      "id": "neuron-022",
+      "enabled": true,
+      "bias": -0.08021635562181473,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": -3.3288230042671785e-05
+        },
+        {
+          "feature_index": 37,
+          "weight": -0.6303873658180237
+        },
+        {
+          "feature_index": 67,
+          "weight": 0.034469250589609146
+        },
+        {
+          "feature_index": 137,
+          "weight": 0.14401040971279144
+        },
+        {
+          "feature_index": 146,
+          "weight": -0.22183431684970856
+        },
+        {
+          "feature_index": 165,
+          "weight": -0.24722084403038025
+        },
+        {
+          "feature_index": 186,
+          "weight": 0.23048295080661774
+        },
+        {
+          "feature_index": 192,
+          "weight": -0.10554132610559464
+        },
+        {
+          "feature_index": 201,
+          "weight": 0.5352932810783386
+        },
+        {
+          "feature_index": 205,
+          "weight": 4.8846646677702665e-05
+        },
+        {
+          "feature_index": 207,
+          "weight": -0.3294563591480255
+        },
+        {
+          "feature_index": 220,
+          "weight": -0.47696515917778015
+        },
+        {
+          "feature_index": 224,
+          "weight": -0.05931839346885681
+        },
+        {
+          "feature_index": 230,
+          "weight": 0.45602136850357056
+        },
+        {
+          "feature_index": 236,
+          "weight": 0.48486700654029846
+        },
+        {
+          "feature_index": 239,
+          "weight": -0.27720052003860474
+        },
+        {
+          "feature_index": 257,
+          "weight": 0.5151757001876831
+        },
+        {
+          "feature_index": 269,
+          "weight": -0.5720245242118835
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": 1.4111034870147705
+        },
+        {
+          "token_id": 4,
+          "weight": -0.146131694316864
+        },
+        {
+          "token_id": 6,
+          "weight": 3.407296389923431e-05
+        },
+        {
+          "token_id": 8,
+          "weight": 0.0883423388004303
+        },
+        {
+          "token_id": 11,
+          "weight": -0.3191957473754883
+        },
+        {
+          "token_id": 13,
+          "weight": 0.06114695593714714
+        },
+        {
+          "token_id": 16,
+          "weight": 4.996120333089493e-05
+        },
+        {
+          "token_id": 17,
+          "weight": -0.29381048679351807
+        },
+        {
+          "token_id": 19,
+          "weight": -0.6636355519294739
+        },
+        {
+          "token_id": 21,
+          "weight": -0.17382654547691345
+        },
+        {
+          "token_id": 26,
+          "weight": 0.1617368459701538
+        },
+        {
+          "token_id": 28,
+          "weight": 0.686141848564148
+        },
+        {
+          "token_id": 29,
+          "weight": -0.25091034173965454
+        }
+      ]
+    },
+    {
+      "id": "neuron-023",
+      "enabled": true,
+      "bias": 0.42930954694747925,
+      "input_edges": [
+        {
+          "feature_index": 2,
+          "weight": 0.2472347468137741
+        },
+        {
+          "feature_index": 35,
+          "weight": -8.57697450555861e-05
+        },
+        {
+          "feature_index": 50,
+          "weight": -0.5747020244598389
+        },
+        {
+          "feature_index": 51,
+          "weight": -0.06645318120718002
+        },
+        {
+          "feature_index": 61,
+          "weight": 0.1273493766784668
+        },
+        {
+          "feature_index": 68,
+          "weight": -0.06479596346616745
+        },
+        {
+          "feature_index": 111,
+          "weight": -0.14553068578243256
+        },
+        {
+          "feature_index": 127,
+          "weight": -0.0002799978537950665
+        },
+        {
+          "feature_index": 133,
+          "weight": 0.06750377267599106
+        },
+        {
+          "feature_index": 168,
+          "weight": -0.817929744720459
+        },
+        {
+          "feature_index": 173,
+          "weight": 0.4477059543132782
+        },
+        {
+          "feature_index": 184,
+          "weight": -0.07113273441791534
+        },
+        {
+          "feature_index": 194,
+          "weight": -0.4019586741924286
+        },
+        {
+          "feature_index": 233,
+          "weight": 0.1399126797914505
+        },
+        {
+          "feature_index": 235,
+          "weight": -0.7480610013008118
+        },
+        {
+          "feature_index": 252,
+          "weight": 0.12363050132989883
+        },
+        {
+          "feature_index": 259,
+          "weight": -0.5607618093490601
+        },
+        {
+          "feature_index": 266,
+          "weight": 0.1270177811384201
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -2.528122604417149e-05
+        },
+        {
+          "token_id": 3,
+          "weight": 0.21106034517288208
+        },
+        {
+          "token_id": 5,
+          "weight": -0.034816544502973557
+        },
+        {
+          "token_id": 6,
+          "weight": -1.0254296284983866e-05
+        },
+        {
+          "token_id": 13,
+          "weight": -0.1899019181728363
+        },
+        {
+          "token_id": 14,
+          "weight": -0.0531042143702507
+        },
+        {
+          "token_id": 16,
+          "weight": 0.2581099271774292
+        },
+        {
+          "token_id": 17,
+          "weight": 0.14629098773002625
+        },
+        {
+          "token_id": 18,
+          "weight": 0.406410813331604
+        },
+        {
+          "token_id": 19,
+          "weight": -1.5405616760253906
+        },
+        {
+          "token_id": 20,
+          "weight": -0.7727378010749817
+        },
+        {
+          "token_id": 21,
+          "weight": 0.26626119017601013
+        },
+        {
+          "token_id": 30,
+          "weight": 0.13135501742362976
+        }
+      ]
+    },
+    {
+      "id": "neuron-024",
+      "enabled": true,
+      "bias": 0.552594780921936,
+      "input_edges": [
+        {
+          "feature_index": 12,
+          "weight": 0.05513695627450943
+        },
+        {
+          "feature_index": 26,
+          "weight": 0.37601327896118164
+        },
+        {
+          "feature_index": 49,
+          "weight": -0.41879570484161377
+        },
+        {
+          "feature_index": 68,
+          "weight": 0.4716629981994629
+        },
+        {
+          "feature_index": 69,
+          "weight": -0.09461110830307007
+        },
+        {
+          "feature_index": 103,
+          "weight": 3.41837658197619e-05
+        },
+        {
+          "feature_index": 112,
+          "weight": -0.07485975325107574
+        },
+        {
+          "feature_index": 139,
+          "weight": -0.5581672787666321
+        },
+        {
+          "feature_index": 173,
+          "weight": -0.3237163722515106
+        },
+        {
+          "feature_index": 176,
+          "weight": -0.058511193841695786
+        },
+        {
+          "feature_index": 204,
+          "weight": -3.166109308949672e-05
+        },
+        {
+          "feature_index": 220,
+          "weight": -0.9998490214347839
+        },
+        {
+          "feature_index": 233,
+          "weight": 0.13326552510261536
+        },
+        {
+          "feature_index": 254,
+          "weight": -0.6679343581199646
+        },
+        {
+          "feature_index": 261,
+          "weight": 0.4428849518299103
+        },
+        {
+          "feature_index": 262,
+          "weight": 0.14544998109340668
+        },
+        {
+          "feature_index": 263,
+          "weight": -0.5225011110305786
+        },
+        {
+          "feature_index": 266,
+          "weight": 0.023835834115743637
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": 2.2064954464440234e-05
+        },
+        {
+          "token_id": 7,
+          "weight": 4.177914161118679e-05
+        },
+        {
+          "token_id": 8,
+          "weight": 0.20324836671352386
+        },
+        {
+          "token_id": 10,
+          "weight": 0.21768610179424286
+        },
+        {
+          "token_id": 12,
+          "weight": -0.05135435611009598
+        },
+        {
+          "token_id": 14,
+          "weight": -0.1552591472864151
+        },
+        {
+          "token_id": 15,
+          "weight": -0.04147787392139435
+        },
+        {
+          "token_id": 16,
+          "weight": 0.21864087879657745
+        },
+        {
+          "token_id": 18,
+          "weight": -1.998978614807129
+        },
+        {
+          "token_id": 19,
+          "weight": -0.2778906226158142
+        },
+        {
+          "token_id": 20,
+          "weight": -0.13562685251235962
+        },
+        {
+          "token_id": 26,
+          "weight": 0.22398877143859863
+        },
+        {
+          "token_id": 32,
+          "weight": 0.7973516583442688
+        }
+      ]
+    },
+    {
+      "id": "neuron-025",
+      "enabled": true,
+      "bias": -0.06737098842859268,
+      "input_edges": [
+        {
+          "feature_index": 30,
+          "weight": 0.47734686732292175
+        },
+        {
+          "feature_index": 32,
+          "weight": -0.4033612310886383
+        },
+        {
+          "feature_index": 59,
+          "weight": 0.24684244394302368
+        },
+        {
+          "feature_index": 65,
+          "weight": -0.45135724544525146
+        },
+        {
+          "feature_index": 69,
+          "weight": -0.1687793880701065
+        },
+        {
+          "feature_index": 73,
+          "weight": 0.2107493132352829
+        },
+        {
+          "feature_index": 103,
+          "weight": 0.3211434781551361
+        },
+        {
+          "feature_index": 105,
+          "weight": -0.5231821537017822
+        },
+        {
+          "feature_index": 137,
+          "weight": 0.00013161548122297972
+        },
+        {
+          "feature_index": 166,
+          "weight": 0.6507164835929871
+        },
+        {
+          "feature_index": 171,
+          "weight": -2.8081663913326338e-05
+        },
+        {
+          "feature_index": 186,
+          "weight": -0.26967522501945496
+        },
+        {
+          "feature_index": 205,
+          "weight": -0.3722408413887024
+        },
+        {
+          "feature_index": 220,
+          "weight": 0.5386289954185486
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.870867908000946
+        },
+        {
+          "feature_index": 253,
+          "weight": -0.5520978569984436
+        },
+        {
+          "feature_index": 254,
+          "weight": 0.2647329270839691
+        },
+        {
+          "feature_index": 268,
+          "weight": -0.460849791765213
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -1.5926477909088135
+        },
+        {
+          "token_id": 2,
+          "weight": 0.4642716348171234
+        },
+        {
+          "token_id": 6,
+          "weight": -4.880739652435295e-05
+        },
+        {
+          "token_id": 7,
+          "weight": 5.200103623792529e-05
+        },
+        {
+          "token_id": 13,
+          "weight": 0.22757618129253387
+        },
+        {
+          "token_id": 15,
+          "weight": 0.3706890642642975
+        },
+        {
+          "token_id": 17,
+          "weight": 0.044199101626873016
+        },
+        {
+          "token_id": 19,
+          "weight": 0.5939933061599731
+        },
+        {
+          "token_id": 20,
+          "weight": -0.4200088679790497
+        },
+        {
+          "token_id": 22,
+          "weight": 0.8369060754776001
+        },
+        {
+          "token_id": 26,
+          "weight": 0.43992453813552856
+        },
+        {
+          "token_id": 29,
+          "weight": -0.10850156843662262
+        },
+        {
+          "token_id": 32,
+          "weight": -0.3988487422466278
+        }
+      ]
+    },
+    {
+      "id": "neuron-026",
+      "enabled": true,
+      "bias": 0.18529371917247772,
+      "input_edges": [
+        {
+          "feature_index": 2,
+          "weight": -0.06070670858025551
+        },
+        {
+          "feature_index": 9,
+          "weight": -0.09248287230730057
+        },
+        {
+          "feature_index": 16,
+          "weight": -0.2076503187417984
+        },
+        {
+          "feature_index": 86,
+          "weight": -5.291879642754793e-05
+        },
+        {
+          "feature_index": 93,
+          "weight": -0.11229350417852402
+        },
+        {
+          "feature_index": 98,
+          "weight": 0.04506891965866089
+        },
+        {
+          "feature_index": 109,
+          "weight": -0.10527312010526657
+        },
+        {
+          "feature_index": 126,
+          "weight": 0.014074953272938728
+        },
+        {
+          "feature_index": 136,
+          "weight": -0.04168426990509033
+        },
+        {
+          "feature_index": 137,
+          "weight": -9.467572454013862e-06
+        },
+        {
+          "feature_index": 156,
+          "weight": -0.03132350370287895
+        },
+        {
+          "feature_index": 163,
+          "weight": 0.12516692280769348
+        },
+        {
+          "feature_index": 173,
+          "weight": 0.03245807811617851
+        },
+        {
+          "feature_index": 203,
+          "weight": 0.04340469464659691
+        },
+        {
+          "feature_index": 210,
+          "weight": 0.12095873802900314
+        },
+        {
+          "feature_index": 214,
+          "weight": 0.06967676430940628
+        },
+        {
+          "feature_index": 236,
+          "weight": 0.0890277698636055
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.28359106183052063
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 5,
+          "weight": -0.06168505176901817
+        },
+        {
+          "token_id": 7,
+          "weight": 0.1603682041168213
+        },
+        {
+          "token_id": 8,
+          "weight": -0.06956032663583755
+        },
+        {
+          "token_id": 10,
+          "weight": -0.1791974902153015
+        },
+        {
+          "token_id": 12,
+          "weight": 0.2371957004070282
+        },
+        {
+          "token_id": 15,
+          "weight": 1.4155050848785322e-05
+        },
+        {
+          "token_id": 19,
+          "weight": 9.28555255086394e-06
+        },
+        {
+          "token_id": 20,
+          "weight": 0.0770636796951294
+        },
+        {
+          "token_id": 24,
+          "weight": -0.10600580275058746
+        },
+        {
+          "token_id": 25,
+          "weight": -0.18896465003490448
+        },
+        {
+          "token_id": 27,
+          "weight": 0.21209803223609924
+        },
+        {
+          "token_id": 28,
+          "weight": -0.15158501267433167
+        },
+        {
+          "token_id": 33,
+          "weight": -0.4425070881843567
+        }
+      ]
+    },
+    {
+      "id": "neuron-027",
+      "enabled": true,
+      "bias": -0.06335580348968506,
+      "input_edges": [
+        {
+          "feature_index": 6,
+          "weight": -0.20605577528476715
+        },
+        {
+          "feature_index": 35,
+          "weight": 0.3682648837566376
+        },
+        {
+          "feature_index": 43,
+          "weight": 0.1450577676296234
+        },
+        {
+          "feature_index": 69,
+          "weight": 7.3190203693229705e-06
+        },
+        {
+          "feature_index": 73,
+          "weight": -0.03042888641357422
+        },
+        {
+          "feature_index": 86,
+          "weight": -0.2475181519985199
+        },
+        {
+          "feature_index": 103,
+          "weight": -7.324932994379196e-06
+        },
+        {
+          "feature_index": 119,
+          "weight": 0.13321563601493835
+        },
+        {
+          "feature_index": 125,
+          "weight": 0.19548551738262177
+        },
+        {
+          "feature_index": 137,
+          "weight": 0.3550357222557068
+        },
+        {
+          "feature_index": 143,
+          "weight": -0.07046714425086975
+        },
+        {
+          "feature_index": 168,
+          "weight": -0.29815325140953064
+        },
+        {
+          "feature_index": 171,
+          "weight": -0.22228258848190308
+        },
+        {
+          "feature_index": 186,
+          "weight": -0.2964707911014557
+        },
+        {
+          "feature_index": 205,
+          "weight": -0.4590170681476593
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.66828852891922
+        },
+        {
+          "feature_index": 249,
+          "weight": 0.14212960004806519
+        },
+        {
+          "feature_index": 252,
+          "weight": 0.026070930063724518
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -0.20920029282569885
+        },
+        {
+          "token_id": 6,
+          "weight": 0.0573810413479805
+        },
+        {
+          "token_id": 7,
+          "weight": 0.44226881861686707
+        },
+        {
+          "token_id": 13,
+          "weight": -0.2438601404428482
+        },
+        {
+          "token_id": 14,
+          "weight": -0.13144248723983765
+        },
+        {
+          "token_id": 15,
+          "weight": 4.6487435611197725e-05
+        },
+        {
+          "token_id": 16,
+          "weight": 0.2756861448287964
+        },
+        {
+          "token_id": 20,
+          "weight": -0.5603007078170776
+        },
+        {
+          "token_id": 22,
+          "weight": 7.320960139622912e-05
+        },
+        {
+          "token_id": 24,
+          "weight": -0.28229302167892456
+        },
+        {
+          "token_id": 25,
+          "weight": -0.47054094076156616
+        },
+        {
+          "token_id": 27,
+          "weight": 0.7030424475669861
+        },
+        {
+          "token_id": 32,
+          "weight": -0.5910243988037109
+        }
+      ]
+    },
+    {
+      "id": "neuron-028",
+      "enabled": true,
+      "bias": -0.1569352149963379,
+      "input_edges": [
+        {
+          "feature_index": 5,
+          "weight": -0.09635807573795319
+        },
+        {
+          "feature_index": 32,
+          "weight": -0.4129215478897095
+        },
+        {
+          "feature_index": 65,
+          "weight": -0.3494917154312134
+        },
+        {
+          "feature_index": 72,
+          "weight": 0.07133929431438446
+        },
+        {
+          "feature_index": 81,
+          "weight": -0.0881992056965828
+        },
+        {
+          "feature_index": 93,
+          "weight": 0.39287057518959045
+        },
+        {
+          "feature_index": 103,
+          "weight": 6.231443694559857e-05
+        },
+        {
+          "feature_index": 117,
+          "weight": 0.10606715083122253
+        },
+        {
+          "feature_index": 132,
+          "weight": 0.2939678728580475
+        },
+        {
+          "feature_index": 186,
+          "weight": -0.35493600368499756
+        },
+        {
+          "feature_index": 202,
+          "weight": 0.40649744868278503
+        },
+        {
+          "feature_index": 215,
+          "weight": -0.07649032771587372
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.3013538122177124
+        },
+        {
+          "feature_index": 244,
+          "weight": 0.00015088841610122472
+        },
+        {
+          "feature_index": 254,
+          "weight": 0.5010432004928589
+        },
+        {
+          "feature_index": 260,
+          "weight": 0.214481920003891
+        },
+        {
+          "feature_index": 268,
+          "weight": -0.3114108443260193
+        },
+        {
+          "feature_index": 271,
+          "weight": 0.1300351768732071
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -0.945083737373352
+        },
+        {
+          "token_id": 8,
+          "weight": 0.11761784553527832
+        },
+        {
+          "token_id": 10,
+          "weight": 0.15738607943058014
+        },
+        {
+          "token_id": 16,
+          "weight": -0.24477429687976837
+        },
+        {
+          "token_id": 17,
+          "weight": -0.32079413533210754
+        },
+        {
+          "token_id": 20,
+          "weight": 0.2780265510082245
+        },
+        {
+          "token_id": 21,
+          "weight": -0.3034205734729767
+        },
+        {
+          "token_id": 25,
+          "weight": 9.962326294044033e-05
+        },
+        {
+          "token_id": 26,
+          "weight": 0.1558702141046524
+        },
+        {
+          "token_id": 27,
+          "weight": -0.25764578580856323
+        },
+        {
+          "token_id": 30,
+          "weight": 5.8160141634289175e-05
+        },
+        {
+          "token_id": 32,
+          "weight": -0.5744736194610596
+        },
+        {
+          "token_id": 33,
+          "weight": 0.3867766857147217
+        }
+      ]
+    },
+    {
+      "id": "neuron-029",
+      "enabled": true,
+      "bias": 0.04697204753756523,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": 0.4272316098213196
+        },
+        {
+          "feature_index": 3,
+          "weight": -0.16665437817573547
+        },
+        {
+          "feature_index": 27,
+          "weight": -0.16487155854701996
+        },
+        {
+          "feature_index": 69,
+          "weight": -1.177947433461668e-05
+        },
+        {
+          "feature_index": 101,
+          "weight": -0.04327604919672012
+        },
+        {
+          "feature_index": 103,
+          "weight": -2.8870994356111623e-05
+        },
+        {
+          "feature_index": 110,
+          "weight": 0.0451536662876606
+        },
+        {
+          "feature_index": 152,
+          "weight": 0.3424512445926666
+        },
+        {
+          "feature_index": 157,
+          "weight": 0.07904542982578278
+        },
+        {
+          "feature_index": 166,
+          "weight": -0.33527225255966187
+        },
+        {
+          "feature_index": 179,
+          "weight": -0.056102994829416275
+        },
+        {
+          "feature_index": 199,
+          "weight": -0.02944050543010235
+        },
+        {
+          "feature_index": 202,
+          "weight": -0.41792264580726624
+        },
+        {
+          "feature_index": 205,
+          "weight": 0.02100534178316593
+        },
+        {
+          "feature_index": 212,
+          "weight": -0.06901939958333969
+        },
+        {
+          "feature_index": 223,
+          "weight": 0.06192873418331146
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.18729199469089508
+        },
+        {
+          "feature_index": 260,
+          "weight": 0.044078126549720764
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 5,
+          "weight": 0.5860186219215393
+        },
+        {
+          "token_id": 7,
+          "weight": 6.655742618022487e-05
+        },
+        {
+          "token_id": 8,
+          "weight": -0.10373149812221527
+        },
+        {
+          "token_id": 9,
+          "weight": 0.15637612342834473
+        },
+        {
+          "token_id": 11,
+          "weight": 0.1466374695301056
+        },
+        {
+          "token_id": 12,
+          "weight": 0.27799975872039795
+        },
+        {
+          "token_id": 15,
+          "weight": -0.06377658247947693
+        },
+        {
+          "token_id": 17,
+          "weight": 0.4185623824596405
+        },
+        {
+          "token_id": 21,
+          "weight": -0.29954400658607483
+        },
+        {
+          "token_id": 26,
+          "weight": -0.5657468438148499
+        },
+        {
+          "token_id": 27,
+          "weight": 0.15417306125164032
+        },
+        {
+          "token_id": 31,
+          "weight": -0.00013745189062319696
+        },
+        {
+          "token_id": 33,
+          "weight": -0.2363681048154831
+        }
+      ]
+    },
+    {
+      "id": "neuron-030",
+      "enabled": true,
+      "bias": -0.008211614564061165,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": 4.9383834266336635e-05
+        },
+        {
+          "feature_index": 5,
+          "weight": 0.101091168820858
+        },
+        {
+          "feature_index": 18,
+          "weight": -0.14665387570858002
+        },
+        {
+          "feature_index": 30,
+          "weight": 0.3604019582271576
+        },
+        {
+          "feature_index": 35,
+          "weight": -8.566116594010964e-05
+        },
+        {
+          "feature_index": 46,
+          "weight": 0.14392049610614777
+        },
+        {
+          "feature_index": 69,
+          "weight": -0.19197416305541992
+        },
+        {
+          "feature_index": 89,
+          "weight": -0.2092343121767044
+        },
+        {
+          "feature_index": 113,
+          "weight": -0.13483600318431854
+        },
+        {
+          "feature_index": 120,
+          "weight": -0.1435270756483078
+        },
+        {
+          "feature_index": 138,
+          "weight": -0.13780373334884644
+        },
+        {
+          "feature_index": 148,
+          "weight": -0.04356147348880768
+        },
+        {
+          "feature_index": 171,
+          "weight": -0.6689658761024475
+        },
+        {
+          "feature_index": 203,
+          "weight": 0.17904485762119293
+        },
+        {
+          "feature_index": 206,
+          "weight": 0.22171656787395477
+        },
+        {
+          "feature_index": 232,
+          "weight": -0.19701266288757324
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.8744529485702515
+        },
+        {
+          "feature_index": 251,
+          "weight": -0.37683042883872986
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -0.663975179195404
+        },
+        {
+          "token_id": 3,
+          "weight": -0.8829854726791382
+        },
+        {
+          "token_id": 4,
+          "weight": 0.052516382187604904
+        },
+        {
+          "token_id": 5,
+          "weight": 0.5420997738838196
+        },
+        {
+          "token_id": 7,
+          "weight": 0.036633457988500595
+        },
+        {
+          "token_id": 13,
+          "weight": 4.6831944928271696e-05
+        },
+        {
+          "token_id": 14,
+          "weight": 0.28624945878982544
+        },
+        {
+          "token_id": 16,
+          "weight": -0.2364971786737442
+        },
+        {
+          "token_id": 18,
+          "weight": -0.6525588631629944
+        },
+        {
+          "token_id": 20,
+          "weight": -0.18167449533939362
+        },
+        {
+          "token_id": 24,
+          "weight": -0.39651918411254883
+        },
+        {
+          "token_id": 30,
+          "weight": 7.629664651176427e-07
+        },
+        {
+          "token_id": 32,
+          "weight": -0.18759560585021973
+        }
+      ]
+    },
+    {
+      "id": "neuron-031",
+      "enabled": true,
+      "bias": 0.31640249490737915,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": 6.898022547829896e-05
+        },
+        {
+          "feature_index": 57,
+          "weight": -0.0001891499850898981
+        },
+        {
+          "feature_index": 71,
+          "weight": -0.5859255194664001
+        },
+        {
+          "feature_index": 102,
+          "weight": -0.6769066452980042
+        },
+        {
+          "feature_index": 118,
+          "weight": 0.3865891098976135
+        },
+        {
+          "feature_index": 144,
+          "weight": 0.10225845873355865
+        },
+        {
+          "feature_index": 145,
+          "weight": -0.1224282830953598
+        },
+        {
+          "feature_index": 164,
+          "weight": -0.3709776699542999
+        },
+        {
+          "feature_index": 172,
+          "weight": -0.05418230965733528
+        },
+        {
+          "feature_index": 174,
+          "weight": -0.14626279473304749
+        },
+        {
+          "feature_index": 194,
+          "weight": 0.14070843160152435
+        },
+        {
+          "feature_index": 205,
+          "weight": -0.07666634023189545
+        },
+        {
+          "feature_index": 223,
+          "weight": -0.8222189545631409
+        },
+        {
+          "feature_index": 227,
+          "weight": -0.6731283068656921
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.696487545967102
+        },
+        {
+          "feature_index": 260,
+          "weight": -0.6470707654953003
+        },
+        {
+          "feature_index": 261,
+          "weight": -0.6500698924064636
+        },
+        {
+          "feature_index": 270,
+          "weight": -0.5494070053100586
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": 0.437140554189682
+        },
+        {
+          "token_id": 2,
+          "weight": 0.3637833893299103
+        },
+        {
+          "token_id": 5,
+          "weight": 4.1266048356192186e-05
+        },
+        {
+          "token_id": 6,
+          "weight": -0.04966557398438454
+        },
+        {
+          "token_id": 7,
+          "weight": 9.889859211398289e-05
+        },
+        {
+          "token_id": 14,
+          "weight": 0.09164535999298096
+        },
+        {
+          "token_id": 23,
+          "weight": -0.3624374568462372
+        },
+        {
+          "token_id": 26,
+          "weight": 0.22856932878494263
+        },
+        {
+          "token_id": 27,
+          "weight": 0.6039499044418335
+        },
+        {
+          "token_id": 30,
+          "weight": -1.999625325202942
+        },
+        {
+          "token_id": 31,
+          "weight": -0.4324752986431122
+        },
+        {
+          "token_id": 32,
+          "weight": -0.9207814931869507
+        },
+        {
+          "token_id": 33,
+          "weight": 0.2872149646282196
+        }
+      ]
+    },
+    {
+      "id": "neuron-032",
+      "enabled": true,
+      "bias": -0.1598905324935913,
+      "input_edges": [
+        {
+          "feature_index": 33,
+          "weight": 0.16890305280685425
+        },
+        {
+          "feature_index": 37,
+          "weight": 0.04480167478322983
+        },
+        {
+          "feature_index": 61,
+          "weight": 0.4116593599319458
+        },
+        {
+          "feature_index": 64,
+          "weight": -0.055494483560323715
+        },
+        {
+          "feature_index": 67,
+          "weight": -0.0354357473552227
+        },
+        {
+          "feature_index": 69,
+          "weight": -0.34767863154411316
+        },
+        {
+          "feature_index": 94,
+          "weight": 0.04476381465792656
+        },
+        {
+          "feature_index": 120,
+          "weight": -0.09047313779592514
+        },
+        {
+          "feature_index": 137,
+          "weight": 0.5281597375869751
+        },
+        {
+          "feature_index": 140,
+          "weight": -0.09100963920354843
+        },
+        {
+          "feature_index": 150,
+          "weight": 0.14207823574543
+        },
+        {
+          "feature_index": 151,
+          "weight": 0.08861327171325684
+        },
+        {
+          "feature_index": 166,
+          "weight": 0.7515749335289001
+        },
+        {
+          "feature_index": 170,
+          "weight": -0.3500664234161377
+        },
+        {
+          "feature_index": 171,
+          "weight": -8.443873412034009e-06
+        },
+        {
+          "feature_index": 220,
+          "weight": -0.3384955823421478
+        },
+        {
+          "feature_index": 239,
+          "weight": 1.825924300646875e-05
+        },
+        {
+          "feature_index": 263,
+          "weight": -0.33301568031311035
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": 0.26745283603668213
+        },
+        {
+          "token_id": 1,
+          "weight": -5.332384171197191e-05
+        },
+        {
+          "token_id": 5,
+          "weight": -0.2955935597419739
+        },
+        {
+          "token_id": 12,
+          "weight": 0.04813329130411148
+        },
+        {
+          "token_id": 15,
+          "weight": -0.09417418390512466
+        },
+        {
+          "token_id": 18,
+          "weight": -0.7307074666023254
+        },
+        {
+          "token_id": 19,
+          "weight": -0.46568527817726135
+        },
+        {
+          "token_id": 20,
+          "weight": -0.2631334960460663
+        },
+        {
+          "token_id": 21,
+          "weight": -7.730336801614612e-05
+        },
+        {
+          "token_id": 22,
+          "weight": 0.9291278123855591
+        },
+        {
+          "token_id": 26,
+          "weight": 0.33109426498413086
+        },
+        {
+          "token_id": 30,
+          "weight": 0.055999163538217545
+        },
+        {
+          "token_id": 32,
+          "weight": -0.2470746487379074
+        }
+      ]
+    },
+    {
+      "id": "neuron-033",
+      "enabled": true,
+      "bias": -0.053571294993162155,
+      "input_edges": [
+        {
+          "feature_index": 3,
+          "weight": -0.18727155029773712
+        },
+        {
+          "feature_index": 9,
+          "weight": 0.10375627875328064
+        },
+        {
+          "feature_index": 17,
+          "weight": 0.16986112296581268
+        },
+        {
+          "feature_index": 35,
+          "weight": 7.385918434010819e-05
+        },
+        {
+          "feature_index": 41,
+          "weight": -0.08704893290996552
+        },
+        {
+          "feature_index": 69,
+          "weight": 0.34412258863449097
+        },
+        {
+          "feature_index": 85,
+          "weight": 0.11467736959457397
+        },
+        {
+          "feature_index": 87,
+          "weight": -0.2022702842950821
+        },
+        {
+          "feature_index": 103,
+          "weight": -0.29238665103912354
+        },
+        {
+          "feature_index": 148,
+          "weight": -0.10005513578653336
+        },
+        {
+          "feature_index": 165,
+          "weight": 0.04145437851548195
+        },
+        {
+          "feature_index": 196,
+          "weight": 0.06443224102258682
+        },
+        {
+          "feature_index": 202,
+          "weight": -0.3106851577758789
+        },
+        {
+          "feature_index": 205,
+          "weight": 0.884456217288971
+        },
+        {
+          "feature_index": 212,
+          "weight": -0.06358105689287186
+        },
+        {
+          "feature_index": 220,
+          "weight": -0.3931114375591278
+        },
+        {
+          "feature_index": 238,
+          "weight": -0.00015072099631652236
+        },
+        {
+          "feature_index": 239,
+          "weight": -0.35413721203804016
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -4.2408672015881166e-05
+        },
+        {
+          "token_id": 3,
+          "weight": 0.39838340878486633
+        },
+        {
+          "token_id": 4,
+          "weight": 0.617812991142273
+        },
+        {
+          "token_id": 7,
+          "weight": 3.589451580410241e-06
+        },
+        {
+          "token_id": 10,
+          "weight": 0.15868258476257324
+        },
+        {
+          "token_id": 11,
+          "weight": 0.316173791885376
+        },
+        {
+          "token_id": 15,
+          "weight": -0.4372577965259552
+        },
+        {
+          "token_id": 17,
+          "weight": -0.4921201169490814
+        },
+        {
+          "token_id": 20,
+          "weight": 0.6256043314933777
+        },
+        {
+          "token_id": 23,
+          "weight": 0.11748092621564865
+        },
+        {
+          "token_id": 26,
+          "weight": -0.6514625549316406
+        },
+        {
+          "token_id": 28,
+          "weight": 0.39061200618743896
+        },
+        {
+          "token_id": 31,
+          "weight": -0.3776533305644989
+        }
+      ]
+    },
+    {
+      "id": "neuron-034",
+      "enabled": true,
+      "bias": -0.638199508190155,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": 0.054006822407245636
+        },
+        {
+          "feature_index": 3,
+          "weight": 0.1615266352891922
+        },
+        {
+          "feature_index": 15,
+          "weight": -0.07341024279594421
+        },
+        {
+          "feature_index": 31,
+          "weight": 0.3653687834739685
+        },
+        {
+          "feature_index": 55,
+          "weight": 0.33638796210289
+        },
+        {
+          "feature_index": 69,
+          "weight": -5.505808076122776e-05
+        },
+        {
+          "feature_index": 79,
+          "weight": -0.07896221429109573
+        },
+        {
+          "feature_index": 103,
+          "weight": 0.2319669872522354
+        },
+        {
+          "feature_index": 137,
+          "weight": -2.0595674868673086e-05
+        },
+        {
+          "feature_index": 138,
+          "weight": -0.22013777494430542
+        },
+        {
+          "feature_index": 166,
+          "weight": 0.19010695815086365
+        },
+        {
+          "feature_index": 170,
+          "weight": 0.10384729504585266
+        },
+        {
+          "feature_index": 171,
+          "weight": -0.3960299789905548
+        },
+        {
+          "feature_index": 186,
+          "weight": -0.29223036766052246
+        },
+        {
+          "feature_index": 202,
+          "weight": 0.34342721104621887
+        },
+        {
+          "feature_index": 218,
+          "weight": 0.0631493404507637
+        },
+        {
+          "feature_index": 228,
+          "weight": 0.3658286929130554
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.1614539474248886
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -0.29355454444885254
+        },
+        {
+          "token_id": 3,
+          "weight": -0.08697962015867233
+        },
+        {
+          "token_id": 5,
+          "weight": 0.27319732308387756
+        },
+        {
+          "token_id": 7,
+          "weight": -4.134927166887792e-06
+        },
+        {
+          "token_id": 9,
+          "weight": 0.35842958092689514
+        },
+        {
+          "token_id": 15,
+          "weight": -1.7148200640804134e-05
+        },
+        {
+          "token_id": 17,
+          "weight": 0.10266533493995667
+        },
+        {
+          "token_id": 21,
+          "weight": -0.2524101138114929
+        },
+        {
+          "token_id": 26,
+          "weight": 1.3739068508148193
+        },
+        {
+          "token_id": 27,
+          "weight": 0.17326588928699493
+        },
+        {
+          "token_id": 28,
+          "weight": 0.07848259061574936
+        },
+        {
+          "token_id": 29,
+          "weight": 0.16959862411022186
+        },
+        {
+          "token_id": 32,
+          "weight": -0.41412854194641113
+        }
+      ]
+    },
+    {
+      "id": "neuron-035",
+      "enabled": true,
+      "bias": -0.06304758787155151,
+      "input_edges": [
+        {
+          "feature_index": 18,
+          "weight": -0.2885841727256775
+        },
+        {
+          "feature_index": 29,
+          "weight": -0.11617600917816162
+        },
+        {
+          "feature_index": 68,
+          "weight": -0.5018545389175415
+        },
+        {
+          "feature_index": 103,
+          "weight": -0.4686712920665741
+        },
+        {
+          "feature_index": 111,
+          "weight": -0.10143183916807175
+        },
+        {
+          "feature_index": 122,
+          "weight": -9.074203990167007e-05
+        },
+        {
+          "feature_index": 132,
+          "weight": 0.2113226354122162
+        },
+        {
+          "feature_index": 135,
+          "weight": 0.11560255289077759
+        },
+        {
+          "feature_index": 137,
+          "weight": 0.5960740447044373
+        },
+        {
+          "feature_index": 143,
+          "weight": 0.05273390933871269
+        },
+        {
+          "feature_index": 158,
+          "weight": 0.24558484554290771
+        },
+        {
+          "feature_index": 205,
+          "weight": -1.3567744645115454e-05
+        },
+        {
+          "feature_index": 221,
+          "weight": -0.7136073112487793
+        },
+        {
+          "feature_index": 230,
+          "weight": 0.09367356449365616
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.6062092185020447
+        },
+        {
+          "feature_index": 241,
+          "weight": 0.6416027545928955
+        },
+        {
+          "feature_index": 254,
+          "weight": -0.5389899015426636
+        },
+        {
+          "feature_index": 265,
+          "weight": -0.5063073635101318
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": 0.9177013635635376
+        },
+        {
+          "token_id": 2,
+          "weight": 0.6397333145141602
+        },
+        {
+          "token_id": 6,
+          "weight": 0.36872193217277527
+        },
+        {
+          "token_id": 7,
+          "weight": 5.02014190715272e-05
+        },
+        {
+          "token_id": 8,
+          "weight": 0.11149442195892334
+        },
+        {
+          "token_id": 14,
+          "weight": 0.2699640095233917
+        },
+        {
+          "token_id": 18,
+          "weight": -0.25874239206314087
+        },
+        {
+          "token_id": 22,
+          "weight": 0.00011925243597943336
+        },
+        {
+          "token_id": 23,
+          "weight": -1.4739760160446167
+        },
+        {
+          "token_id": 27,
+          "weight": 0.64314866065979
+        },
+        {
+          "token_id": 30,
+          "weight": 0.5195462703704834
+        },
+        {
+          "token_id": 31,
+          "weight": -0.557813823223114
+        },
+        {
+          "token_id": 32,
+          "weight": -0.6054573059082031
+        }
+      ]
+    },
+    {
+      "id": "neuron-036",
+      "enabled": true,
+      "bias": 0.19662390649318695,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": -0.43105798959732056
+        },
+        {
+          "feature_index": 45,
+          "weight": 0.12479071319103241
+        },
+        {
+          "feature_index": 48,
+          "weight": -0.16857710480690002
+        },
+        {
+          "feature_index": 56,
+          "weight": -0.20409968495368958
+        },
+        {
+          "feature_index": 78,
+          "weight": 0.07890807092189789
+        },
+        {
+          "feature_index": 84,
+          "weight": 0.11330310255289078
+        },
+        {
+          "feature_index": 90,
+          "weight": 0.09613282978534698
+        },
+        {
+          "feature_index": 95,
+          "weight": 0.14997851848602295
+        },
+        {
+          "feature_index": 98,
+          "weight": -0.44742071628570557
+        },
+        {
+          "feature_index": 103,
+          "weight": 4.430554690770805e-05
+        },
+        {
+          "feature_index": 128,
+          "weight": 0.28766417503356934
+        },
+        {
+          "feature_index": 137,
+          "weight": -2.6645870093489066e-05
+        },
+        {
+          "feature_index": 205,
+          "weight": 0.29049360752105713
+        },
+        {
+          "feature_index": 220,
+          "weight": -0.9993597269058228
+        },
+        {
+          "feature_index": 232,
+          "weight": -0.051462575793266296
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.48564451932907104
+        },
+        {
+          "feature_index": 258,
+          "weight": 0.13558439910411835
+        },
+        {
+          "feature_index": 261,
+          "weight": -0.27494359016418457
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": 0.17525449395179749
+        },
+        {
+          "token_id": 2,
+          "weight": 0.3360491693019867
+        },
+        {
+          "token_id": 4,
+          "weight": -0.010992391966283321
+        },
+        {
+          "token_id": 5,
+          "weight": 3.898220165865496e-05
+        },
+        {
+          "token_id": 11,
+          "weight": -0.027869801968336105
+        },
+        {
+          "token_id": 16,
+          "weight": 4.358073783805594e-05
+        },
+        {
+          "token_id": 17,
+          "weight": -1.3367502689361572
+        },
+        {
+          "token_id": 18,
+          "weight": -0.8441169857978821
+        },
+        {
+          "token_id": 19,
+          "weight": -0.44941094517707825
+        },
+        {
+          "token_id": 23,
+          "weight": 0.031582508236169815
+        },
+        {
+          "token_id": 27,
+          "weight": 0.3394429683685303
+        },
+        {
+          "token_id": 30,
+          "weight": -0.5998755097389221
+        },
+        {
+          "token_id": 33,
+          "weight": 0.20379534363746643
+        }
+      ]
+    },
+    {
+      "id": "neuron-037",
+      "enabled": true,
+      "bias": -0.15204176306724548,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": -0.22972102463245392
+        },
+        {
+          "feature_index": 4,
+          "weight": 0.09555560350418091
+        },
+        {
+          "feature_index": 13,
+          "weight": 0.03685956820845604
+        },
+        {
+          "feature_index": 21,
+          "weight": 0.10727007687091827
+        },
+        {
+          "feature_index": 26,
+          "weight": -0.16440927982330322
+        },
+        {
+          "feature_index": 42,
+          "weight": 0.08768390864133835
+        },
+        {
+          "feature_index": 85,
+          "weight": -0.03209596872329712
+        },
+        {
+          "feature_index": 86,
+          "weight": 6.259070687519852e-06
+        },
+        {
+          "feature_index": 103,
+          "weight": 0.30000758171081543
+        },
+        {
+          "feature_index": 114,
+          "weight": 0.10672465711832047
+        },
+        {
+          "feature_index": 137,
+          "weight": -0.27605023980140686
+        },
+        {
+          "feature_index": 141,
+          "weight": -6.286407733568922e-05
+        },
+        {
+          "feature_index": 188,
+          "weight": -0.025109365582466125
+        },
+        {
+          "feature_index": 205,
+          "weight": -0.0759984478354454
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.28086093068122864
+        },
+        {
+          "feature_index": 240,
+          "weight": -0.10061062127351761
+        },
+        {
+          "feature_index": 257,
+          "weight": -0.4698558449745178
+        },
+        {
+          "feature_index": 266,
+          "weight": 0.10271429270505905
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -0.1490032970905304
+        },
+        {
+          "token_id": 5,
+          "weight": -5.523168510990217e-06
+        },
+        {
+          "token_id": 7,
+          "weight": 1.2369918295007665e-05
+        },
+        {
+          "token_id": 13,
+          "weight": 0.1369038075208664
+        },
+        {
+          "token_id": 14,
+          "weight": 0.15338744223117828
+        },
+        {
+          "token_id": 15,
+          "weight": 0.20991428196430206
+        },
+        {
+          "token_id": 21,
+          "weight": -0.08901063352823257
+        },
+        {
+          "token_id": 23,
+          "weight": -0.022231681272387505
+        },
+        {
+          "token_id": 25,
+          "weight": 0.13635163009166718
+        },
+        {
+          "token_id": 26,
+          "weight": 0.3978210389614105
+        },
+        {
+          "token_id": 27,
+          "weight": 0.1689681112766266
+        },
+        {
+          "token_id": 28,
+          "weight": -0.79349285364151
+        },
+        {
+          "token_id": 30,
+          "weight": -0.36863401532173157
+        }
+      ]
+    },
+    {
+      "id": "neuron-038",
+      "enabled": true,
+      "bias": 0.12150084227323532,
+      "input_edges": [
+        {
+          "feature_index": 5,
+          "weight": -0.14723213016986847
+        },
+        {
+          "feature_index": 43,
+          "weight": -0.13543710112571716
+        },
+        {
+          "feature_index": 61,
+          "weight": -0.3149096369743347
+        },
+        {
+          "feature_index": 63,
+          "weight": 0.05910011753439903
+        },
+        {
+          "feature_index": 65,
+          "weight": -0.436283141374588
+        },
+        {
+          "feature_index": 95,
+          "weight": -0.3891879618167877
+        },
+        {
+          "feature_index": 132,
+          "weight": 0.5665854811668396
+        },
+        {
+          "feature_index": 136,
+          "weight": -0.30780360102653503
+        },
+        {
+          "feature_index": 137,
+          "weight": 5.70583033550065e-05
+        },
+        {
+          "feature_index": 171,
+          "weight": -0.5820237994194031
+        },
+        {
+          "feature_index": 186,
+          "weight": -0.44469961524009705
+        },
+        {
+          "feature_index": 205,
+          "weight": 0.00012371508637443185
+        },
+        {
+          "feature_index": 223,
+          "weight": 0.1782713085412979
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.6463307738304138
+        },
+        {
+          "feature_index": 243,
+          "weight": 0.3138437867164612
+        },
+        {
+          "feature_index": 251,
+          "weight": -0.31481650471687317
+        },
+        {
+          "feature_index": 268,
+          "weight": -0.45649969577789307
+        },
+        {
+          "feature_index": 269,
+          "weight": 0.2604111433029175
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -1.2500090599060059
+        },
+        {
+          "token_id": 3,
+          "weight": -0.29724279046058655
+        },
+        {
+          "token_id": 4,
+          "weight": 0.07673132419586182
+        },
+        {
+          "token_id": 5,
+          "weight": 1.991467252082657e-05
+        },
+        {
+          "token_id": 10,
+          "weight": 0.2827174961566925
+        },
+        {
+          "token_id": 11,
+          "weight": 0.24138808250427246
+        },
+        {
+          "token_id": 12,
+          "weight": 0.3594209849834442
+        },
+        {
+          "token_id": 20,
+          "weight": 0.4314709007740021
+        },
+        {
+          "token_id": 23,
+          "weight": -0.14895781874656677
+        },
+        {
+          "token_id": 24,
+          "weight": -0.46733158826828003
+        },
+        {
+          "token_id": 27,
+          "weight": 5.359675924410112e-06
+        },
+        {
+          "token_id": 29,
+          "weight": 0.13174496591091156
+        },
+        {
+          "token_id": 32,
+          "weight": -0.699029266834259
+        }
+      ]
+    },
+    {
+      "id": "neuron-039",
+      "enabled": true,
+      "bias": -0.055987630039453506,
+      "input_edges": [
+        {
+          "feature_index": 6,
+          "weight": 0.24553732573986053
+        },
+        {
+          "feature_index": 42,
+          "weight": -0.07682431489229202
+        },
+        {
+          "feature_index": 69,
+          "weight": 3.238006684114225e-05
+        },
+        {
+          "feature_index": 131,
+          "weight": 0.05457030609250069
+        },
+        {
+          "feature_index": 132,
+          "weight": -0.20307858288288116
+        },
+        {
+          "feature_index": 137,
+          "weight": -2.3551450794911943e-05
+        },
+        {
+          "feature_index": 146,
+          "weight": -0.04103720560669899
+        },
+        {
+          "feature_index": 186,
+          "weight": 0.3486725389957428
+        },
+        {
+          "feature_index": 211,
+          "weight": -0.3999553918838501
+        },
+        {
+          "feature_index": 220,
+          "weight": -0.42736467719078064
+        },
+        {
+          "feature_index": 229,
+          "weight": 0.21083100140094757
+        },
+        {
+          "feature_index": 236,
+          "weight": 0.3659001290798187
+        },
+        {
+          "feature_index": 239,
+          "weight": -0.25478702783584595
+        },
+        {
+          "feature_index": 241,
+          "weight": -0.5363051295280457
+        },
+        {
+          "feature_index": 256,
+          "weight": 0.23076727986335754
+        },
+        {
+          "feature_index": 262,
+          "weight": 0.28411900997161865
+        },
+        {
+          "feature_index": 266,
+          "weight": 0.23944547772407532
+        },
+        {
+          "feature_index": 268,
+          "weight": 0.33866581320762634
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": -0.5079606175422668
+        },
+        {
+          "token_id": 1,
+          "weight": 0.736747682094574
+        },
+        {
+          "token_id": 4,
+          "weight": -0.11107899993658066
+        },
+        {
+          "token_id": 6,
+          "weight": 2.26121428568149e-05
+        },
+        {
+          "token_id": 11,
+          "weight": -0.2721768319606781
+        },
+        {
+          "token_id": 13,
+          "weight": 0.24231553077697754
+        },
+        {
+          "token_id": 16,
+          "weight": 0.28992876410484314
+        },
+        {
+          "token_id": 19,
+          "weight": -0.203771710395813
+        },
+        {
+          "token_id": 22,
+          "weight": -5.926352969254367e-05
+        },
+        {
+          "token_id": 23,
+          "weight": 0.2084708958864212
+        },
+        {
+          "token_id": 30,
+          "weight": -0.25752636790275574
+        },
+        {
+          "token_id": 32,
+          "weight": 0.6478376388549805
+        },
+        {
+          "token_id": 33,
+          "weight": 0.13818787038326263
+        }
+      ]
+    },
+    {
+      "id": "neuron-040",
+      "enabled": true,
+      "bias": -0.11432197690010071,
+      "input_edges": [
+        {
+          "feature_index": 31,
+          "weight": 0.32607361674308777
+        },
+        {
+          "feature_index": 57,
+          "weight": -0.15181587636470795
+        },
+        {
+          "feature_index": 77,
+          "weight": -0.07630909979343414
+        },
+        {
+          "feature_index": 79,
+          "weight": 0.03959744796156883
+        },
+        {
+          "feature_index": 81,
+          "weight": 0.1398548036813736
+        },
+        {
+          "feature_index": 82,
+          "weight": -0.09959997236728668
+        },
+        {
+          "feature_index": 103,
+          "weight": 1.2864064956374932e-05
+        },
+        {
+          "feature_index": 119,
+          "weight": 0.10105209052562714
+        },
+        {
+          "feature_index": 127,
+          "weight": -0.06952042132616043
+        },
+        {
+          "feature_index": 131,
+          "weight": -0.07237393409013748
+        },
+        {
+          "feature_index": 171,
+          "weight": -0.7153368592262268
+        },
+        {
+          "feature_index": 172,
+          "weight": -0.04160658270120621
+        },
+        {
+          "feature_index": 186,
+          "weight": -0.17867153882980347
+        },
+        {
+          "feature_index": 202,
+          "weight": 0.18684010207653046
+        },
+        {
+          "feature_index": 205,
+          "weight": 8.08476033853367e-05
+        },
+        {
+          "feature_index": 229,
+          "weight": 0.0958733856678009
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.6207932829856873
+        },
+        {
+          "feature_index": 269,
+          "weight": 0.07972599565982819
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -9.522047548671253e-06
+        },
+        {
+          "token_id": 3,
+          "weight": -0.678779125213623
+        },
+        {
+          "token_id": 5,
+          "weight": 3.8155496440595016e-05
+        },
+        {
+          "token_id": 6,
+          "weight": 0.5138566493988037
+        },
+        {
+          "token_id": 11,
+          "weight": 0.24508221447467804
+        },
+        {
+          "token_id": 12,
+          "weight": 0.27456462383270264
+        },
+        {
+          "token_id": 15,
+          "weight": -0.04403157904744148
+        },
+        {
+          "token_id": 18,
+          "weight": -0.4199792146682739
+        },
+        {
+          "token_id": 24,
+          "weight": -0.26091238856315613
+        },
+        {
+          "token_id": 25,
+          "weight": 0.2836196720600128
+        },
+        {
+          "token_id": 26,
+          "weight": 0.7755193710327148
+        },
+        {
+          "token_id": 28,
+          "weight": -0.1442648023366928
+        },
+        {
+          "token_id": 32,
+          "weight": -0.2137453705072403
+        }
+      ]
+    },
+    {
+      "id": "neuron-041",
+      "enabled": true,
+      "bias": 0.10750515013933182,
+      "input_edges": [
+        {
+          "feature_index": 52,
+          "weight": 0.42826083302497864
+        },
+        {
+          "feature_index": 66,
+          "weight": -0.18903227150440216
+        },
+        {
+          "feature_index": 69,
+          "weight": -0.00011403666576370597
+        },
+        {
+          "feature_index": 86,
+          "weight": 0.6626384854316711
+        },
+        {
+          "feature_index": 120,
+          "weight": 0.19525499641895294
+        },
+        {
+          "feature_index": 128,
+          "weight": -0.152178555727005
+        },
+        {
+          "feature_index": 163,
+          "weight": -0.25510281324386597
+        },
+        {
+          "feature_index": 165,
+          "weight": 0.04786837100982666
+        },
+        {
+          "feature_index": 171,
+          "weight": -0.8845831751823425
+        },
+        {
+          "feature_index": 187,
+          "weight": 0.3286769688129425
+        },
+        {
+          "feature_index": 196,
+          "weight": 0.12489200383424759
+        },
+        {
+          "feature_index": 205,
+          "weight": -0.00012041621812386438
+        },
+        {
+          "feature_index": 207,
+          "weight": 0.5355226993560791
+        },
+        {
+          "feature_index": 245,
+          "weight": -0.07050418108701706
+        },
+        {
+          "feature_index": 250,
+          "weight": -0.23023691773414612
+        },
+        {
+          "feature_index": 254,
+          "weight": 0.3416629433631897
+        },
+        {
+          "feature_index": 255,
+          "weight": 0.36247989535331726
+        },
+        {
+          "feature_index": 261,
+          "weight": 0.3076953589916229
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -0.6477630734443665
+        },
+        {
+          "token_id": 2,
+          "weight": -0.1937735378742218
+        },
+        {
+          "token_id": 3,
+          "weight": -0.4145157039165497
+        },
+        {
+          "token_id": 5,
+          "weight": -6.842504262749571e-06
+        },
+        {
+          "token_id": 12,
+          "weight": -0.17226475477218628
+        },
+        {
+          "token_id": 15,
+          "weight": -0.5640474557876587
+        },
+        {
+          "token_id": 16,
+          "weight": 1.0291175842285156
+        },
+        {
+          "token_id": 17,
+          "weight": 0.5037203431129456
+        },
+        {
+          "token_id": 22,
+          "weight": -0.00013152793690096587
+        },
+        {
+          "token_id": 24,
+          "weight": -0.5522621273994446
+        },
+        {
+          "token_id": 25,
+          "weight": 0.8753899931907654
+        },
+        {
+          "token_id": 29,
+          "weight": -0.2135016769170761
+        },
+        {
+          "token_id": 31,
+          "weight": 0.29511234164237976
+        }
+      ]
+    },
+    {
+      "id": "neuron-042",
+      "enabled": true,
+      "bias": 0.0724688172340393,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": 0.15949317812919617
+        },
+        {
+          "feature_index": 18,
+          "weight": -0.15203280746936798
+        },
+        {
+          "feature_index": 40,
+          "weight": -0.08896461129188538
+        },
+        {
+          "feature_index": 48,
+          "weight": 0.12024500966072083
+        },
+        {
+          "feature_index": 85,
+          "weight": 0.1023537665605545
+        },
+        {
+          "feature_index": 104,
+          "weight": -0.16966697573661804
+        },
+        {
+          "feature_index": 113,
+          "weight": -0.0693306252360344
+        },
+        {
+          "feature_index": 122,
+          "weight": -0.1321856826543808
+        },
+        {
+          "feature_index": 157,
+          "weight": 0.21217894554138184
+        },
+        {
+          "feature_index": 158,
+          "weight": -0.08680488914251328
+        },
+        {
+          "feature_index": 171,
+          "weight": 0.37886738777160645
+        },
+        {
+          "feature_index": 189,
+          "weight": 0.31607088446617126
+        },
+        {
+          "feature_index": 205,
+          "weight": -4.7068064304767177e-05
+        },
+        {
+          "feature_index": 207,
+          "weight": 6.903788744239137e-05
+        },
+        {
+          "feature_index": 209,
+          "weight": -0.0968775823712349
+        },
+        {
+          "feature_index": 249,
+          "weight": -0.08100982010364532
+        },
+        {
+          "feature_index": 255,
+          "weight": 0.3691711723804474
+        },
+        {
+          "feature_index": 261,
+          "weight": 0.4500730633735657
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": 0.08652842789888382
+        },
+        {
+          "token_id": 1,
+          "weight": -0.24845507740974426
+        },
+        {
+          "token_id": 3,
+          "weight": 0.3407123386859894
+        },
+        {
+          "token_id": 5,
+          "weight": 0.019439179450273514
+        },
+        {
+          "token_id": 6,
+          "weight": -1.5499348592129536e-05
+        },
+        {
+          "token_id": 7,
+          "weight": 0.11196786910295486
+        },
+        {
+          "token_id": 16,
+          "weight": 0.3880225419998169
+        },
+        {
+          "token_id": 17,
+          "weight": 0.4436989724636078
+        },
+        {
+          "token_id": 22,
+          "weight": 7.661233394173905e-05
+        },
+        {
+          "token_id": 24,
+          "weight": 0.14820896089076996
+        },
+        {
+          "token_id": 29,
+          "weight": -0.435103178024292
+        },
+        {
+          "token_id": 30,
+          "weight": 0.090435691177845
+        },
+        {
+          "token_id": 32,
+          "weight": 0.6932888031005859
+        }
+      ]
+    },
+    {
+      "id": "neuron-043",
+      "enabled": true,
+      "bias": 0.23265352845191956,
+      "input_edges": [
+        {
+          "feature_index": 1,
+          "weight": -0.000250408862484619
+        },
+        {
+          "feature_index": 35,
+          "weight": -0.6566694974899292
+        },
+        {
+          "feature_index": 60,
+          "weight": -0.00019263183639850467
+        },
+        {
+          "feature_index": 76,
+          "weight": -0.08671411871910095
+        },
+        {
+          "feature_index": 119,
+          "weight": -0.6495079398155212
+        },
+        {
+          "feature_index": 123,
+          "weight": -0.10042370110750198
+        },
+        {
+          "feature_index": 129,
+          "weight": 0.21004390716552734
+        },
+        {
+          "feature_index": 139,
+          "weight": -0.36818382143974304
+        },
+        {
+          "feature_index": 155,
+          "weight": -0.3170488178730011
+        },
+        {
+          "feature_index": 164,
+          "weight": 0.4964846670627594
+        },
+        {
+          "feature_index": 169,
+          "weight": 0.08996988832950592
+        },
+        {
+          "feature_index": 170,
+          "weight": -0.5031888484954834
+        },
+        {
+          "feature_index": 221,
+          "weight": -0.362494558095932
+        },
+        {
+          "feature_index": 223,
+          "weight": 0.3725603222846985
+        },
+        {
+          "feature_index": 227,
+          "weight": 0.8606893420219421
+        },
+        {
+          "feature_index": 254,
+          "weight": -0.49800392985343933
+        },
+        {
+          "feature_index": 261,
+          "weight": 0.3360948860645294
+        },
+        {
+          "feature_index": 265,
+          "weight": -0.24529124796390533
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 6,
+          "weight": 1.336880995950196e-05
+        },
+        {
+          "token_id": 8,
+          "weight": 0.3869122266769409
+        },
+        {
+          "token_id": 10,
+          "weight": 0.13225597143173218
+        },
+        {
+          "token_id": 11,
+          "weight": 0.10734802484512329
+        },
+        {
+          "token_id": 18,
+          "weight": -0.8298165798187256
+        },
+        {
+          "token_id": 19,
+          "weight": -0.9752404093742371
+        },
+        {
+          "token_id": 23,
+          "weight": -1.1215320825576782
+        },
+        {
+          "token_id": 25,
+          "weight": -7.929951971163973e-05
+        },
+        {
+          "token_id": 26,
+          "weight": -0.05549968406558037
+        },
+        {
+          "token_id": 27,
+          "weight": -0.3997361660003662
+        },
+        {
+          "token_id": 30,
+          "weight": 0.9967698454856873
+        },
+        {
+          "token_id": 31,
+          "weight": 0.2986982464790344
+        },
+        {
+          "token_id": 32,
+          "weight": 0.610005795955658
+        }
+      ]
+    },
+    {
+      "id": "neuron-044",
+      "enabled": true,
+      "bias": 0.3242702782154083,
+      "input_edges": [
+        {
+          "feature_index": 57,
+          "weight": 0.6379190683364868
+        },
+        {
+          "feature_index": 77,
+          "weight": 0.09574923664331436
+        },
+        {
+          "feature_index": 86,
+          "weight": -0.7922210693359375
+        },
+        {
+          "feature_index": 90,
+          "weight": 0.12963734567165375
+        },
+        {
+          "feature_index": 103,
+          "weight": -5.116579632158391e-05
+        },
+        {
+          "feature_index": 120,
+          "weight": -0.00018992509285453707
+        },
+        {
+          "feature_index": 121,
+          "weight": 0.47283878922462463
+        },
+        {
+          "feature_index": 154,
+          "weight": 0.21881233155727386
+        },
+        {
+          "feature_index": 157,
+          "weight": -0.2746337652206421
+        },
+        {
+          "feature_index": 167,
+          "weight": 0.6395969986915588
+        },
+        {
+          "feature_index": 171,
+          "weight": -0.3169211745262146
+        },
+        {
+          "feature_index": 189,
+          "weight": -1.0607755184173584
+        },
+        {
+          "feature_index": 196,
+          "weight": 0.10795971751213074
+        },
+        {
+          "feature_index": 205,
+          "weight": 0.32125547528266907
+        },
+        {
+          "feature_index": 206,
+          "weight": 0.14165805280208588
+        },
+        {
+          "feature_index": 238,
+          "weight": -0.6425149440765381
+        },
+        {
+          "feature_index": 255,
+          "weight": -1.0983201265335083
+        },
+        {
+          "feature_index": 261,
+          "weight": -0.5186682343482971
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": 0.06086138263344765
+        },
+        {
+          "token_id": 1,
+          "weight": 0.7837174534797668
+        },
+        {
+          "token_id": 2,
+          "weight": 0.30546367168426514
+        },
+        {
+          "token_id": 6,
+          "weight": 2.5562869723216863e-06
+        },
+        {
+          "token_id": 8,
+          "weight": 0.3111155331134796
+        },
+        {
+          "token_id": 16,
+          "weight": -1.6035380363464355
+        },
+        {
+          "token_id": 17,
+          "weight": -0.00015826980234123766
+        },
+        {
+          "token_id": 18,
+          "weight": 0.044542763382196426
+        },
+        {
+          "token_id": 21,
+          "weight": 0.2951470911502838
+        },
+        {
+          "token_id": 22,
+          "weight": -0.12455815821886063
+        },
+        {
+          "token_id": 23,
+          "weight": 0.14278025925159454
+        },
+        {
+          "token_id": 30,
+          "weight": 0.8152646422386169
+        },
+        {
+          "token_id": 32,
+          "weight": -1.5235964059829712
+        }
+      ]
+    },
+    {
+      "id": "neuron-045",
+      "enabled": true,
+      "bias": 0.25751906633377075,
+      "input_edges": [
+        {
+          "feature_index": 5,
+          "weight": 0.18444180488586426
+        },
+        {
+          "feature_index": 23,
+          "weight": 0.21274709701538086
+        },
+        {
+          "feature_index": 55,
+          "weight": 0.09351636469364166
+        },
+        {
+          "feature_index": 65,
+          "weight": 0.4454650580883026
+        },
+        {
+          "feature_index": 94,
+          "weight": -0.21523705124855042
+        },
+        {
+          "feature_index": 124,
+          "weight": -0.45378538966178894
+        },
+        {
+          "feature_index": 152,
+          "weight": -0.3990800380706787
+        },
+        {
+          "feature_index": 153,
+          "weight": -0.2950439751148224
+        },
+        {
+          "feature_index": 171,
+          "weight": 0.00017347677203360945
+        },
+        {
+          "feature_index": 186,
+          "weight": 0.5875270962715149
+        },
+        {
+          "feature_index": 220,
+          "weight": -0.5573046207427979
+        },
+        {
+          "feature_index": 234,
+          "weight": -0.8404013514518738
+        },
+        {
+          "feature_index": 238,
+          "weight": -0.5125722885131836
+        },
+        {
+          "feature_index": 239,
+          "weight": -0.7693866491317749
+        },
+        {
+          "feature_index": 243,
+          "weight": -0.33542686700820923
+        },
+        {
+          "feature_index": 244,
+          "weight": -0.00027970553492195904
+        },
+        {
+          "feature_index": 268,
+          "weight": 0.5425236225128174
+        },
+        {
+          "feature_index": 270,
+          "weight": -0.7794922590255737
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 0,
+          "weight": 0.3690284788608551
+        },
+        {
+          "token_id": 1,
+          "weight": 1.6507203578948975
+        },
+        {
+          "token_id": 3,
+          "weight": 0.1896222084760666
+        },
+        {
+          "token_id": 5,
+          "weight": -0.36211228370666504
+        },
+        {
+          "token_id": 7,
+          "weight": -0.00010416108852950856
+        },
+        {
+          "token_id": 8,
+          "weight": -0.264303982257843
+        },
+        {
+          "token_id": 10,
+          "weight": -0.25950735807418823
+        },
+        {
+          "token_id": 12,
+          "weight": -0.21598932147026062
+        },
+        {
+          "token_id": 16,
+          "weight": 0.03456604853272438
+        },
+        {
+          "token_id": 21,
+          "weight": 0.00011808752606157213
+        },
+        {
+          "token_id": 24,
+          "weight": -0.9610036611557007
+        },
+        {
+          "token_id": 25,
+          "weight": 0.483646959066391
+        },
+        {
+          "token_id": 32,
+          "weight": 1.1571846008300781
+        }
+      ]
+    },
+    {
+      "id": "neuron-046",
+      "enabled": true,
+      "bias": -0.2612217664718628,
+      "input_edges": [
+        {
+          "feature_index": 4,
+          "weight": -0.22394990921020508
+        },
+        {
+          "feature_index": 18,
+          "weight": 0.1257021576166153
+        },
+        {
+          "feature_index": 20,
+          "weight": 0.11019387096166611
+        },
+        {
+          "feature_index": 34,
+          "weight": 0.11246200650930405
+        },
+        {
+          "feature_index": 70,
+          "weight": 0.13568706810474396
+        },
+        {
+          "feature_index": 92,
+          "weight": -0.06452132016420364
+        },
+        {
+          "feature_index": 141,
+          "weight": -0.1646619290113449
+        },
+        {
+          "feature_index": 144,
+          "weight": -0.1349892020225525
+        },
+        {
+          "feature_index": 153,
+          "weight": -0.21791903674602509
+        },
+        {
+          "feature_index": 171,
+          "weight": 0.1323893517255783
+        },
+        {
+          "feature_index": 173,
+          "weight": -0.3366982340812683
+        },
+        {
+          "feature_index": 180,
+          "weight": 0.04455661028623581
+        },
+        {
+          "feature_index": 204,
+          "weight": -0.2560192346572876
+        },
+        {
+          "feature_index": 205,
+          "weight": 5.1235630962764844e-05
+        },
+        {
+          "feature_index": 223,
+          "weight": 0.11431040614843369
+        },
+        {
+          "feature_index": 239,
+          "weight": 0.5923246741294861
+        },
+        {
+          "feature_index": 254,
+          "weight": -9.940872405422851e-05
+        },
+        {
+          "feature_index": 261,
+          "weight": -0.028151648119091988
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 4,
+          "weight": -0.3444978892803192
+        },
+        {
+          "token_id": 5,
+          "weight": 0.18023791909217834
+        },
+        {
+          "token_id": 6,
+          "weight": 0.3402238190174103
+        },
+        {
+          "token_id": 7,
+          "weight": 5.3243100410327315e-05
+        },
+        {
+          "token_id": 11,
+          "weight": 0.08461374789476395
+        },
+        {
+          "token_id": 12,
+          "weight": 0.1250772774219513
+        },
+        {
+          "token_id": 13,
+          "weight": -0.10123293846845627
+        },
+        {
+          "token_id": 14,
+          "weight": 0.08519203960895538
+        },
+        {
+          "token_id": 15,
+          "weight": 6.01903120696079e-05
+        },
+        {
+          "token_id": 21,
+          "weight": -0.6913354396820068
+        },
+        {
+          "token_id": 25,
+          "weight": -0.27593523263931274
+        },
+        {
+          "token_id": 29,
+          "weight": 0.15985825657844543
+        },
+        {
+          "token_id": 31,
+          "weight": -0.39600011706352234
+        }
+      ]
+    },
+    {
+      "id": "neuron-047",
+      "enabled": true,
+      "bias": 0.09774155914783478,
+      "input_edges": [
+        {
+          "feature_index": 0,
+          "weight": -0.056509919464588165
+        },
+        {
+          "feature_index": 1,
+          "weight": 0.38356873393058777
+        },
+        {
+          "feature_index": 9,
+          "weight": 0.0751713290810585
+        },
+        {
+          "feature_index": 33,
+          "weight": 0.0817621573805809
+        },
+        {
+          "feature_index": 53,
+          "weight": -0.4169760048389435
+        },
+        {
+          "feature_index": 79,
+          "weight": 0.05225536227226257
+        },
+        {
+          "feature_index": 92,
+          "weight": -0.09402786195278168
+        },
+        {
+          "feature_index": 93,
+          "weight": 0.07684767246246338
+        },
+        {
+          "feature_index": 101,
+          "weight": 0.11244366317987442
+        },
+        {
+          "feature_index": 103,
+          "weight": 3.200231003575027e-05
+        },
+        {
+          "feature_index": 152,
+          "weight": -0.3805263042449951
+        },
+        {
+          "feature_index": 193,
+          "weight": -0.20288358628749847
+        },
+        {
+          "feature_index": 205,
+          "weight": -0.4680466055870056
+        },
+        {
+          "feature_index": 207,
+          "weight": 9.648429841035977e-05
+        },
+        {
+          "feature_index": 220,
+          "weight": 0.6092870235443115
+        },
+        {
+          "feature_index": 232,
+          "weight": -0.09193981438875198
+        },
+        {
+          "feature_index": 238,
+          "weight": 0.0207282193005085
+        },
+        {
+          "feature_index": 251,
+          "weight": -0.09360527247190475
+        }
+      ],
+      "output_edges": [
+        {
+          "token_id": 1,
+          "weight": -2.048490205197595e-05
+        },
+        {
+          "token_id": 6,
+          "weight": -0.30682995915412903
+        },
+        {
+          "token_id": 7,
+          "weight": -0.31402522325515747
+        },
+        {
+          "token_id": 8,
+          "weight": 0.03061341680586338
+        },
+        {
+          "token_id": 11,
+          "weight": -0.2628398537635803
+        },
+        {
+          "token_id": 17,
+          "weight": 0.7334617376327515
+        },
+        {
+          "token_id": 18,
+          "weight": 0.6418647766113281
+        },
+        {
+          "token_id": 20,
+          "weight": -0.5316480398178101
+        },
+        {
+          "token_id": 21,
+          "weight": -0.04682714492082596
+        },
+        {
+          "token_id": 26,
+          "weight": 0.1091984286904335
+        },
+        {
+          "token_id": 27,
+          "weight": -0.022315215319395065
+        },
+        {
+          "token_id": 29,
+          "weight": -0.16237610578536987
+        },
+        {
+          "token_id": 30,
+          "weight": 8.326982060680166e-05
+        }
+      ]
+    }
+  ],
+  "output_bias": [
+    0.2618906795978546,
+    1.0473946332931519,
+    -0.31169843673706055,
+    0.13920478522777557,
+    -0.344044953584671,
+    0.02705557830631733,
+    0.14445023238658905,
+    -0.007293933071196079,
+    -0.23993852734565735,
+    -0.1456865817308426,
+    -0.30064961314201355,
+    -0.2574421763420105,
+    -0.28616127371788025,
+    -0.24484409391880035,
+    -0.7664188742637634,
+    -0.3208198547363281,
+    1.0413737297058105,
+    0.1496288925409317,
+    0.4476213753223419,
+    0.5933730006217957,
+    -0.2860073447227478,
+    -0.041525181382894516,
+    -0.12122290581464767,
+    0.7070383429527283,
+    -0.1815072000026703,
+    0.07900547236204147,
+    -0.3325684666633606,
+    -0.2798028290271759,
+    -0.010074622929096222,
+    -0.8004093170166016,
+    0.8395862579345703,
+    0.523054838180542,
+    0.11822253465652466,
+    -0.8407851457595825
+  ],
+  "evaluation": {
+    "heldout_loss": 1.27273690700531,
+    "heldout_accuracy": 0.6971318493150684
+  }
+}
