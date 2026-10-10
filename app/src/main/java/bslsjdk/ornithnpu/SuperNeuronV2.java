@@ -47,6 +47,8 @@ public final class SuperNeuronV2 {
     private final double[] lastInputGradient;
     private final double[] outputBias;
     private final double[] state;
+    // Reused scratch: input contribution is identical across all internal recurrent micro-steps.
+    private final double[] inputDrive;
 
     // One-step cache used by trainClass(); deliberately bounded.
     private final double[] lastInput;
@@ -84,6 +86,7 @@ public final class SuperNeuronV2 {
         lastInputGradient = new double[inputCount];
         outputBias = new double[outputCount];
         state = new double[hiddenSize];
+        inputDrive = new double[hiddenSize];
         lastInput = new double[inputCount];
         lastGate = new double[inputCount];
         lastHidden = new double[hiddenSize];
@@ -123,13 +126,23 @@ public final class SuperNeuronV2 {
             lastGate[p] = sigmoid(z);
         }
 
+        // Input projection does not depend on the recurrent micro-step. Compute it
+        // once in contiguous weight order, then reuse it for all three steps. This
+        // removes two thirds of the repeated input-projection MACs and improves cache
+        // locality without changing the recurrent equations or numerical precision.
+        Arrays.fill(inputDrive, 0.0);
+        for (int p = 0; p < inputCount; p++) {
+            double gatedInput = inputs[p] * lastGate[p];
+            int base = p * hiddenSize;
+            for (int h = 0; h < hiddenSize; h++)
+                inputDrive[h] += gatedInput * inputProjection[base + h];
+        }
+
         // Three bounded internal recurrent micro-steps per external token.
         // The diagonal recurrence keeps storage O(hiddenSize), not O(hiddenSize^2).
         for (int step = 0; step < INTERNAL_MICRO_STEPS; step++) {
             for (int h = 0; h < hiddenSize; h++) {
-                double sum = recurrentScale[h] * state[h];
-                for (int p = 0; p < inputCount; p++)
-                    sum += inputs[p] * lastGate[p] * inputProjection[p * hiddenSize + h];
+                double sum = recurrentScale[h] * state[h] + inputDrive[h];
                 lastHidden[h] = Math.tanh(clamp(sum, -12.0, 12.0));
             }
             System.arraycopy(lastHidden, 0, state, 0, hiddenSize);
