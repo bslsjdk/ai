@@ -120,7 +120,17 @@ jobs:
             echo "No language-model output produced."
           else
             git commit -m "Record real language-model PK results [skip ci]"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
+            pushed=0
+            for attempt in 1 2 3 4 5; do
+              git fetch origin "${GITHUB_REF_NAME}"
+              git rebase "origin/${GITHUB_REF_NAME}"
+              if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+                pushed=1
+                break
+              fi
+              sleep 2
+            done
+            test "$pushed" = "1"
           fi
 
       - name: Enforce benchmark execution status
