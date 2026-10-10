@@ -83,14 +83,7 @@ public final class SuperNeuronLanguageTrainer {
                 copyEmbedding(token, inputScratch);
                 model.forwardInto(inputScratch, outputScratch);
                 totalLoss += model.trainClass(target, learningRate);
-                model.copyLastInputGradient(gradientScratch);
-                int base = token * embeddingSize;
-                for (int d = 0; d < embeddingSize; d++) {
-                    double grad = Math.max(-5.0, Math.min(5.0, gradientScratch[d]));
-                    embeddings[base + d] = clamp(
-                            embeddings[base + d] - learningRate * grad,
-                            -MAX_ABS_EMBEDDING, MAX_ABS_EMBEDDING);
-                }
+                // Token embeddings are fixed input coding; gradient descent stays inside SuperNeuronV2.
                 trainedTokenTargets++;
             }
         }
@@ -126,17 +119,11 @@ public final class SuperNeuronLanguageTrainer {
             model.forwardInto(inputScratch, outputScratch);
             int prediction = argmax(outputScratch);
             double loss = model.trainClass(target, learningRate);
-            model.copyLastInputGradient(gradientScratch);
-            int base = token * embeddingSize;
-            for (int d = 0; d < embeddingSize; d++) {
-                double grad = clamp(gradientScratch[d], -5.0, 5.0);
-                embeddings[base + d] = clamp(embeddings[base + d] - learningRate * grad,
-                        -MAX_ABS_EMBEDDING, MAX_ABS_EMBEDDING);
-            }
-            // A bounded local reward supplements the within-unit supervised update.
-            // No gradient is propagated across the population or across time steps.
-            model.applyReward(prediction == target ? 0.1 : -0.02,
-                    Math.min(0.002, learningRate * 0.1));
+            // The embedding vector is fixed input coding, not a gradient-trained layer.
+            // All gradient updates happen inside this individual SuperNeuronV2.
+            double reward = (prediction < 0 || prediction >= vocabularySize)
+                    ? -1.0 : (prediction == target ? 0.1 : -0.02);
+            model.applyReward(reward, Math.min(0.002, learningRate * 0.1));
             totalLoss += loss;
             completed++;
             trainedTokenTargets++;
@@ -243,7 +230,7 @@ public final class SuperNeuronLanguageTrainer {
     public int getEmbeddingSize() { return embeddingSize; }
     public long getTrainedTokenTargets() { return trainedTokenTargets; }
     public long getParameterCount() {
-        return model.getParameterCount() + (long) embeddings.length;
+        return model.getParameterCount();
     }
     public long estimatedStorageBytes() {
         return (long) embeddings.length * Double.BYTES + model.estimatedStorageBytes()
