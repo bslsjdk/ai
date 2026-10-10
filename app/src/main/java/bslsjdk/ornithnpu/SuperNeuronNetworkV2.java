@@ -10,7 +10,8 @@ public final class SuperNeuronNetworkV2 {
     private final int n, channels, maxEdges;
     private final double[] bias, state, activation, sharedWeight, sharedBias;
     private final int[] head, to, channel, next;
-    private final double[] edgeWeight;
+    private final double[] edgeWeight, edgeEligibility;
+    private final double[] neuronEligibility;
     private int edges;
     private final double[] pending, current;
     private final int[] pendingStamp, currentStamp, pendingTouched, currentTouched;
@@ -29,7 +30,8 @@ public final class SuperNeuronNetworkV2 {
         bias = new double[n]; state = new double[n]; activation = new double[n];
         head = new int[n]; Arrays.fill(head, -1);
         to = new int[maxEdges]; channel = new int[maxEdges]; next = new int[maxEdges];
-        edgeWeight = new double[maxEdges];
+        edgeWeight = new double[maxEdges]; edgeEligibility = new double[maxEdges];
+        neuronEligibility = new double[n];
         sharedWeight = new double[channels]; sharedBias = new double[channels];
         pending = new double[n]; current = new double[n];
         pendingStamp = new int[n]; currentStamp = new int[n];
@@ -77,7 +79,10 @@ public final class SuperNeuronNetworkV2 {
             int node = lastActive[i];
             double a = Math.tanh(current[node] + recurrentScale * state[node] + bias[node]);
             state[node] = activation[node] = a;
+            neuronEligibility[node] = 0.9 * neuronEligibility[node] + current[node] * (1.0 - a * a);
             for (int e = head[node]; e >= 0; e = next[e]) {
+                edgeEligibility[e] *= 0.9;
+                edgeEligibility[e] += a * state[to[e]];
                 double message = Math.tanh(a * sharedWeight[channel[e]] + sharedBias[channel[e]]) * edgeWeight[e];
                 if (message != 0.0) addPending(to[e], message);
             }
@@ -93,6 +98,25 @@ public final class SuperNeuronNetworkV2 {
         if (c < 0 || c >= channels) throw new IllegalArgumentException("bad channel");
         return Math.tanh(activation[node] * sharedWeight[c] + sharedBias[c]);
     }
+
+    /**
+     * Experimental reward-modulated local update. This is a coordination baseline,
+     * not a substitute for end-to-end language-model backpropagation.
+     */
+    public void applyReward(double reward, double learningRate) {
+        if (!Double.isFinite(reward) || Math.abs(reward) > 1.0)
+            throw new IllegalArgumentException("reward must be finite and within [-1,1]");
+        if (!Double.isFinite(learningRate) || learningRate <= 0.0 || learningRate > 0.02)
+            throw new IllegalArgumentException("learningRate must be in (0,0.02]");
+        for (int i = 0; i < activeCount; i++) {
+            int node = lastActive[i];
+            bias[node] = clamp(bias[node] + learningRate * reward * neuronEligibility[node], -2.0, 2.0);
+            for (int e = head[node]; e >= 0; e = next[e]) {
+                edgeWeight[e] = clamp(edgeWeight[e] + learningRate * reward * edgeEligibility[e], -4.0, 4.0);
+            }
+        }
+    }
+
     public int getNeuronCount() { return n; }
     public int getEdgeCount() { return edges; }
     public int getChannelCount() { return channels; }
@@ -110,6 +134,7 @@ public final class SuperNeuronNetworkV2 {
     }
     public void resetState() {
         Arrays.fill(state, 0); Arrays.fill(activation, 0);
+        Arrays.fill(neuronEligibility, 0); Arrays.fill(edgeEligibility, 0);
         Arrays.fill(pending, 0); Arrays.fill(current, 0);
         Arrays.fill(pendingStamp, 0); Arrays.fill(currentStamp, 0);
         pendingCount = currentCount = activeCount = 0; generation = 1;
@@ -149,6 +174,7 @@ public final class SuperNeuronNetworkV2 {
         }
         generation++;
     }
+    private static double clamp(double v, double min, double max) { return Math.max(min, Math.min(max, v)); }
     private void check(int node) {
         if (node < 0 || node >= n) throw new IllegalArgumentException("node out of range: " + node);
     }
