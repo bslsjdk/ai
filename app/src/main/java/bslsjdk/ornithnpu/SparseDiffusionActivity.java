@@ -17,7 +17,7 @@ public final class SparseDiffusionActivity extends Activity {
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private EditText prompt, count;
     private TextView status, result;
-    private Button run;
+    private Button run, rewardButton, punishButton;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -53,6 +53,16 @@ public final class SparseDiffusionActivity extends Activity {
         run.setEnabled(false);
         run.setOnClickListener(v -> generate());
         root.addView(run);
+        rewardButton = new Button(this);
+        rewardButton.setText("奖励 +1（这次结果有帮助）");
+        rewardButton.setEnabled(false);
+        rewardButton.setOnClickListener(v -> giveFeedback(1f));
+        root.addView(rewardButton);
+        punishButton = new Button(this);
+        punishButton.setText("惩罚 -1（这次结果不好）");
+        punishButton.setEnabled(false);
+        punishButton.setOnClickListener(v -> giveFeedback(-1f));
+        root.addView(punishButton);
         ScrollView scroll = new ScrollView(this);
         result = new TextView(this);
         result.setTextIsSelectable(true);
@@ -81,7 +91,8 @@ public final class SparseDiffusionActivity extends Activity {
                     out.write(b, 0, n);
                 }
                 model.load(file);
-                runOnUiThread(() -> { status.setText("模型已加载，等待本地推理"); run.setEnabled(true); });
+                model.loadLearningState(new File(getFilesDir(), "aimeng-learning-state.json"));
+                runOnUiThread(() -> { status.setText("模型已加载 · 本地学习记录 " + model.getLearningUpdates() + " 次"); run.setEnabled(true); });
             } catch (Throwable e) {
                 runOnUiThread(() -> status.setText("加载失败：" + e.getClass().getSimpleName() + ": " + e.getMessage()));
             }
@@ -105,11 +116,28 @@ public final class SparseDiffusionActivity extends Activity {
                 long ms = (System.nanoTime() - t) / 1_000_000;
                 runOnUiThread(() -> {
                     result.setText(text);
-                    status.setText("本地 CPU 推理完成 · " + ms + " ms");
+                    status.setText("本地 CPU 推理完成 · " + ms + " ms · 可给本次结果奖励或惩罚");
                     run.setEnabled(true);
+                    rewardButton.setEnabled(model.canGiveFeedback());
+                    punishButton.setEnabled(model.canGiveFeedback());
                 });
             } catch (Throwable e) {
                 runOnUiThread(() -> { status.setText("推理失败：" + e.getClass().getSimpleName() + ": " + e.getMessage()); run.setEnabled(true); });
+            }
+        });
+    }
+
+    private void giveFeedback(float reward) {
+        rewardButton.setEnabled(false);
+        punishButton.setEnabled(false);
+        worker.execute(() -> {
+            try {
+                int changed = model.applyFeedback(reward, new File(getFilesDir(), "aimeng-learning-state.json"));
+                runOnUiThread(() -> status.setText((reward > 0 ? "已奖励" : "已惩罚")
+                        + " · 更新参数 " + changed + " 项 · 累计学习 " + model.getLearningUpdates()
+                        + " 次 · 已保存到手机"));
+            } catch (Throwable e) {
+                runOnUiThread(() -> status.setText("学习更新失败：" + e.getClass().getSimpleName() + ": " + e.getMessage()));
             }
         });
     }
