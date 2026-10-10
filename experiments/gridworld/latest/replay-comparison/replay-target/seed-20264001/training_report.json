@@ -1,0 +1,27 @@
+{
+  "algorithm": "experience replay + target network",
+  "batchSize": 8,
+  "episodesTrained": 5000,
+  "finalEvaluation": {
+    "episodes": 500,
+    "mean_optimality_ratio": 0.995751401721551,
+    "mean_steps_success": 4.027363184079602,
+    "success_rate": 0.804,
+    "successes": 402
+  },
+  "initialEvaluation": {
+    "episodes": 500,
+    "mean_optimality_ratio": 0.9938888888888889,
+    "mean_steps_success": 2.9583333333333335,
+    "success_rate": 0.24,
+    "successes": 120
+  },
+  "parameterCount": 212,
+  "replayCapacity": 2048,
+  "seed": 20264001,
+  "successDelta": 0.5640000000000001,
+  "targetSyncEnvironmentSteps": 200,
+  "trainingSeconds": 4.848,
+  "updateEveryEnvironmentSteps": 8,
+  "warmupTransitions": 64
+}

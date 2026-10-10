@@ -1,0 +1,210 @@
+{
+  "bfsOracle": {
+    "episodes": 500,
+    "mean_steps_success": 4.504,
+    "note": "BFS oracle upper bound; not a learned model",
+    "success_rate": 1.0,
+    "successes": 500
+  },
+  "episodesPerSeed": 5000,
+  "evaluation": "100 fixed-seed held-out maps, 5 starts per map, exploration disabled",
+  "format": "aimeng-online-td-vs-replay-report/v1",
+  "limitations": [
+    "Only a small navigation task, not a language-model benchmark.",
+    "Replay changes the number and distribution of gradient updates; training episode count is matched, not exact wall-clock or gradient-update count.",
+    "Three seeds are exploratory evidence, not statistical proof."
+  ],
+  "methods": {
+    "online-td": {
+      "aggregate": {
+        "finalSuccessRateMax": 0.894,
+        "finalSuccessRateMean": 0.8326666666666667,
+        "finalSuccessRateMin": 0.794,
+        "finalSuccessRateStdev": 0.04385835787572939,
+        "initialSuccessRateMean": 0.15933333333333333,
+        "meanTrainingSeconds": 4.479666666666667,
+        "seedCount": 3,
+        "seedsImproved": 3
+      },
+      "description": "212-parameter 8-16-4 MLP; online TD(0)",
+      "parameterCount": 212,
+      "perSeed": [
+        {
+          "algorithm": "online TD(0)",
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9992803166606693,
+            "mean_steps_success": 4.025188916876575,
+            "success_rate": 0.794,
+            "successes": 397
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9938888888888889,
+            "mean_steps_success": 2.9583333333333335,
+            "success_rate": 0.24,
+            "successes": 120
+          },
+          "parameterCount": 212,
+          "seed": 20264001,
+          "successDelta": 0.554,
+          "trainingSeconds": 4.629
+        },
+        {
+          "algorithm": "online TD(0)",
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9988636767160257,
+            "mean_steps_success": 4.243847874720358,
+            "success_rate": 0.894,
+            "successes": 447
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 2.2,
+            "success_rate": 0.14,
+            "successes": 70
+          },
+          "parameterCount": 212,
+          "seed": 20264002,
+          "successDelta": 0.754,
+          "trainingSeconds": 4.658
+        },
+        {
+          "algorithm": "online TD(0)",
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9982520086223791,
+            "mean_steps_success": 4.088888888888889,
+            "success_rate": 0.81,
+            "successes": 405
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 1.816326530612245,
+            "success_rate": 0.098,
+            "successes": 49
+          },
+          "parameterCount": 212,
+          "seed": 20264003,
+          "successDelta": 0.7120000000000001,
+          "trainingSeconds": 4.152
+        }
+      ]
+    },
+    "replay-target": {
+      "aggregate": {
+        "finalSuccessRateMax": 0.926,
+        "finalSuccessRateMean": 0.8220000000000001,
+        "finalSuccessRateMin": 0.736,
+        "finalSuccessRateStdev": 0.0786044952064872,
+        "initialSuccessRateMean": 0.15933333333333333,
+        "meanTrainingSeconds": 4.9543333333333335,
+        "seedCount": 3,
+        "seedsImproved": 3
+      },
+      "description": "same 212-parameter MLP; replay buffer and periodically copied target network",
+      "parameterCount": 212,
+      "perSeed": [
+        {
+          "algorithm": "experience replay + target network",
+          "batchSize": 8,
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.995751401721551,
+            "mean_steps_success": 4.027363184079602,
+            "success_rate": 0.804,
+            "successes": 402
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9938888888888889,
+            "mean_steps_success": 2.9583333333333335,
+            "success_rate": 0.24,
+            "successes": 120
+          },
+          "parameterCount": 212,
+          "replayCapacity": 2048,
+          "seed": 20264001,
+          "successDelta": 0.5640000000000001,
+          "targetSyncEnvironmentSteps": 200,
+          "trainingSeconds": 4.848,
+          "updateEveryEnvironmentSteps": 8,
+          "warmupTransitions": 64
+        },
+        {
+          "algorithm": "experience replay + target network",
+          "batchSize": 8,
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9993961352657005,
+            "mean_steps_success": 3.7744565217391304,
+            "success_rate": 0.736,
+            "successes": 368
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 2.2,
+            "success_rate": 0.14,
+            "successes": 70
+          },
+          "parameterCount": 212,
+          "replayCapacity": 2048,
+          "seed": 20264002,
+          "successDelta": 0.596,
+          "targetSyncEnvironmentSteps": 200,
+          "trainingSeconds": 5.169,
+          "updateEveryEnvironmentSteps": 8,
+          "warmupTransitions": 64
+        },
+        {
+          "algorithm": "experience replay + target network",
+          "batchSize": 8,
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9990880729541637,
+            "mean_steps_success": 4.280777537796976,
+            "success_rate": 0.926,
+            "successes": 463
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 1.816326530612245,
+            "success_rate": 0.098,
+            "successes": 49
+          },
+          "parameterCount": 212,
+          "replayCapacity": 2048,
+          "seed": 20264003,
+          "successDelta": 0.8280000000000001,
+          "targetSyncEnvironmentSteps": 200,
+          "trainingSeconds": 4.846,
+          "updateEveryEnvironmentSteps": 8,
+          "warmupTransitions": 64
+        }
+      ]
+    }
+  },
+  "randomBaseline": {
+    "episodes": 500,
+    "mean_steps_success": 17.02906976744186,
+    "success_rate": 0.344,
+    "successes": 172
+  },
+  "seeds": [
+    20264001,
+    20264002,
+    20264003
+  ],
+  "trainingSchedule": "identical pre-generated map/start sequence per seed for both methods"
+}

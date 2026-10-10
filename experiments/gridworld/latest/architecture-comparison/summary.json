@@ -22,7 +22,7 @@
         "finalSuccessRateMin": 0.724,
         "finalSuccessRateStdev": 0.07024401912064987,
         "initialSuccessRateMean": 0.034666666666666665,
-        "meanTrainingSeconds": 5.782333333333333,
+        "meanTrainingSeconds": 4.871333333333333,
         "seedCount": 3,
         "seedsImproved": 3
       },
@@ -48,7 +48,7 @@
           "parameterCount": 212,
           "seed": 20263001,
           "successDelta": 0.81,
-          "trainingSeconds": 5.669
+          "trainingSeconds": 4.761
         },
         {
           "episodesTrained": 5000,
@@ -69,7 +69,7 @@
           "parameterCount": 212,
           "seed": 20263002,
           "successDelta": 0.6839999999999999,
-          "trainingSeconds": 6.211
+          "trainingSeconds": 5.349
         },
         {
           "episodesTrained": 5000,
@@ -90,7 +90,7 @@
           "parameterCount": 212,
           "seed": 20263003,
           "successDelta": 0.872,
-          "trainingSeconds": 5.467
+          "trainingSeconds": 4.504
         }
       ]
     },
@@ -101,7 +101,7 @@
         "finalSuccessRateMin": 0.802,
         "finalSuccessRateStdev": 0.040540788788028706,
         "initialSuccessRateMean": 0.06533333333333334,
-        "meanTrainingSeconds": 10.050333333333333,
+        "meanTrainingSeconds": 7.380333333333333,
         "seedCount": 3,
         "seedsImproved": 3
       },
@@ -127,7 +127,7 @@
           "parameterCount": 202,
           "seed": 20263001,
           "successDelta": 0.748,
-          "trainingSeconds": 9.576
+          "trainingSeconds": 6.975
         },
         {
           "episodesTrained": 5000,
@@ -148,7 +148,7 @@
           "parameterCount": 202,
           "seed": 20263002,
           "successDelta": 0.746,
-          "trainingSeconds": 10.29
+          "trainingSeconds": 7.579
         },
         {
           "episodesTrained": 5000,
@@ -169,7 +169,7 @@
           "parameterCount": 202,
           "seed": 20263003,
           "successDelta": 0.802,
-          "trainingSeconds": 10.285
+          "trainingSeconds": 7.587
         }
       ]
     }

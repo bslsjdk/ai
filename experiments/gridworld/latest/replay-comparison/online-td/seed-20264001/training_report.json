@@ -1,0 +1,22 @@
+{
+  "algorithm": "online TD(0)",
+  "episodesTrained": 5000,
+  "finalEvaluation": {
+    "episodes": 500,
+    "mean_optimality_ratio": 0.9992803166606693,
+    "mean_steps_success": 4.025188916876575,
+    "success_rate": 0.794,
+    "successes": 397
+  },
+  "initialEvaluation": {
+    "episodes": 500,
+    "mean_optimality_ratio": 0.9938888888888889,
+    "mean_steps_success": 2.9583333333333335,
+    "success_rate": 0.24,
+    "successes": 120
+  },
+  "parameterCount": 212,
+  "seed": 20264001,
+  "successDelta": 0.554,
+  "trainingSeconds": 4.629
+}
