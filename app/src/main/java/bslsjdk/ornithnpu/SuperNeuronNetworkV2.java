@@ -15,6 +15,8 @@ public final class SuperNeuronNetworkV2 {
     private final double[] sharedWeightEligibility, sharedBiasEligibility;
     // Reused per-active-neuron cache avoids recalculating the same channel tanh for every edge.
     private final double[] channelOutputScratch;
+    private final int[] channelOutputStamp;
+    private int channelOutputGeneration = 1;
     private int edges;
     private final double[] pending, current;
     private final int[] pendingStamp, currentStamp, pendingTouched, currentTouched;
@@ -38,6 +40,7 @@ public final class SuperNeuronNetworkV2 {
         sharedWeight = new double[channels]; sharedBias = new double[channels];
         sharedWeightEligibility = new double[channels]; sharedBiasEligibility = new double[channels];
         channelOutputScratch = new double[channels];
+        channelOutputStamp = new int[channels];
         pending = new double[n]; current = new double[n];
         pendingStamp = new int[n]; currentStamp = new int[n];
         pendingTouched = new int[n]; currentTouched = new int[n];
@@ -85,14 +88,21 @@ public final class SuperNeuronNetworkV2 {
             double a = Math.tanh(current[node] + recurrentScale * state[node] + bias[node]);
             state[node] = activation[node] = a;
             neuronEligibility[node] = 0.9 * neuronEligibility[node] + current[node] * (1.0 - a * a);
-            // All outgoing edges read the same channel output for this active node.
-            // Calculate each channel once, rather than repeating tanh for every edge.
-            for (int c = 0; c < channels; c++)
-                channelOutputScratch[c] = Math.tanh(a * sharedWeight[c] + sharedBias[c]);
+            // Cache lazily: a channel is evaluated at most once per active node,
+            // and unused channels cost nothing when a node has only a few outgoing edges.
+            if (++channelOutputGeneration == 0) {
+                Arrays.fill(channelOutputStamp, 0);
+                channelOutputGeneration = 1;
+            }
+            int localChannelGeneration = channelOutputGeneration;
             for (int e = head[node]; e >= 0; e = next[e]) {
                 edgeEligibility[e] *= 0.9;
                 edgeEligibility[e] += a * state[to[e]];
                 int c = channel[e];
+                if (channelOutputStamp[c] != localChannelGeneration) {
+                    channelOutputScratch[c] = Math.tanh(a * sharedWeight[c] + sharedBias[c]);
+                    channelOutputStamp[c] = localChannelGeneration;
+                }
                 double channelTanh = channelOutputScratch[c];
                 double channelDerivative = 1.0 - channelTanh * channelTanh;
                 sharedWeightEligibility[c] = 0.9 * sharedWeightEligibility[c]
