@@ -26,6 +26,22 @@ public class SuperNeuronNetworkV2Test {
     }
 
     @Test
+    public void repeatedOutgoingChannelsReuseCacheWithoutChangingSparsePropagation() {
+        SuperNeuronNetworkV2 net = new SuperNeuronNetworkV2(6, 12, 3, 23L);
+        net.connect(0, 1, 1, 0.7);
+        net.connect(0, 2, 1, -0.4);
+        net.connect(0, 3, 2, 0.9);
+        assertEquals(1, net.step(new int[]{0}, new double[]{1.0}, 1, 1));
+        assertEquals(3, net.step(new int[0], new double[0], 0, 4));
+        for (int node = 1; node <= 3; node++) {
+            assertTrue(Double.isFinite(net.getActivation(node)));
+            assertTrue(Double.isFinite(net.getState(node)));
+            for (int channel = 0; channel < net.getChannelCount(); channel++)
+                assertTrue(Double.isFinite(net.getChannelOutput(node, channel)));
+        }
+    }
+
+    @Test
     public void thousandNodesUseBoundedActivationBudget() {
         SuperNeuronNetworkV2 net = new SuperNeuronNetworkV2(1000, 16000, 4, 19L);
         int[] ids = new int[1000];
