@@ -290,6 +290,8 @@ public final class SuperNeuronLabActivity extends Activity {
                 checkpoint.put("memoryReport", report);
                 writeJsonAtomically("super_neuron_checkpoint.json", checkpoint);
 
+                File reportDir = getExternalFilesDir(null);
+                String reportDirectory = reportDir == null ? getFilesDir().getAbsolutePath() : reportDir.getAbsolutePath();
                 StringBuilder curveText = new StringBuilder(
                         "\\n\\n每 1000 步的损失/内存曲线：\\n步数 | 平均交叉熵 | PSS MiB | RSS MiB\\n");
                 for (int i = 0; i < samples.length(); i++) {
@@ -313,7 +315,7 @@ public final class SuperNeuronLabActivity extends Activity {
                         tokenizer.tokenAt(prediction), pool.getLastTrainingSteps(), trainLoss,
                         initialValidationLoss,
                         Double.isFinite(validationLoss) ? String.format(Locale.US, "%.5f", validationLoss) : "未完成",
-                        pool.getGeneration(), finalPss / 1024.0, finalRss / 1024.0, samples.length());
+                        pool.getGeneration(), finalPss / 1024.0, finalRss / 1024.0, samples.length(), reportDirectory);
                 result += curveText.toString();
                 main.post(() -> {
                     trainer = best;
@@ -352,8 +354,11 @@ public final class SuperNeuronLabActivity extends Activity {
     }
 
     private void writeJsonAtomically(String name, JSONObject json) throws IOException, JSONException {
-        File target = new File(getFilesDir(), name);
-        File temporary = new File(getFilesDir(), name + ".tmp");
+        File directory = getExternalFilesDir(null);
+        if (directory == null) directory = getFilesDir();
+        if (!directory.exists() && !directory.mkdirs()) throw new IOException("cannot create report directory");
+        File target = new File(directory, name);
+        File temporary = new File(directory, name + ".tmp");
         byte[] bytes = json.toString(2).getBytes(StandardCharsets.UTF_8);
         try (FileOutputStream output = new FileOutputStream(temporary)) {
             output.write(bytes);
