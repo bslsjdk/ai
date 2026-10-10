@@ -81,6 +81,17 @@ public final class GridWorldLabActivity extends Activity {
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final Random rng = new Random(20261009L);
     private QNet net = new QNet(20261009L, DEFAULT_HIDDEN);
+    // Isolated 16-feature evolutionary model. It never shares weights/replay with the 168-input QNet.
+    private EvoNet16 evo16;
+    private boolean useEvo16;
+    private int previousAction = -1;
+    private int[] currentDistanceMap;
+    private final List<EvoNet16> evo16Bank = new ArrayList<>();
+    private List<MapData> evo16ValidationMaps = new ArrayList<>();
+    private List<MapData> evo16TestMaps = new ArrayList<>();
+    private volatile long evo16Evaluations;
+    private volatile int evo16Generations;
+    private volatile double evo16BestValidationScore = Double.NEGATIVE_INFINITY;
     private final List<Integer> path = new ArrayList<>();
     private TextView status, metrics, activationText, qText, log, hiddenActivationTitle;
     private EditText hiddenSizeInput;
@@ -126,6 +137,7 @@ public final class GridWorldLabActivity extends Activity {
         super.onCreate(state);
         loadCheckpoint();
         loadReplayMemory();
+        loadEvo16Checkpoint();
         buildUi();
         resetEpisode();
         status.setText("随机地图实验已就绪。每张地图都经 BFS 验证；训练奖励 v2 已加入真实最短路距离反馈。");
@@ -157,7 +169,9 @@ public final class GridWorldLabActivity extends Activity {
         controls.setOrientation(LinearLayout.VERTICAL);
         root.addView(controls);
         addButton(controls, "训练 5,000 局（TD 学习）", () -> startTraining(5000));
-        addButton(controls, "进化训练 5,000 次评估（变异/筛选）", () -> startEvolutionTraining(5000));
+        addButton(controls, "16维进化训练 10,000 次评估（独立模型）", () -> startEvolution16Training(10000));
+        addButton(controls, "使用已保存的16维进化网络", this::activateEvo16Policy);
+        addButton(controls, "旧版168维进化训练 5,000 次评估", () -> startEvolutionTraining(5000));
         addButton(controls, "训练 10,000 局", () -> startTraining(10000));
         addButton(controls, "训练 100,000 局", () -> startTraining(100000));
         addButton(controls, "训练 1,000,000 局", () -> startTraining(1000000));
@@ -195,6 +209,7 @@ public final class GridWorldLabActivity extends Activity {
         stoppedByMastery = false;
         training = true;
         lastTrainingAlgorithm = "td_q_learning_with_replay";
+        useEvo16 = false;
         status.setText("开始循环思考训练：每次决策进行 " + THOUGHT_CYCLES + " 轮神经元信息传递；最多 " + count + " 局。");
         log.setText("隐藏神经元通过可训练的循环连接互相传递激活，并用 BPTT 学习连接权重。每 " + MASTERY_CHECK_INTERVAL + " 局评估 " + MASTERY_EVAL_EPISODES + " 张独立地图；连续 " + FAST_STREAK_REQUIRED + " 批达标才提前停止。");
         worker.execute(() -> {
@@ -368,6 +383,7 @@ public final class GridWorldLabActivity extends Activity {
         lastEpisodeSteps = -1;
         stoppedByMastery = false;
         lastTrainingAlgorithm = "neuroevolution_mutation_selection";
+        useEvo16 = false;
         lastEvolutionEvaluations = 0L;
         lastEvolutionValidationEpisodes = 0L;
         lastEvolutionGenerations = 0;
@@ -602,6 +618,7 @@ public final class GridWorldLabActivity extends Activity {
         catch (NumberFormatException e) { toast("请输入 8～256 的整数。"); return; }
         if (requested < MIN_HIDDEN || requested > MAX_HIDDEN) { toast("神经元数量范围是 8～256。"); return; }
         if (requested == net.hiddenSize) { toast("当前网络已经是 " + requested + " 个隐藏神经元。"); return; }
+        useEvo16 = false;
         net = new QNet(System.nanoTime(), requested);
         episodesDone = 0;
         lastCompletedEpisode = 0;
@@ -626,6 +643,13 @@ public final class GridWorldLabActivity extends Activity {
     }
 
     private void evaluatePolicy(int episodes) {
+        if (useEvo16 && evo16 != null) {
+            try { ensureEvo16Benchmarks(); } catch (Exception ignored) { }
+            evalEpisodes = evo16TestMaps.size();
+            evalSuccesses = 0;
+            for (MapData map : evo16TestMaps) if (greedyEvo16Steps(evo16, map) > 0) evalSuccesses++;
+            return;
+        }
         evalEpisodes = episodes;
         evalSuccesses = 0;
         Random testRng = new Random(System.nanoTime() ^ episodesDone);
@@ -655,10 +679,18 @@ public final class GridWorldLabActivity extends Activity {
 
     private void stepGame() {
         if (training || player == goal || moves >= MAX_STEPS) return;
-        Forward f = net.forward(observe(player, goal, walls, path));
-        lastHidden = f.h.clone();
-        lastQ = f.q.clone();
-        int action = argmax(f.q);
+        int action;
+        if (useEvo16 && evo16 != null) {
+            lastQ = evo16.forward(evo16Observe(player, goal, walls, currentDistanceMap, previousAction));
+            lastHidden = new double[net.hiddenSize];
+            action = argmax(lastQ);
+        } else {
+            Forward f = net.forward(observe(player, goal, walls, path));
+            lastHidden = f.h.clone();
+            lastQ = f.q.clone();
+            action = argmax(f.q);
+        }
+        previousAction = action;
         Transition tr = transition(player, action, new MapData(start, goal, walls, null));
         player = tr.next;
         moves++;
@@ -682,14 +714,21 @@ public final class GridWorldLabActivity extends Activity {
         start = map.start;
         goal = map.goal;
         walls = map.walls;
+        currentDistanceMap = distanceMap(map);
+        previousAction = -1;
         player = start;
         moves = 0;
         episodeReward = 0;
         path.clear();
         path.add(player);
-        Forward f = net.forward(observe(player, goal, walls, path));
-        lastHidden = f.h.clone();
-        lastQ = f.q.clone();
+        if (useEvo16 && evo16 != null) {
+            lastQ = evo16.forward(evo16Observe(player, goal, walls, currentDistanceMap, previousAction));
+            lastHidden = new double[net.hiddenSize];
+        } else {
+            Forward f = net.forward(observe(player, goal, walls, path));
+            lastHidden = f.h.clone();
+            lastQ = f.q.clone();
+        }
         if (board != null) board.invalidate();
         refreshReadout();
     }
@@ -896,6 +935,11 @@ public final class GridWorldLabActivity extends Activity {
     private void saveCheckpoint() {
         if (training) {
             toast("训练期间会自动保存检查点；训练结束后再生成最终报告。");
+            return;
+        }
+        if (useEvo16 && evo16 != null) {
+            try { saveEvo16Checkpoint(); saveEvo16Report(); status.setText("16维进化网络与独立报告已保存，旧168维网络和回放文件未改动。"); }
+            catch (Exception e) { toast("16维网络保存失败：" + e.getMessage()); }
             return;
         }
         try {
