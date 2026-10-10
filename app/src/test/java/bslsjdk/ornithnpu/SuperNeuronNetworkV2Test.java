@@ -15,6 +15,17 @@ public class SuperNeuronNetworkV2Test {
     }
 
     @Test
+    public void sharedOutputCoreLearnsFromReward() {
+        SuperNeuronNetworkV2 net = new SuperNeuronNetworkV2(4, 8, 2, 11L);
+        net.connect(0, 1, 0, 1.0);
+        net.step(new int[]{0}, new double[]{1.0}, 1, 1);
+        double before = net.getChannelOutput(0, 0);
+        net.applyReward(1.0, 0.02);
+        double after = net.getChannelOutput(0, 0);
+        assertTrue("shared channel parameters should update under reward", Math.abs(after - before) > 1e-8);
+    }
+
+    @Test
     public void thousandNodesUseBoundedActivationBudget() {
         SuperNeuronNetworkV2 net = new SuperNeuronNetworkV2(1000, 16000, 4, 19L);
         int[] ids = new int[1000];
