@@ -1004,16 +1004,16 @@ public final class NeuronLabActivity extends Activity {
             for (int i = 0; i < order.length; i++) order[i] = i;
             java.util.Arrays.sort(order, (a, b) -> Double.compare(snapshot.energy[b], snapshot.energy[a]));
             StringBuilder out = new StringBuilder();
-            out.append("模式：独立 VN 波场实验\\n")
+            out.append("模式：独立 VN 波场实验\n")
                     .append("节点：").append(units.size())
                     .append(" · 有向边：").append(vnWaveField.getEdgeCount())
-                    .append(" · 累计步数：").append(snapshot.ticks).append('\\n')
+                    .append(" · 累计步数：").append(snapshot.ticks).append('\n')
                     .append("本轮活动源：").append(snapshot.activeSources).append('/')
                     .append(vnWaveField.getActiveBudget())
-                    .append(" · 平均能量：").append(format(snapshot.meanEnergy)).append('\\n')
+                    .append(" · 平均能量：").append(format(snapshot.meanEnergy)).append('\n')
                     .append("估算载荷：").append(vnWaveField.estimatedPayloadBytes() / 1024.0)
-                    .append(" KiB（不含 Java 对象头）\\n\\n")
-                    .append("能量最高的神经元：\\n");
+                    .append(" KiB（不含 Java 对象头）\n\n")
+                    .append("能量最高的神经元：\n");
             int shown = Math.min(12, order.length);
             for (int row = 0; row < shown; row++) {
                 int i = order[row];
@@ -1022,9 +1022,9 @@ public final class NeuronLabActivity extends Activity {
                         .append("  φ=").append(format(snapshot.phase[i]))
                         .append("  a=").append(format(snapshot.activation[i]))
                         .append(units.get(i).enabled ? "" : "  [原网络已禁用]")
-                        .append('\\n');
+                        .append('\n');
             }
-            out.append("\\n注意：能量是传播状态，不是答案置信度。此波场不参与当前网络的训练更新。");
+            out.append("\n注意：能量是传播状态，不是答案置信度。此波场不参与当前网络的训练更新。");
             lastInputText = text;
             if (vnWaveReport != null) vnWaveReport.setText(out.toString());
             persistWorkspace();
