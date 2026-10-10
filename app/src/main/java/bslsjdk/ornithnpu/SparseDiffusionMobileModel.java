@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * CPU-only Android inference for aimeng-mobile-diffusion-json-v1.
+ * Android inference for aimeng-mobile-diffusion-json-v1 with optional OpenCL GPU acceleration and CPU fallback.
  * Kept separate from Ornith15Runtime: this is a different model architecture.
  * The portable bundle is produced by aimeng/scripts/export_mobile_diffusion.py.
  */
@@ -112,9 +112,18 @@ public final class SparseDiffusionMobileModel {
         loaded = true;
         baseModelFingerprint = modelFingerprint();
         lastTrace.clear();
+        // Probe the phone GPU once after a valid model is loaded. Failure is normal
+        // on devices without an exposed OpenCL GPU runtime; the CPU path remains valid.
+        OpenClGpuBackend.initialize();
     }
 
     public synchronized boolean isLoaded() { return loaded; }
+
+    public synchronized String backendStatus() {
+        return OpenClGpuBackend.isAvailable()
+                ? "GPU/OpenCL：" + OpenClGpuBackend.deviceName() + "（大矩阵走 GPU，小矩阵走 CPU）"
+                : "CPU 兜底（未检测到可用 OpenCL GPU）";
+    }
 
     public synchronized String generate(String prompt, int count) {
         if (!loaded) throw new IllegalStateException("mobile diffusion model not loaded");
@@ -450,6 +459,8 @@ public final class SparseDiffusionMobileModel {
         int out = shape[0], in = shape[1];
         float[] matrix = w(weightName);
         float[] bias = biasName == null ? null : w(biasName);
+        float[] gpuResult = OpenClGpuBackend.linear(matrix, input, bias, out, in);
+        if (gpuResult != null) return gpuResult;
         float[] result = new float[out];
         for (int o = 0; o < out; o++) {
             float sum = bias == null ? 0f : bias[o];
