@@ -4,6 +4,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -59,6 +61,7 @@ public final class SuperNeuronV2 {
     private boolean hasForward;
     private long forwardSteps;
     private long trainSteps;
+    private volatile String lastBatchBackend = "CPU_NOT_RUN";
 
     public SuperNeuronV2(int inputCount, int hiddenSize, int outputCount, long seed) {
         if (inputCount < 1 || inputCount > 256)
@@ -196,6 +199,170 @@ public final class SuperNeuronV2 {
         forwardSteps++;
         System.arraycopy(lastProbabilities, 0, outputBuffer, 0, outputCount);
         return outputBuffer;
+    }
+
+    /**
+     * Batched inference for independent sequence lanes that share this model's weights.
+     * The caller owns one recurrent-state row per lane. Large enough batches may use
+     * the existing QNN/HTP INT8 matmul for the input projection; unsupported, small,
+     * saturated, inaccurate, or failed NPU calls safely fall back to the CPU reference.
+     * This method deliberately does not set the single-lane trainClass() cache.
+     */
+    public double[][] forwardBatch(double[][] inputs, double[][] laneStates) {
+        if (inputs == null || laneStates == null || inputs.length == 0
+                || inputs.length != laneStates.length || inputs.length > 256)
+            throw new IllegalArgumentException("batch must contain 1..256 matching input/state rows");
+        final int batch = inputs.length;
+        if ((long) batch * outputCount > 1_000_000L)
+            throw new IllegalArgumentException("batch output allocation exceeds 1,000,000 values");
+        for (int row = 0; row < batch; row++) {
+            validateInputs(inputs[row]);
+            if (laneStates[row] == null || laneStates[row].length != hiddenSize)
+                throw new IllegalArgumentException("lane state width must equal hiddenSize");
+            for (double v : laneStates[row])
+                if (!Double.isFinite(v)) throw new IllegalArgumentException("non-finite lane state");
+        }
+
+        double[][] gates = new double[batch][inputCount];
+        double[][] drive = new double[batch][hiddenSize];
+        for (int row = 0; row < batch; row++) {
+            for (int p = 0; p < inputCount; p++) {
+                gates[row][p] = sigmoid(clamp(
+                        gateBias[p] + gateWeight[p] * inputs[row][p], -12.0, 12.0));
+            }
+        }
+
+        boolean usedNpu = false;
+        final long macs = (long) batch * inputCount * hiddenSize;
+        if (batch >= 16 && macs >= 262144L && NpuRuntime.isReady()) {
+            usedNpu = tryNpuInputProjection(inputs, gates, drive);
+        }
+        if (usedNpu) {
+            lastBatchBackend = "QNN_HTP_V73_INT8_BATCH";
+        } else {
+            computeBatchInputDrive(inputs, gates, drive);
+            if (NpuRuntime.isReady() && batch >= 16 && macs >= 262144L)
+                lastBatchBackend = "CPU_FALLBACK_AFTER_NPU_CHECK";
+            else
+                lastBatchBackend = "CPU_BATCH_SMALL_OR_NPU_OFFLINE";
+        }
+
+        double[][] probabilities = new double[batch][outputCount];
+        double[] hidden = new double[hiddenSize];
+        double[] latent = new double[outputRank];
+        double[] logits = new double[outputCount];
+        for (int row = 0; row < batch; row++) {
+            double[] laneState = laneStates[row];
+            for (int step = 0; step < INTERNAL_MICRO_STEPS; step++) {
+                for (int h = 0; h < hiddenSize; h++) {
+                    double sum = recurrentScale[h] * laneState[h] + drive[row][h];
+                    hidden[h] = Math.tanh(clamp(sum, -12.0, 12.0));
+                }
+                System.arraycopy(hidden, 0, laneState, 0, hiddenSize);
+            }
+            for (int r = 0; r < outputRank; r++) {
+                double sum = 0.0;
+                for (int h = 0; h < hiddenSize; h++)
+                    sum += hidden[h] * hiddenToOutputRank[h * outputRank + r];
+                latent[r] = sum;
+            }
+            double maxLogit = Double.NEGATIVE_INFINITY;
+            for (int o = 0; o < outputCount; o++) {
+                double sum = outputBias[o];
+                int base = o * outputRank;
+                for (int r = 0; r < outputRank; r++)
+                    sum += outputEmbedding[base + r] * latent[r];
+                logits[o] = sum;
+                if (sum > maxLogit) maxLogit = sum;
+            }
+            double total = 0.0;
+            for (int o = 0; o < outputCount; o++) {
+                double p = Math.exp(clamp(logits[o] - maxLogit, -80.0, 0.0));
+                probabilities[row][o] = p;
+                total += p;
+            }
+            if (!(total > 0.0) || !Double.isFinite(total)) {
+                Arrays.fill(probabilities[row], 1.0 / outputCount);
+            } else {
+                for (int o = 0; o < outputCount; o++) probabilities[row][o] /= total;
+            }
+        }
+        forwardSteps += batch;
+        return probabilities;
+    }
+
+    /** Diagnostic label for the most recent forwardBatch() call. */
+    public String getLastBatchBackend() { return lastBatchBackend; }
+
+    private boolean tryNpuInputProjection(double[][] inputs, double[][] gates, double[][] drive) {
+        final double featureScale = 0.05;
+        final double productScale = featureScale * featureScale;
+        byte[] a = new byte[inputs.length * inputCount];
+        byte[] b = new byte[inputCount * hiddenSize];
+        for (int row = 0; row < inputs.length; row++) {
+            for (int p = 0; p < inputCount; p++) {
+                double value = inputs[row][p] * gates[row][p] * featureScale;
+                if (!Double.isFinite(value) || Math.abs(value) > 0.127) return false;
+                a[row * inputCount + p] = quantizeBatchValue(value);
+            }
+        }
+        for (int p = 0; p < inputCount; p++) {
+            int base = p * hiddenSize;
+            for (int h = 0; h < hiddenSize; h++) {
+                double value = inputProjection[base + h] * featureScale;
+                if (!Double.isFinite(value) || Math.abs(value) > 0.127) return false;
+                b[base + h] = quantizeBatchValue(value);
+            }
+        }
+        final byte[] raw;
+        try {
+            raw = NpuRuntime.matMulInt8Buf(a, b, inputs.length, inputCount, hiddenSize);
+        } catch (Throwable ignored) {
+            return false;
+        }
+        if (raw == null || raw.length < 4 + inputs.length * hiddenSize) return false;
+        float scaleC = ByteBuffer.wrap(raw).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+        if (!Float.isFinite(scaleC) || scaleC <= 0.0f) return false;
+
+        for (int row = 0; row < inputs.length; row++) {
+            for (int h = 0; h < hiddenSize; h++) {
+                int q = raw[4 + row * hiddenSize + h];
+                drive[row][h] = ((double) q * scaleC) / productScale;
+                if (!Double.isFinite(drive[row][h])) return false;
+            }
+        }
+        // Check several lanes against an independent CPU dot product before trusting
+        // quantised results. If calibration/quantisation drifts, discard the whole batch.
+        int checks = Math.min(3, inputs.length);
+        for (int sample = 0; sample < checks; sample++) {
+            int row = checks == 1 ? 0 : (sample * (inputs.length - 1)) / (checks - 1);
+            for (int h = 0; h < hiddenSize; h++) {
+                double expected = 0.0;
+                for (int p = 0; p < inputCount; p++)
+                    expected += inputs[row][p] * gates[row][p] * inputProjection[p * hiddenSize + h];
+                double tolerance = 0.08 + 0.12 * Math.abs(expected);
+                if (Math.abs(drive[row][h] - expected) > tolerance) return false;
+            }
+        }
+        return true;
+    }
+
+    private void computeBatchInputDrive(double[][] inputs, double[][] gates, double[][] drive) {
+        for (int row = 0; row < inputs.length; row++) {
+            for (int p = 0; p < inputCount; p++) {
+                double gatedInput = inputs[row][p] * gates[row][p];
+                int base = p * hiddenSize;
+                for (int h = 0; h < hiddenSize; h++)
+                    drive[row][h] += gatedInput * inputProjection[base + h];
+            }
+        }
+    }
+
+    private static byte quantizeBatchValue(double value) {
+        long q = Math.round(value / 0.001);
+        if (q > 127) q = 127;
+        if (q < -127) q = -127;
+        return (byte) q;
     }
 
     /**
