@@ -218,7 +218,9 @@ public final class NeuronIndividualManagerActivity extends Activity {
         java.util.ArrayList<Integer> budgets = new java.util.ArrayList<>();
         int[] candidates = {8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1000};
         for (int value : candidates) {
-            if (value >= target.graph.getInputCount() && value <= target.graph.getNeuronCount()
+            int minimum = Math.min(target.graph.getNeuronCount(),
+                    target.graph.getInputCount() + target.graph.getOutputCount() + 1);
+            if (value >= minimum && value <= target.graph.getNeuronCount()
                     && !budgets.contains(value)) budgets.add(value);
         }
         if (budgets.isEmpty()) budgets.add(target.graph.getNeuronCount());
