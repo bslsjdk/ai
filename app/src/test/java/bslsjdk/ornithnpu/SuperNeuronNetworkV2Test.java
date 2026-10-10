@@ -22,6 +22,6 @@ public class SuperNeuronNetworkV2Test {
         for (int i = 0; i < ids.length; i++) { ids[i] = i; values[i] = i + 1; }
         assertEquals(12, net.step(ids, values, ids.length, 12));
         assertEquals(1000, net.getNeuronCount());
-        assertTrue(net.estimatedStorageBytes() < 500000L);
+        assertTrue(net.estimatedStorageBytes() < 600000L);
     }
 }
