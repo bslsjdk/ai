@@ -405,11 +405,11 @@ public final class NeuronIndividualManagerActivity extends Activity {
                     completedCount++;
                     summary.append(target.name).append("：")
                             .append(String.format(java.util.Locale.US, "%.1f%%", result.successRate * 100))
-                            .append(" 训练成功率\\n");
+                            .append(" 训练成功率\n");
                 } catch (Exception e) {
                     summary.append(target.name).append("：失败 ")
                             .append(e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage())
-                            .append("\\n");
+                            .append("\n");
                 }
             }
             final int done = completedCount;
@@ -478,8 +478,8 @@ public final class NeuronIndividualManagerActivity extends Activity {
                 new AlertDialog.Builder(this)
                         .setTitle(training ? "训练完成" : "独立验证完成")
                         .setMessage(completed.toDisplayString()
-                                + (training ? "\\n注意：训练成绩不等于泛化能力，完成后请使用独立验证。" :
-                                "\\n验证使用独立种子，且在网络副本上执行，不修改当前个体。"))
+                                + (training ? "\n注意：训练成绩不等于泛化能力，完成后请使用独立验证。" :
+                                "\n验证使用独立种子，且在网络副本上执行，不修改当前个体。"))
                         .setPositiveButton("确定", null).show();
             });
         }, training ? "NeuronMazeTrain" : "NeuronMazeValidate").start();
