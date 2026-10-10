@@ -15,6 +15,8 @@ def build_cases():
     cases = []
     def add(category, prompt, expected, i):
         cases.append({"id": f"{category}-{i:03d}", "category": category, "prompt": prompt, "expected": str(expected)})
+
+    # Arithmetic uses all four operations and generated operands.
     for i in range(24):
         a, b = (i * 37 + 19) % 197 + 3, (i * 23 + 11) % 89 + 2
         op = i % 4
@@ -29,15 +31,33 @@ def build_cases():
             expr, ans = f"{x} / {y}", x // y
         add("arithmetic", f"Calculate exactly: {expr}. Return only the integer answer.", ans, i + 1)
 
+    # Distinct logical cases: varied predicates, directions and entailment status.
+    subjects = ["dax", "nims", "peks", "glips", "toves", "rins", "morks", "lums"]
+    groups = ["wugs", "zors", "vims", "jeks", "sarns", "drels", "kets", "fens"]
+    props = ["green", "tall", "round", "warm", "silent", "heavy", "bright", "smooth"]
     for i in range(16):
-        premises, question, answer = [
-            ("All dax are wugs. All wugs are green.", "Must every dax be green?", "yes"),
-            ("No nims are tall. All zors are nims.", "Can any zor be tall under these rules?", "no"),
-            ("All peks are round. Some round things are blue.", "Must some peks be blue?", "no"),
-            ("Some glips are red. All red things are warm.", "Must at least one glip be warm?", "yes"),
-        ][i % 4]
-        add("deduction", f"Use only these premises: {premises} {question} Answer only yes or no.", answer, i + 1)
+        a, b, prop = subjects[i % 8], groups[i % 8], props[i % 8]
+        if i % 4 == 0:
+            premise = f"Every {a} is a {b}. Every {b} is {prop}."
+            question, answer = f"Must every {a} be {prop}?", "yes"
+        elif i % 4 == 1:
+            premise = f"No {b} is {prop}. Every {a} is a {b}."
+            question, answer = f"Can a {a} be {prop} under these rules?", "no"
+        elif i % 4 == 2:
+            premise = f"Every {a} is {b}. Some {b} are {prop}."
+            question, answer = f"Does it necessarily follow that some {a} are {prop}?", "no"
+        else:
+            premise = f"Some {a} are {b}. Every {b} is {prop}."
+            question, answer = f"Must at least one {a} be {prop}?", "yes"
+        # Vary wording and premise order to avoid a single memorized surface template.
+        if i % 2:
+            question = question.replace("Must", "Does it follow that").replace("Can a", "Is it possible for a")
+            instruction = "Answer with exactly yes or no."
+        else:
+            instruction = "Reply only yes or no."
+        add("deduction", f"Formal logic. Treat the statements as the only facts. {premise} {question} {instruction}", answer, i + 1)
 
+    # Arithmetic-sequence extrapolation, with a range of starting points and steps.
     for i in range(12):
         start, step = i + 2, i % 5 + 2
         seq = [start + step * j for j in range(5)]
@@ -53,22 +73,31 @@ def build_cases():
     for i, words in enumerate(word_lists, 1):
         add("instruction", f"Reverse the order of these items and output only the items separated by commas, with no explanation: {', '.join(words)}", ",".join(reversed(words)), i)
 
-    names = ["Mira", "Tomas", "Nia", "Oren", "Pavel", "Suki", "Lena", "Idris", "Kira", "Bram", "Yuna", "Felix", "Zara", "Hugo", "Asha", "Noel"]
+    # Unique target objects prevent two people owning the same queried item.
+    names = ["Mira", "Tomas", "Nia", "Oren", "Pavel", "Suki", "Lena", "Idris",
+             "Kira", "Bram", "Yuna", "Felix", "Zara", "Hugo", "Asha", "Noel"]
+    objects = ["compass", "lantern", "notebook", "key", "marble", "ribbon", "coin", "shell",
+               "badge", "pencil", "thermos", "map", "button", "camera", "scarf", "hourglass"]
+    places = ["cabinet", "shelf", "drawer", "basket", "desk", "crate", "box", "pouch",
+              "locker", "trunk", "cupboard", "satchel", "stand", "case", "rack", "bin"]
     colors = ["teal", "ochre", "indigo", "coral", "silver", "mint", "plum", "amber"]
-    objects = ["compass", "lantern", "notebook", "key", "marble", "ribbon", "coin", "shell"]
-    places = ["cabinet", "shelf", "drawer", "basket", "desk", "crate", "box", "pouch"]
     for i, name in enumerate(names):
-        color, obj, place = colors[(i * 3 + 1) % 8], objects[(i * 5 + 2) % 8], places[(i * 3 + 4) % 8]
-        decoys = [f"{names[(i+j+1)%16]} owns a {objects[(i+j+3)%8]}." for j in range(4)]
-        facts = [f"{name} owns a {obj}.", f"The {obj} is stored in the {place}.", f"{name}'s assigned color is {color}."] + decoys
-        if i % 2: facts.reverse()
-        add("context_recall", "Read the facts carefully:\n" + "\n".join(facts) + f"\nQuestion: Where is the {obj} owned by {name} stored? Return only the place name.", place, i + 1)
+        obj, place = objects[i], places[(i * 5 + 3) % len(places)]
+        facts = [f"{name} owns the {obj}.", f"The {obj} is kept in the {place}.",
+                 f"{name}'s assigned color is {colors[(i * 3 + 1) % len(colors)]}."]
+        for j in range(4):
+            k = (i + j + 1) % len(names)
+            facts.append(f"{names[k]} owns the {objects[k]}.")
+        if i % 2:
+            facts.reverse()
+        add("context_recall", "Read the facts carefully:\n" + "\n".join(facts) +
+            f"\nQuestion: Where is the {obj} owned by {name} kept? Return only the place name.", place, i + 1)
 
+    # Sequential state update requires carrying the intermediate value forward.
     for i in range(12):
         initial, inc, dec = 17 + i * 3, i % 9 + 4, i % 5 + 1
         add("state_update", f"A counter starts at {initial}. First increase it by {inc}. Then decrease it by {dec}. What is the final value? Return only the integer.", initial + inc - dec, i + 1)
     return cases
-
 
 def normalize(s):
     s = s.strip().lower()
@@ -119,10 +148,10 @@ def main():
     if args.limit: cases = cases[:args.limit]
     args.output.parent.mkdir(parents=True, exist_ok=True)
     manifest = {
-        "format": "aimeng-llm-pk-report/v1", "model": args.model, "baseUrl": args.base_url,
+        "format": "aimeng-llm-pk-report/v2", "model": args.model, "baseUrl": args.base_url,
         "caseCount": len(cases), "datasetSha256": hashlib.sha256(json.dumps(cases, sort_keys=True).encode()).hexdigest(),
         "decoding": {"temperature": 0, "seed": 1234, "maxTokens": args.max_tokens},
-        "note": "Generated phase-one diagnostic benchmark, not a public leaderboard or proof of general intelligence."
+        "suiteVersion": 2, "note": "Generated phase-two diagnostic benchmark; distinct logic templates and unique context-recall entities. Not a public leaderboard or proof of general intelligence."
     }
     rows = []
     for index, case in enumerate(cases, 1):
