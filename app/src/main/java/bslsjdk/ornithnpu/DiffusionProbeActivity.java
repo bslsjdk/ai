@@ -49,9 +49,9 @@ public final class DiffusionProbeActivity extends Activity {
             JSONObject r=new JSONObject(new String(Files.readAllBytes(f.toPath()),StandardCharsets.UTF_8));
             JSONObject c=r.getJSONObject("config");
             String info="神经元 "+c.optInt("neurons")+" · 宽度 "+c.optInt("width")+"\n每步激活上限 "+c.optInt("active_k")+" · 每节点出边 "+c.optInt("fanout")+"\n最大扩散步数 "+c.optInt("max_steps");
-            SparseDiffusionMobileModel m=new SparseDiffusionMobileModel();m.load(f);m.loadLearningState(new File(getFilesDir(),"aimeng-learning-state.json"));m.loadRuntimeState(new File(getFilesDir(),"aimeng-neuron-residual.bin"));model=m;
+            SparseDiffusionMobileModel m=new SparseDiffusionMobileModel();m.load(f);m.loadLearningState(new File(getFilesDir(),"aimeng-learning-state.json"));boolean restored=m.loadRuntimeState(new File(getFilesDir(),"aimeng-neuron-residual.bin"));model=m;
             long pss=Debug.getPss()/1024L;
-            runOnUiThread(()->{config.setText(info);status.setText("模型就绪 · "+model.backendStatus()+" · PSS "+pss+" MiB");run.setEnabled(true);});
+            runOnUiThread(()->{config.setText(info);status.setText("模型就绪 · 残留状态 "+(restored?"已恢复":"未找到或与模型不匹配")+" · "+model.backendStatus()+" · PSS "+pss+" MiB");run.setEnabled(true);});
         }catch(Throwable e){runOnUiThread(()->status.setText("加载失败："+e.getClass().getSimpleName()+" "+String.valueOf(e.getMessage())));}});
     }
     private void probe() {
