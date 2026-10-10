@@ -1,0 +1,162 @@
+name: Recurrent neuron convergence check (40 epochs)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/mobile-neuron-unit-runtime
+    paths:
+      - ".github/workflows/recurrent-neuron-convergence.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: recurrent-neuron-convergence-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  convergence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install NumPy
+        run: python -m pip install numpy
+      - name: Fetch canonical corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p experiments/recurrent-convergence/latest
+          python - <<'PY'
+          from urllib.request import Request, urlopen
+          from pathlib import Path
+          import hashlib
+          url = "https://www.gutenberg.org/cache/epub/11/pg11.txt"
+          req = Request(url, headers={"User-Agent": "AIMENG-Neuron-LM-Research/1.0"})
+          with urlopen(req, timeout=60) as response:
+              text = response.read().decode("utf-8", errors="replace")
+          start = text.find("*** START OF THE PROJECT GUTENBERG EBOOK")
+          if start >= 0:
+              text = text[text.find("\\n", start) + 1:]
+          end = text.find("*** END OF THE PROJECT GUTENBERG EBOOK")
+          if end >= 0:
+              text = text[:end]
+          digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+          expected = "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
+          if digest != expected:
+              raise SystemExit(f"dataset hash mismatch: {digest}")
+          Path("experiments/recurrent-convergence/latest/alice.txt").write_text(text, encoding="utf-8")
+          print("CORPUS_OK", len(text), digest)
+          PY
+      - name: Train three seeds for up to 40 epochs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile scripts/train_recurrent_neuron_lm.py scripts/run_recurrent_neuron_lm.py
+          for seed in 20261010 20261011 20261012; do
+            out="experiments/recurrent-convergence/latest/seed-$seed"
+            mkdir -p "$out"
+            python scripts/train_recurrent_neuron_lm.py \
+              --text-file experiments/recurrent-convergence/latest/alice.txt \
+              --output-dir "$out" --hidden 64 --context 64 --epochs 40 \
+              --steps-per-epoch 240 --batch-size 32 --learning-rate 0.003 --seed "$seed" \
+              2>&1 | tee "$out/terminal.log"
+            python scripts/run_recurrent_neuron_lm.py \
+              --model "$out/model.json" --prompt "Alice " --max-chars 80 --seed "$seed" \
+              --output "$out/inference-smoke.txt"
+          done
+      - name: Aggregate convergence and audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, statistics, hashlib
+          from pathlib import Path
+          root = Path("experiments/recurrent-convergence/latest")
+          rows = []
+          for seed in (20261010, 20261011, 20261012):
+              d = json.loads((root / f"seed-{seed}" / "summary.json").read_text())
+              hist = d["history"]
+              best = min(hist, key=lambda x: x["validation_loss"])
+              last = hist[-1]
+              tail = hist[-5:]
+              rows.append({
+                  "seed": seed, "parameter_count": d["parameter_count"],
+                  "dataset_sha256": d["dataset_sha256"],
+                  "best_validation_epoch": best["epoch"],
+                  "best_validation_loss": best["validation_loss"],
+                  "epoch_30_validation_loss": hist[29]["validation_loss"],
+                  "epoch_40_validation_loss": last["validation_loss"],
+                  "last_five_validation_losses": [x["validation_loss"] for x in tail],
+                  "tail_trend_epoch_36_to_40": last["validation_loss"] - hist[35]["validation_loss"],
+                  "test_loss_at_best_checkpoint": d["final_heldout_loss"],
+                  "test_bits_per_char": d["final_heldout_bits_per_char"],
+                  "test_char_accuracy": d["final_heldout_char_accuracy"],
+                  "wall_seconds": d["wall_seconds"],
+                  "training_epochs": d["metadata"]["epochs"] if "metadata" in d else 40
+              })
+          hashes = {r["dataset_sha256"] for r in rows}
+          if hashes != {"e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"}:
+              raise SystemExit(f"unexpected dataset hashes: {hashes}")
+          def stats(key):
+              vals = [r[key] for r in rows]
+              return {"mean": statistics.mean(vals),
+                      "sample_stddev": statistics.stdev(vals)}
+          report = {
+              "format": "aimeng-recurrent-neuron-convergence/v1",
+              "purpose": "Diagnostic extension of the prior 30-epoch RNN run; not a compute-matched head-to-head result.",
+              "dataset": "Alice's Adventures in Wonderland, public-domain Project Gutenberg text",
+              "dataset_sha256": next(iter(hashes)),
+              "settings": {"hidden": 64, "context": 64, "epochs_max": 40,
+                           "steps_per_epoch": 240, "batch_size": 32,
+                           "learning_rate": 0.003, "seeds": [r["seed"] for r in rows]},
+              "aggregate": {
+                  "best_validation_epoch": stats("best_validation_epoch"),
+                  "best_validation_loss": stats("best_validation_loss"),
+                  "epoch_30_validation_loss": stats("epoch_30_validation_loss"),
+                  "epoch_40_validation_loss": stats("epoch_40_validation_loss"),
+                  "tail_trend_epoch_36_to_40": stats("tail_trend_epoch_36_to_40"),
+                  "test_loss_at_best_checkpoint": stats("test_loss_at_best_checkpoint"),
+                  "test_bits_per_char": stats("test_bits_per_char"),
+                  "test_char_accuracy": stats("test_char_accuracy"),
+                  "wall_seconds": stats("wall_seconds")},
+              "runs": rows,
+              "interpretation_rule": "A negative epoch-36-to-40 delta means validation loss continued to improve over that interval; do not call the model converged solely because 40 epochs elapsed.",
+              "limitations": ["Single-book character prediction only.",
+                             "This 40-epoch diagnostic has more training budget than the original 30-epoch RNN and is not directly compute-matched to the fixed-window experiment.",
+                             "The validation set selects checkpoints; test metrics are reported only after training."]
+          }
+          (root / "summary.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+          print("RECURRENT_CONVERGENCE_SUMMARY", json.dumps(report, ensure_ascii=False, sort_keys=True))
+          PY
+      - name: Commit convergence reports
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          REPORT_DIR="experiments/recurrent-convergence/latest"
+          BACKUP_DIR="$(mktemp -d)"
+          cp -a "$REPORT_DIR/." "$BACKUP_DIR/"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "${GITHUB_REF_NAME}"
+            git reset --hard "origin/${GITHUB_REF_NAME}"
+            mkdir -p "$REPORT_DIR"
+            cp -a "$BACKUP_DIR/." "$REPORT_DIR/"
+            git add "$REPORT_DIR"
+            if git diff --cached --quiet; then echo "No changed convergence artifacts"; exit 0; fi
+            git commit -m "Record 40-epoch recurrent convergence check [skip ci]"
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then rm -rf "$BACKUP_DIR"; exit 0; fi
+            sleep 2
+          done
+          rm -rf "$BACKUP_DIR"
+          echo "Could not push convergence artifacts after retries" >&2
+          exit 1
