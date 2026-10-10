@@ -286,8 +286,18 @@ public final class SuperNeuronLabActivity extends Activity {
                 checkpoint.put("memoryReport", report);
                 writeJsonAtomically("super_neuron_checkpoint.json", checkpoint);
 
+                StringBuilder curveText = new StringBuilder(
+                        "\\n\\n每 1000 步的损失/内存曲线：\\n步数 | 平均交叉熵 | PSS MiB | RSS MiB\\n");
+                for (int i = 0; i < samples.length(); i++) {
+                    JSONObject sample = samples.getJSONObject(i);
+                    curveText.append(String.format(Locale.US, "%d | %.5f | %.1f | %.1f\\n",
+                            sample.getLong("step"),
+                            sample.getDouble("windowMeanCrossEntropy"),
+                            sample.getLong("pssKiB") / 1024.0,
+                            sample.getLong("rssKiB") / 1024.0));
+                }
                 String result = String.format(Locale.US,
-                        "字符级故事实验%s\n\n字符数：%d\n字符词表 / 固定输出数量：%d\n"
+                        "字符级故事实验%s\\n\\n字符数：%d\\n字符词表 / 固定输出数量：%d\\n"
                                 + "输出 ID：%d（%s）\n模型池：4 个个体\n实际训练步数：%d / 10,000\n"
                                 + "训练平均交叉熵：%.5f\n独立尾段验证交叉熵：%s\n"
                                 + "进化代数：%d\n最终 PSS：%.1f MiB\n最终 RSS：%.1f MiB\n"
@@ -299,6 +309,7 @@ public final class SuperNeuronLabActivity extends Activity {
                         tokenizer.tokenAt(prediction), pool.getLastTrainingSteps(), trainLoss,
                         Double.isFinite(validationLoss) ? String.format(Locale.US, "%.5f", validationLoss) : "未完成",
                         pool.getGeneration(), finalPss / 1024.0, finalRss / 1024.0, samples.length());
+                result += curveText.toString();
                 main.post(() -> {
                     trainer = best;
                     resultView.setText(result);
