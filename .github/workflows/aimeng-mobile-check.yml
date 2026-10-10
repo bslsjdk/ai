@@ -7,6 +7,9 @@ on:
     branches: [main]
     paths:
       - "app/src/main/java/bslsjdk/ornithnpu/SparseDiffusion*.java"
+      - "app/src/main/java/bslsjdk/ornithnpu/Aimeng*.java"
+      - "app/src/main/java/bslsjdk/ornithnpu/Diffusion*.java"
+      - "app/src/main/java/bslsjdk/ornithnpu/Chat*.java"
       - "app/src/main/AndroidManifest.xml"
       - "app/src/main/res/layout/activity_chat.xml"
       - "app/src/test/**"
