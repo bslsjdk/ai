@@ -214,7 +214,6 @@ public final class SelfOrganizingNeuronGraph {
         for (double v : inputs) if (!Double.isFinite(v))
             throw new IllegalArgumentException("input contains non-finite value");
 
-        for (int i = 0; i < neuronCount; i++) if (!enabled[i]) state[i] = 0.0;
         for (int p = 0; p < inputCount; p++) {
             int i = inputOrder[p];
             state[i] = enabled[i] ? clamp(inputs[p], -1.0, 1.0) : 0.0;
@@ -285,8 +284,9 @@ public final class SelfOrganizingNeuronGraph {
             }
         }
         ticks++;
+        for (int i = 0; i < activeCount; i++) activeMask[activeNodes[i]] = false;
         double[] outputs = new double[outputCount];
-        p = 0;
+        int p = 0;
         for (int i = 0; i < neuronCount; i++)
             if (outputPort[i]) outputs[p++] = state[i];
         return outputs;
@@ -330,6 +330,9 @@ public final class SelfOrganizingNeuronGraph {
         Arrays.fill(state, 0, neuronCount, 0);
         Arrays.fill(previous, 0, neuronCount, 0);
         Arrays.fill(edgeTrace, 0, edgeCount, 0);
+        Arrays.fill(activeMask, 0, neuronCount, false);
+        Arrays.fill(nextActiveMask, 0, neuronCount, false);
+        lastActiveNeuronCount = 0;
     }
 
     /**
