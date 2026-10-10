@@ -21,7 +21,7 @@
     "mean_heldout_loss": 1.6782461671476012,
     "mean_bits_per_char": 2.4211974227347546,
     "mean_char_accuracy": 0.5233564814814815,
-    "mean_wall_seconds": 41.749,
+    "mean_wall_seconds": 42.062333333333335,
     "mean_ablation_delta_mean": 0.1551622701187928,
     "mean_ablation_delta_max": 0.3000051113411231,
     "parameter_count": 13964
@@ -34,7 +34,7 @@
       "heldout_loss": 1.6816514110565186,
       "bits_per_char": 2.426110151235167,
       "char_accuracy": 0.5245138888888888,
-      "wall_seconds": 41.623,
+      "wall_seconds": 42.231,
       "ablation_delta_mean": 0.16353211403720905,
       "ablation_delta_max": 0.28829467879401305,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
@@ -46,7 +46,7 @@
       "heldout_loss": 1.6754954528808594,
       "bits_per_char": 2.4172289809032237,
       "char_accuracy": 0.5229166666666667,
-      "wall_seconds": 41.749,
+      "wall_seconds": 42.254,
       "ablation_delta_mean": 0.14554157597323253,
       "ablation_delta_max": 0.26378303739759645,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
@@ -58,7 +58,7 @@
       "heldout_loss": 1.6775916375054254,
       "bits_per_char": 2.420253136065873,
       "char_accuracy": 0.5226388888888889,
-      "wall_seconds": 41.875,
+      "wall_seconds": 41.702,
       "ablation_delta_mean": 0.15641312034593685,
       "ablation_delta_max": 0.3479376178317599,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"

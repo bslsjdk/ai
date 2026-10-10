@@ -14828,7 +14828,7 @@
     "vocabulary_size": 76,
     "context_characters": 64,
     "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
-    "wall_seconds": 41.749,
+    "wall_seconds": 42.254,
     "optimizer_steps": 7200,
     "unigram_baseline_heldout_loss": 3.170140011296197,
     "final_heldout_loss": 1.6754954528808594,
@@ -14837,7 +14837,7 @@
     "loss_improvement_over_unigram": 1.4946445584153374,
     "unit_ablation_loss_delta_mean": 0.14554157597323253,
     "unit_ablation_loss_delta_max": 0.26378303739759645,
-    "generation_sample": "Alice dark at plating to doent now, he’s white tone\nshe\nfound it into courhe,” the Doceverying, or she contered as a mouse the humay fert, and say or like the Queen, and a door, she had judsing nows,” said Alice said that plall she joud now\nshe would be into say whice suddenasn!” shouting a she like offed",
+    "generation_sample": "Alice gall at the speepillor was very were to herseded I shoulded down liter were calk,” said the Pigen lasting as a little jumpraging which as as silens. “I see the Foun a little the Queen.’?” the Gryphon.\n\n“Hor_ it, I whise of she contout\nglarss!” Alice was as the Conversaped whitong in a she heard my h",
     "limitations": "Single public-domain book, character-level prediction, vanilla RNN, fixed dense recurrent connections; not a chat model or general reasoning benchmark."
   }
 }

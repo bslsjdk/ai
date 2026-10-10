@@ -14828,7 +14828,7 @@
     "vocabulary_size": 76,
     "context_characters": 64,
     "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
-    "wall_seconds": 41.875,
+    "wall_seconds": 41.702,
     "optimizer_steps": 7200,
     "unigram_baseline_heldout_loss": 3.170140011296197,
     "final_heldout_loss": 1.6775916375054254,
@@ -14837,7 +14837,7 @@
     "loss_improvement_over_unigram": 1.4925483737907714,
     "unit_ablation_loss_delta_mean": 0.15641312034593685,
     "unit_ablation_loss_delta_max": 0.3479376178317599,
-    "generation_sample": "Alice id not you’d to way on so shrong about the Gryphon, so sealled my herself, “Oh, and the taves.\n\nThe Hatter soustady it ome were see heard the took with the ones, the roved\nthis head that roulded Alice held, and the Rabbit the do the had on in the eleest the tire far set an seen you frar heppe held, ",
+    "generation_sample": "Alice thlouthre well gried the Queen wancon, wand the little the just your teren,” said the Cat say,\n“and for like wouldn’t did Alice the doing to don’t what the marvenly anguindenting and same that shall redeing at the change more ol!” Alice to\nfeel, and must of the Hase was an\nthem,” said\nthe Gryphon to",
     "limitations": "Single public-domain book, character-level prediction, vanilla RNN, fixed dense recurrent connections; not a chat model or general reasoning benchmark."
   }
 }
