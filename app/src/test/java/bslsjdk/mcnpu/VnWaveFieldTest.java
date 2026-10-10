@@ -58,6 +58,14 @@ public class VnWaveFieldTest {
     }
 
     @Test
+    public void emptyBackgroundDoesNotWakeArbitrarySources() {
+        VnWaveField field = new VnWaveField(8, 3, 16, 0.1, 0.4, 0.2);
+        VnWaveField.Snapshot state = field.backgroundTick();
+        assertEquals(0, state.activeSources);
+        assertEquals(0.0, state.meanEnergy, 0.0);
+    }
+
+    @Test
     public void payloadEstimateStaysBoundedForMobileScale() {
         VnWaveField field = new VnWaveField(2048, 64, 65536, 0.1, 0.4, 0.2);
         for (int i = 0; i < 2048; i++) field.addDirectedEdge(i, (i + 1) % 2048, 0.5);
