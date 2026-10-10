@@ -1,0 +1,76 @@
+{
+  "format": "aimeng-fixed-context-neuron-lm-report/v1",
+  "architecture": "position-specific fixed-context feed-forward neuron network",
+  "parameter_count": 14899,
+  "hidden_neurons": 3,
+  "context_characters": 64,
+  "vocabulary_size": 76,
+  "unigram_baseline_heldout_loss": 3.170140011296197,
+  "final_heldout_loss": 2.5145997541440934,
+  "final_heldout_bits_per_char": 3.6278005951242904,
+  "final_heldout_char_accuracy": 0.3225226471198396,
+  "wall_seconds": 19.603,
+  "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
+  "settings": {
+    "epochs": 8,
+    "steps_per_epoch": 720,
+    "batch_size": 512,
+    "learning_rate": 0.003,
+    "seed": 20261012
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "heldout_loss": 2.7578511529258654,
+      "heldout_bits_per_char": 3.9787381818360563,
+      "heldout_char_accuracy": 0.2883618007053454
+    },
+    {
+      "epoch": 2,
+      "heldout_loss": 2.5925903974516857,
+      "heldout_bits_per_char": 3.740317309459894,
+      "heldout_char_accuracy": 0.3012239817440011
+    },
+    {
+      "epoch": 3,
+      "heldout_loss": 2.5519349900331334,
+      "heldout_bits_per_char": 3.6816639547918277,
+      "heldout_char_accuracy": 0.3134637991840122
+    },
+    {
+      "epoch": 4,
+      "heldout_loss": 2.537868062124799,
+      "heldout_bits_per_char": 3.6613696676579313,
+      "heldout_char_accuracy": 0.31574579904570915
+    },
+    {
+      "epoch": 5,
+      "heldout_loss": 2.528642934434238,
+      "heldout_bits_per_char": 3.6480606216871916,
+      "heldout_char_accuracy": 0.31858101099509023
+    },
+    {
+      "epoch": 6,
+      "heldout_loss": 2.515901890939288,
+      "heldout_bits_per_char": 3.6296791814212765,
+      "heldout_char_accuracy": 0.3202406472581426
+    },
+    {
+      "epoch": 7,
+      "heldout_loss": 2.5175876995973274,
+      "heldout_bits_per_char": 3.632111289212118,
+      "heldout_char_accuracy": 0.3227301016527211
+    },
+    {
+      "epoch": 8,
+      "heldout_loss": 2.5145997541440934,
+      "heldout_bits_per_char": 3.6278005951242904,
+      "heldout_char_accuracy": 0.3225226471198396
+    }
+  ],
+  "limitations": [
+    "Same single-book held-out text as the recurrent model.",
+    "Character-level prediction, not chat or reasoning.",
+    "Parameter count is reported explicitly; training FLOPs differ from recurrent sequence training."
+  ]
+}
