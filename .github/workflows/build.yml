@@ -74,6 +74,12 @@ jobs:
           gradle :app:compileReleaseJavaWithJavac --no-daemon --stacktrace 2>&1 | tee build/java-resources.log
           test -s build/java-resources.log
 
+      - name: Run JVM unit tests including VN wave invariants
+        run: |
+          set -o pipefail
+          gradle :app:testReleaseUnitTest --no-daemon --stacktrace 2>&1 | tee build/unit-tests.log
+          test -s build/unit-tests.log
+
       - name: Fetch verified QNN stack at known-good probe commit
         run: |
           set -eux
