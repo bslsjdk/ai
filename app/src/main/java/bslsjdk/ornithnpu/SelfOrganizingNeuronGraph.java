@@ -263,7 +263,6 @@ public final class SelfOrganizingNeuronGraph {
             int[] nodeSwap = activeNodes; activeNodes = nextActiveNodes; nextActiveNodes = nodeSwap;
             boolean[] maskSwap = activeMask; activeMask = nextActiveMask; nextActiveMask = maskSwap;
             activeCount = nextCount;
-            Arrays.fill(nextActiveMask, 0, neuronCount, false);
         }
         lastActiveNeuronCount = activeCount;
         for (int i = 0; i < activeCount; i++) {
