@@ -30,6 +30,29 @@ public class SuperNeuronLanguageTrainerTest {
         assertTrue(trainer.getParameterCount() > 0L);
     }
 
+    @Test
+    public void exactStepTrainingAndCheckpointRoundTrip() throws Exception {
+        SuperNeuronLanguageTrainer trainer = new SuperNeuronLanguageTrainer(5, 4, 6, 19L);
+        int[] tokens = {0, 1, 2, 1, 0, 3, 2, 1};
+        trainer.trainSequenceSteps(tokens, 37, 0.01, null);
+        assertEquals(37L, trainer.getTrainedTokenTargets());
+        org.json.JSONObject checkpoint = trainer.toJson();
+        SuperNeuronLanguageTrainer restored = SuperNeuronLanguageTrainer.fromJson(
+                new org.json.JSONObject(checkpoint.toString()), 77L);
+        assertEquals(trainer.getVocabularySize(), restored.getVocabularySize());
+        assertEquals(trainer.getParameterCount(), restored.getParameterCount());
+        assertEquals(trainer.getTrainedTokenTargets(), restored.getTrainedTokenTargets());
+        assertEquals(trainer.evaluateSequence(tokens), restored.evaluateSequence(tokens), 1e-10);
+    }
+
+    @Test
+    public void listenerCanStopTrainingAtExactStep() {
+        SuperNeuronLanguageTrainer trainer = new SuperNeuronLanguageTrainer(3, 4, 6, 29L);
+        int[] tokens = {0, 1, 2, 1, 0};
+        trainer.trainSequenceSteps(tokens, 100, 0.01, (step, loss) -> step < 13);
+        assertEquals(13L, trainer.getTrainedTokenTargets());
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void rejectsOversizedModelBeforeAllocation() {
         new SuperNeuronLanguageTrainer(65536, 64, 256, 3L);
