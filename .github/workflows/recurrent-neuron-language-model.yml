@@ -1,0 +1,140 @@
+name: Recurrent neuron language model on public-domain text
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/mobile-neuron-unit-runtime
+    paths:
+      - "scripts/train_recurrent_neuron_lm.py"
+      - ".github/workflows/recurrent-neuron-language-model.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: recurrent-neuron-lm-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  train-real-text:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install numerical runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+      - name: Fetch public-domain training text
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p experiments/recurrent-neuron-lm/latest
+          python - <<'PY'
+          from urllib.request import Request, urlopen
+          from pathlib import Path
+          url = "https://www.gutenberg.org/cache/epub/11/pg11.txt"
+          req = Request(url, headers={"User-Agent": "AIMENG-Neuron-LM-Research/1.0"})
+          with urlopen(req, timeout=60) as response:
+              data = response.read()
+          text = data.decode("utf-8", errors="replace")
+          start = text.find("*** START OF THE PROJECT GUTENBERG EBOOK")
+          if start >= 0:
+              text = text[text.find("\n", start) + 1:]
+          end = text.find("*** END OF THE PROJECT GUTENBERG EBOOK")
+          if end >= 0:
+              text = text[:end]
+          if len(text) < 10000:
+              raise SystemExit(f"downloaded text too small: {len(text)} characters")
+          Path("experiments/recurrent-neuron-lm/latest/alice.txt").write_text(text, encoding="utf-8")
+          print(f"CORPUS_OK characters={len(text)} sha256-ready")
+          PY
+      - name: Train three recurrent neuron models from scratch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile scripts/train_recurrent_neuron_lm.py
+          for seed in 20261010 20261011 20261012; do
+            mkdir -p "experiments/recurrent-neuron-lm/latest/seed-$seed"
+            python scripts/train_recurrent_neuron_lm.py \
+              --text-file experiments/recurrent-neuron-lm/latest/alice.txt \
+              --output-dir "experiments/recurrent-neuron-lm/latest/seed-$seed" \
+              --hidden 64 --context 64 --epochs 8 --steps-per-epoch 180 \
+              --batch-size 32 --learning-rate 0.003 --seed "$seed" \
+              2>&1 | tee "experiments/recurrent-neuron-lm/latest/seed-$seed/terminal.log"
+          done
+      - name: Aggregate and validate metrics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, statistics
+          from pathlib import Path
+          root = Path("experiments/recurrent-neuron-lm/latest")
+          rows = []
+          for seed in (20261010, 20261011, 20261012):
+              p = root / f"seed-{seed}" / "summary.json"
+              d = json.loads(p.read_text())
+              rows.append({"seed": seed, "parameter_count": d["parameter_count"],
+                           "baseline_loss": d["unigram_baseline_heldout_loss"],
+                           "heldout_loss": d["final_heldout_loss"],
+                           "bits_per_char": d["final_heldout_bits_per_char"],
+                           "char_accuracy": d["final_heldout_char_accuracy"],
+                           "wall_seconds": d["wall_seconds"],
+                           "ablation_delta_mean": d["unit_ablation_loss_delta_mean"],
+                           "ablation_delta_max": d["unit_ablation_loss_delta_max"],
+                           "dataset_sha256": d["dataset_sha256"]})
+          if len({r["dataset_sha256"] for r in rows}) != 1:
+              raise SystemExit("dataset hashes differ across seeds")
+          aggregate = {}
+          for key in ("baseline_loss", "heldout_loss", "bits_per_char", "char_accuracy",
+                      "wall_seconds", "ablation_delta_mean", "ablation_delta_max"):
+              aggregate["mean_" + key] = statistics.mean(r[key] for r in rows)
+          aggregate["parameter_count"] = rows[0]["parameter_count"]
+          report = {"format": "aimeng-recurrent-neuron-lm-multiseed/v1",
+                    "dataset": "Alice's Adventures in Wonderland, public-domain Project Gutenberg text",
+                    "dataset_sha256": rows[0]["dataset_sha256"],
+                    "model": "from-scratch character-level vanilla RNN with individually addressable recurrent neuron units",
+                    "settings": {"hidden": 64, "context": 64, "epochs": 8,
+                                 "steps_per_epoch": 180, "batch_size": 32,
+                                 "learning_rate": 0.003, "seeds": [r["seed"] for r in rows]},
+                    "aggregate": aggregate, "runs": rows,
+                    "limitations": ["One public-domain book and character-level prediction only.",
+                                    "This is not a chat LLM and is not directly comparable to a pretrained 9B model's QA accuracy.",
+                                    "A real-text next-character benchmark is a foundation for scaling and tokenizer experiments, not proof of reasoning ability."]}
+          (root / "summary.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+          print("RECURRENT_NEURON_LM_MULTISEED " + json.dumps(report, ensure_ascii=False, sort_keys=True))
+          PY
+      - name: Commit model checkpoints and reports
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add experiments/recurrent-neuron-lm/latest
+          if git diff --cached --quiet; then
+            echo "No recurrent LM artifacts to commit."
+          else
+            git commit -m "Record recurrent neuron language-model experiment [skip ci]"
+            for attempt in 1 2 3 4 5; do
+              git fetch origin "${GITHUB_REF_NAME}"
+              if git rebase "origin/${GITHUB_REF_NAME}"; then
+                if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+                  exit 0
+                fi
+              else
+                git rebase --abort || true
+              fi
+              sleep 2
+            done
+            echo "Could not push experiment artifacts after retries" >&2
+            exit 1
+          fi
