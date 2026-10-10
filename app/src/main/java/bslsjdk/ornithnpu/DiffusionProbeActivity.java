@@ -1,6 +1,10 @@
 package bslsjdk.ornithnpu;
 
 import android.app.Activity;
+import android.content.ComponentName;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.IBinder;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Debug;
@@ -21,9 +25,25 @@ import java.util.concurrent.Executors;
 public final class DiffusionProbeActivity extends Activity {
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private SparseDiffusionMobileModel model;
+    private AimengNeuronService neuronService;
+    private boolean serviceBound;
     private EditText input;
     private TextView status, output, config, trace;
     private Button run;
+    private final ServiceConnection neuronConnection = new ServiceConnection() {
+        @Override public void onServiceConnected(ComponentName name, IBinder binder) {
+            neuronService = ((AimengNeuronService.LocalBinder) binder).getService();
+            model = neuronService.getModel();
+            load();
+        }
+        @Override public void onServiceDisconnected(ComponentName name) {
+            serviceBound = false;
+            neuronService = null;
+            model = null;
+            run.setEnabled(false);
+            status.setText("本机神经元服务已断开。");
+        }
+    };
     private int dp(int n) { return (int)(n * getResources().getDisplayMetrics().density + 0.5f); }
     private LinearLayout.LayoutParams gap() { LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1,-2); p.bottomMargin=dp(9); return p; }
     private TextView card(String s) { TextView t=new TextView(this); t.setText(s); t.setTextSize(14); t.setTextColor(Color.rgb(34,48,70)); t.setPadding(dp(13),dp(12),dp(13),dp(12)); t.setBackgroundColor(Color.WHITE); return t; }
@@ -40,7 +60,8 @@ public final class DiffusionProbeActivity extends Activity {
         root.addView(card("逐步扩散轨迹"),gap());
         trace=card("执行前向计算后，这里会列出实际记录的活跃节点、能量、状态变化和停止决策。"); root.addView(trace,gap());
         root.addView(card("轨迹来自模型 forward 的实际记录，不是对模型心理活动的自然语言解释。它显示算法如何路由和停止，不意味着模型具有人类意识。"),gap());
-        setContentView(sc); load();
+        setContentView(sc);
+        serviceBound = bindService(new Intent(this, AimengNeuronService.class), neuronConnection, BIND_AUTO_CREATE);
     }
     private void load() {
         File f=new File(getFilesDir(),"aimeng-mobile-diffusion.json");
@@ -49,9 +70,18 @@ public final class DiffusionProbeActivity extends Activity {
             JSONObject r=new JSONObject(new String(Files.readAllBytes(f.toPath()),StandardCharsets.UTF_8));
             JSONObject c=r.getJSONObject("config");
             String info="神经元 "+c.optInt("neurons")+" · 宽度 "+c.optInt("width")+"\n每步激活上限 "+c.optInt("active_k")+" · 每节点出边 "+c.optInt("fanout")+"\n最大扩散步数 "+c.optInt("max_steps");
-            SparseDiffusionMobileModel m=new SparseDiffusionMobileModel();m.load(f);m.loadLearningState(new File(getFilesDir(),"aimeng-learning-state.json"));boolean restored=m.loadRuntimeState(new File(getFilesDir(),"aimeng-neuron-residual.bin"));model=m;
+            boolean restored=false;
+            if (model == null) throw new IllegalStateException("神经元服务尚未连接");
+            if (!model.isLoaded()) {
+                model.load(f);
+                model.loadLearningState(new File(getFilesDir(),"aimeng-learning-state.json"));
+                restored=model.loadRuntimeState(new File(getFilesDir(),"aimeng-neuron-residual.bin"));
+            } else {
+                restored=true;
+            }
             long pss=Debug.getPss()/1024L;
-            runOnUiThread(()->{config.setText(info);status.setText("模型就绪 · 残留状态 "+(restored?"已恢复":"未找到或与模型不匹配")+" · "+model.backendStatus()+" · PSS "+pss+" MiB");run.setEnabled(true);});
+            boolean stateWasRestored=restored;
+            runOnUiThread(()->{config.setText(info);status.setText("共享驻留模型就绪 · "+(stateWasRestored?"状态已载入/驻留中":"残留状态未找到")+" · "+model.backendStatus()+" · PSS "+pss+" MiB");run.setEnabled(true);});
         }catch(Throwable e){runOnUiThread(()->status.setText("加载失败："+e.getClass().getSimpleName()+" "+String.valueOf(e.getMessage())));}});
     }
     private void probe() {
@@ -66,11 +96,12 @@ public final class DiffusionProbeActivity extends Activity {
             for(int rank=0;rank<Math.min(8,logits.length);rank++){int best=-1;for(int i=0;i<logits.length;i++)if(!seen[i]&&(best<0||probs[i]>probs[best]))best=i;if(best<0)break;seen[best]=true;
                 String token=tokens.optString(best,"?").replace("\n","换行符").replace("\t","制表符");
                 s.append(rank+1).append(". ").append(token).append("  ").append(String.format(Locale.ROOT,"%.2f%%",100*probs[best]/Math.max(sum,1e-30))).append("\n");}
+            model.saveRuntimeState(new File(getFilesDir(),"aimeng-neuron-residual.bin"));
             long ms=(System.nanoTime()-start)/1_000_000L,pss=Debug.getPss()/1024L;
             String traceText=model.getLastDiffusionTraceText();
             runOnUiThread(()->{output.setText(s.toString());trace.setText(traceText);status.setText("完成 · "+ms+" ms · "+model.backendStatus()+" · PSS "+pss+" MiB");run.setEnabled(true);});
         }catch(Throwable e){runOnUiThread(()->{status.setText("计算失败："+e.getClass().getSimpleName()+" "+String.valueOf(e.getMessage()));run.setEnabled(true);});}}
         );
     }
-    @Override protected void onDestroy(){worker.shutdownNow();super.onDestroy();}
+    @Override protected void onDestroy(){worker.shutdownNow();if(serviceBound){try{unbindService(neuronConnection);}catch(Throwable ignored){}serviceBound=false;}super.onDestroy();}
 }
