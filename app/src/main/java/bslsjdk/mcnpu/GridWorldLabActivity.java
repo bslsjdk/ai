@@ -214,11 +214,12 @@ public final class GridWorldLabActivity extends Activity {
                 double[] stateBuffer = new double[INPUT_SIZE];
                 double[] nextBuffer = new double[INPUT_SIZE];
                 double[] wallFeatures = new double[CELLS];
+                int[] activeWallCells = new int[CELLS];
                 int mapWallCount = 0;
                 for (int cell = 0; cell < CELLS; cell++) {
                     if (map.walls.contains(cell)) {
                         wallFeatures[cell] = 1.0;
-                        mapWallCount++;
+                        activeWallCells[mapWallCount++] = cell;
                     }
                 }
                 // The wall-map part of the observation is constant for this episode.
@@ -254,7 +255,7 @@ public final class GridWorldLabActivity extends Activity {
                     observeInto(nextBuffer, tr.next, map.goal, map.walls, nextHistory, wallFeatures);
                     // TD target needs only max(Q), not a retained Forward/BPTT cache.
                     double target = tr.done ? reward : reward + 0.92 * net.maxQ(nextBuffer, mapProjection);
-                    net.update(s, currentForward, action, target, mapProjection, mapWallCount);
+                    net.update(s, currentForward, action, target, mapProjection, mapWallCount, activeWallCells);
                     replay.add(s, action, reward, nextBuffer, tr.done);
                     globalEnvironmentSteps++;
                     // Revisit a random past transition at the configured interval.
@@ -1394,6 +1395,11 @@ public final class GridWorldLabActivity extends Activity {
 
         void update(double[] x, Forward f, int action, double target,
                     double[] mapProjection, int mapWallCount) {
+            update(x, f, action, target, mapProjection, mapWallCount, null);
+        }
+
+        void update(double[] x, Forward f, int action, double target,
+                    double[] mapProjection, int mapWallCount, int[] activeWallCells) {
             if (f == null) f = forward(x, mapProjection);
             double grad = Math.max(-1.0, Math.min(1.0, f.q[action] - target));
             double[][] h = f.thoughtH;
@@ -1426,9 +1432,23 @@ public final class GridWorldLabActivity extends Activity {
                 b1[j] -= lr * (first + last);
                 double combined = first + last;
                 if (combined != 0.0) {
-                    for (int i = 0; i < inputSize; i++) if (x[i] != 0.0) w1[j][i] -= lr * combined * x[i];
-                    // On the live episode, x's map block equals the binary wall map.
-                    // Its cached projection therefore changes by -lr*combined*wallCount.
+                    if (activeWallCells == null) {
+                        for (int i = 0; i < inputSize; i++)
+                            if (x[i] != 0.0) w1[j][i] -= lr * combined * x[i];
+                    } else {
+                        // The live map's wall inputs are sparse and fixed. Visit only
+                        // active wall weights instead of checking all 144 map cells.
+                        for (int i = 0; i < BASE_FEATURES; i++)
+                            if (x[i] != 0.0) w1[j][i] -= lr * combined * x[i];
+                        for (int e = 0; e < mapWallCount; e++) {
+                            int i = BASE_FEATURES + activeWallCells[e];
+                            w1[j][i] -= lr * combined * x[i];
+                        }
+                        for (int i = BASE_FEATURES + MAP_FEATURES; i < inputSize; i++)
+                            if (x[i] != 0.0) w1[j][i] -= lr * combined * x[i];
+                    }
+                    // The cache delta is the dot product of this update's map-feature
+                    // change with the current map. mapWallCount is the overlap count.
                     if (mapProjection != null) mapProjection[j] -= lr * combined * mapWallCount;
                 }
                 if (THOUGHT_CYCLES > 1 && last != 0.0) {
