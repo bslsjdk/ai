@@ -251,14 +251,20 @@ public final class SelfOrganizingNeuronGraph {
             edgeWeight[e] = clamp(edgeWeight[e] + learningRate * advantage * edgeTrace[e],
                     -MAX_ABS_WEIGHT, MAX_ABS_WEIGHT);
         }
+        // Reuse the per-neuron scratch buffer to aggregate incoming traces in O(V + E).
+        // A nested neuron-by-edge scan would become prohibitively expensive as graphs grow.
+        Arrays.fill(scratchSum, 0, neuronCount, 0.0);
+        int[] incomingCount = new int[neuronCount];
+        for (int e = 0; e < edgeCount; e++) {
+            if (!edgeEnabled[e]) continue;
+            int target = edgeTo[e];
+            scratchSum[target] += edgeTrace[e];
+            incomingCount[target]++;
+        }
         for (int i = 0; i < neuronCount; i++) {
-            if (enabled[i] && !inputPort[i]) {
-                double incomingTrace = 0;
-                int n = 0;
-                for (int e = 0; e < edgeCount; e++)
-                    if (edgeEnabled[e] && edgeTo[e] == i) { incomingTrace += edgeTrace[e]; n++; }
-                if (n > 0) bias[i] = clamp(bias[i] + learningRate * advantage * incomingTrace / n,
-                        -2, 2);
+            if (enabled[i] && !inputPort[i] && incomingCount[i] > 0) {
+                bias[i] = clamp(bias[i] + learningRate * advantage
+                        * scratchSum[i] / incomingCount[i], -2, 2);
             }
         }
     }
