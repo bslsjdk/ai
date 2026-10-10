@@ -20,7 +20,6 @@ public class CharacterStoryTrainingBenchmarkTest {
         SuperNeuronEvolutionPool pool = new SuperNeuronEvolutionPool(
                 4, tokenizer.getVocabularySize(), 8, 16, 20261010L);
 
-        double before = pool.getInitialBestValidationLoss();
         final double[] windowLoss = {0.0};
         final long[] windowCount = {0};
         double meanTrainingLoss = pool.trainAndEvolve(train, validation, 10000L, 0.015,
@@ -39,6 +38,7 @@ public class CharacterStoryTrainingBenchmarkTest {
                     return true;
                 });
 
+        double before = pool.getInitialBestValidationLoss();
         double after = pool.getBestValidationLoss();
         int prediction = pool.getBestTrainer().predictNextToken(validation[validation.length - 1]);
         System.out.println("CHAR_STORY_BENCH_SUMMARY steps=" + pool.getLastTrainingSteps()
