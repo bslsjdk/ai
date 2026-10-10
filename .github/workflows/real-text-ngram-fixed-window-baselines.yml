@@ -51,7 +51,7 @@ jobs:
           Path("experiments/real-text-baselines/latest/alice.txt").write_text(text, encoding="utf-8")
           print("CORPUS_CHARACTERS", len(text))
           PY
-      - name: Compile and run n-gram plus fixed-window experiments
+      - name: Compile and run chunk-aligned n-gram plus fixed-window experiments
         shell: bash
         run: |
           set -euo pipefail
