@@ -106,7 +106,7 @@ jobs:
                   "test_char_accuracy": d["final_heldout_char_accuracy"],
                   "wall_seconds": d["wall_seconds"],
                   "training_epochs": d["metadata"]["epochs"] if "metadata" in d else 100,
-                  "learning_rate_schedule": d["metadata"].get("learning_rate_schedule", {})
+                  "learning_rate_schedule": d.get("learning_rate_schedule", {})
               })
           hashes = {r["dataset_sha256"] for r in rows}
           if hashes != {"e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"}:
