@@ -34,6 +34,8 @@ public final class SelfOrganizingNeuronGraph {
     private int outputCount;
     private final int[] inputOrder;
     private int nextInputOrder;
+    private final int[] outputOrder;
+    private int nextOutputOrder;
     private final boolean[] enabled;
     private final boolean[] inputPort;
     private final boolean[] outputPort;
@@ -83,6 +85,8 @@ public final class SelfOrganizingNeuronGraph {
         inputPort = new boolean[maxNeurons];
         inputOrder = new int[maxNeurons];
         Arrays.fill(inputOrder, -1);
+        outputOrder = new int[maxNeurons];
+        Arrays.fill(outputOrder, -1);
         outputPort = new boolean[maxNeurons];
         bias = new double[maxNeurons];
         state = new double[maxNeurons];
@@ -152,6 +156,7 @@ public final class SelfOrganizingNeuronGraph {
     public boolean markOutputPort(int neuronId) {
         if (!validNeuron(neuronId) || outputPort[neuronId]) return false;
         outputPort[neuronId] = true;
+        outputOrder[nextOutputOrder++] = neuronId;
         outputCount++;
         return true;
     }
@@ -214,6 +219,10 @@ public final class SelfOrganizingNeuronGraph {
         for (double v : inputs) if (!Double.isFinite(v))
             throw new IllegalArgumentException("input contains non-finite value");
 
+        for (int p = 0; p < outputCount; p++) {
+            int id = outputOrder[p];
+            if (!inputPort[id]) state[id] = 0.0;
+        }
         for (int p = 0; p < inputCount; p++) {
             int i = inputOrder[p];
             state[i] = enabled[i] ? clamp(inputs[p], -1.0, 1.0) : 0.0;
@@ -286,8 +295,8 @@ public final class SelfOrganizingNeuronGraph {
         for (int i = 0; i < activeCount; i++) activeMask[activeNodes[i]] = false;
         double[] outputs = new double[outputCount];
         int p = 0;
-        for (int i = 0; i < neuronCount; i++)
-            if (outputPort[i]) outputs[p++] = state[i];
+        for (int i = 0; i < outputCount; i++)
+            outputs[p++] = state[outputOrder[i]];
         return outputs;
     }
 
@@ -414,6 +423,9 @@ public final class SelfOrganizingNeuronGraph {
         JSONArray portOrder = new JSONArray();
         for (int p = 0; p < inputCount; p++) portOrder.put(inputOrder[p]);
         root.put("inputOrder", portOrder);
+        JSONArray readoutOrder = new JSONArray();
+        for (int p = 0; p < outputCount; p++) readoutOrder.put(outputOrder[p]);
+        root.put("outputOrder", readoutOrder);
         root.put("rewardBaseline", rewardBaseline);
         root.put("ticks", ticks);
         root.put("topologyChanges", topologyChanges);
@@ -460,6 +472,7 @@ public final class SelfOrganizingNeuronGraph {
         JSONArray nodes = root.getJSONArray("neurons");
         JSONArray edges = root.getJSONArray("edges");
         JSONArray portOrder = root.optJSONArray("inputOrder");
+        JSONArray readoutOrder = root.optJSONArray("outputOrder");
         if (nodes.length() != nCount || edges.length() != eCount)
             throw new JSONException("checkpoint count mismatch");
         for (int i = 0; i < nCount; i++) {
@@ -483,6 +496,18 @@ public final class SelfOrganizingNeuronGraph {
                 g.inputOrder[p] = id;
             }
             g.nextInputOrder = g.inputCount;
+        }
+        if (readoutOrder != null) {
+            if (readoutOrder.length() != g.outputCount) throw new JSONException("output port order mismatch");
+            boolean[] seenOutputs = new boolean[nCount];
+            for (int p = 0; p < readoutOrder.length(); p++) {
+                int id = readoutOrder.getInt(p);
+                if (id < 0 || id >= nCount || !g.outputPort[id] || seenOutputs[id])
+                    throw new JSONException("invalid output port order");
+                seenOutputs[id] = true;
+                g.outputOrder[p] = id;
+            }
+            g.nextOutputOrder = g.outputCount;
         }
         for (int e = 0; e < eCount; e++) {
             JSONObject edge = edges.getJSONObject(e);
