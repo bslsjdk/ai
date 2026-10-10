@@ -71,6 +71,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(args.model, use_fast=True)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "right"
     if not tokenizer.is_fast:
         raise SystemExit("A fast tokenizer with offset_mapping is required for safe character contexts.")
     model = AutoModelForCausalLM.from_pretrained(
