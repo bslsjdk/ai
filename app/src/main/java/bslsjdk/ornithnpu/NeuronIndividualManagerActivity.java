@@ -61,6 +61,7 @@ public final class NeuronIndividualManagerActivity extends Activity {
         SelfOrganizingNeuronGraph graph;
         String lastTrainingResult = "尚无训练记录";
         String lastValidationResult = "尚无独立验证记录";
+        double validationRate = -1.0;
         boolean checked;
         Individual(String id, String name, String fileName, SelfOrganizingNeuronGraph graph) {
             this.id = id; this.name = name; this.fileName = fileName; this.graph = graph;
@@ -237,6 +238,7 @@ public final class NeuronIndividualManagerActivity extends Activity {
         root.put("savedAt", System.currentTimeMillis());
         root.put("lastTrainingResult", item.lastTrainingResult);
         root.put("lastValidationResult", item.lastValidationResult);
+        root.put("validationRate", item.validationRate);
         root.put("graph", item.graph.toJson());
         return root;
     }
@@ -274,6 +276,7 @@ public final class NeuronIndividualManagerActivity extends Activity {
         Individual item = new Individual(id, name, id + ".json", graph);
         item.lastTrainingResult = root.optString("lastTrainingResult", "尚无训练记录");
         item.lastValidationResult = root.optString("lastValidationResult", "尚无独立验证记录");
+        item.validationRate = root.optDouble("validationRate", -1.0);
         return item;
     }
 
@@ -310,6 +313,7 @@ public final class NeuronIndividualManagerActivity extends Activity {
 
     private void refresh() {
         if (listBox == null) return;
+        individuals.sort((a, b) -> Double.compare(b.validationRate, a.validationRate));
         listBox.removeAllViews();
         for (Individual item : individuals) {
             LinearLayout row = new LinearLayout(this);
@@ -330,9 +334,12 @@ public final class NeuronIndividualManagerActivity extends Activity {
             name.setTextSize(16);
             name.setTypeface(null, Typeface.BOLD);
             TextView meta = new TextView(this);
-            meta.setText("ID: " + item.id + "\n神经元 " + item.graph.getNeuronCount()
+            String score = item.validationRate < 0 ? "尚未独立验证" :
+                    "独立验证成功率 " + String.format(java.util.Locale.US, "%.1f%%", item.validationRate * 100);
+            meta.setText(score + "\nID: " + item.id + "\n神经元 " + item.graph.getNeuronCount()
                     + " · 活跃连接 " + item.graph.getActiveEdgeCount()
-                    + " · 累计传播步 " + item.graph.getTicks());
+                    + " · 激活预算 " + item.graph.getActiveNeuronBudget()
+                    + " · 传播步 " + item.graph.getTicks());
             meta.setTextSize(12);
             details.addView(name);
             details.addView(meta);
@@ -413,7 +420,10 @@ public final class NeuronIndividualManagerActivity extends Activity {
                     return;
                 }
                 if (training) target.lastTrainingResult = completed.toDisplayString();
-                else target.lastValidationResult = completed.toDisplayString();
+                else {
+                    target.lastValidationResult = completed.toDisplayString();
+                    target.validationRate = completed.successRate;
+                }
                 try { writeIndividual(target); }
                 catch (Exception e) { showError("成绩保存失败", e); }
                 current = target;
