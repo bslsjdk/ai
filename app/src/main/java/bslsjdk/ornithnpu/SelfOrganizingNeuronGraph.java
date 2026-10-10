@@ -148,7 +148,8 @@ public final class SelfOrganizingNeuronGraph {
         if (neuronCount >= maxNeurons) return -1;
         int id = neuronCount++;
         enabled[id] = true;
-        bias[id] = (random.nextDouble() - 0.5) * 0.04;
+        // Start biases at zero for deterministic propagation; learning may adjust them.
+        bias[id] = 0.0;
         return id;
     }
 
