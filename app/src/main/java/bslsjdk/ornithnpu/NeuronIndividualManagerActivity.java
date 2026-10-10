@@ -193,7 +193,7 @@ public final class NeuronIndividualManagerActivity extends Activity {
                     int initialEdges = Math.min(8000, Math.max(80, neuronCount * 3));
                     SelfOrganizingNeuronGraph graph = SelfOrganizingNeuronGraph
                             .createRandomGraph(8, 4, neuronCount, initialEdges, System.nanoTime());
-                    graph.setActiveNeuronBudget(Math.min(neuronCount, Math.max(12, neuronCount / 4)));
+                    graph.setActiveNeuronBudget(Math.min(neuronCount, Math.max(24, neuronCount / 4)));
                     Individual individual = new Individual(id, name, fileName, graph);
                     individuals.add(individual);
                     current = individual;
