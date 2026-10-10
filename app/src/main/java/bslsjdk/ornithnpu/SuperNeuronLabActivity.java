@@ -257,6 +257,7 @@ public final class SuperNeuronLabActivity extends Activity {
                         });
 
                 SuperNeuronLanguageTrainer best = pool.getBestTrainer();
+                double initialValidationLoss = pool.getInitialBestValidationLoss();
                 double validationLoss = pool.wasStoppedEarly() ? Double.NaN : pool.getBestValidationLoss();
                 int lastId = validation[validation.length - 1];
                 best.resetContext();
@@ -268,8 +269,11 @@ public final class SuperNeuronLabActivity extends Activity {
                 report.put("completedSteps", pool.getLastTrainingSteps());
                 report.put("generationAfterEvolution", pool.getGeneration());
                 report.put("meanTrainingCrossEntropy", trainLoss);
+                report.put("initialHeldOutValidationCrossEntropy", initialValidationLoss);
                 report.put("heldOutValidationCrossEntropy",
                         Double.isFinite(validationLoss) ? validationLoss : JSONObject.NULL);
+                report.put("heldOutLossDelta", Double.isFinite(validationLoss)
+                        ? validationLoss - initialValidationLoss : JSONObject.NULL);
                 report.put("predictedTokenId", prediction);
                 report.put("predictedCharacter", tokenizer.tokenAt(prediction));
                 report.put("finalPssKiB", finalPss);
@@ -299,7 +303,7 @@ public final class SuperNeuronLabActivity extends Activity {
                 String result = String.format(Locale.US,
                         "字符级故事实验%s\\n\\n字符数：%d\\n字符词表 / 固定输出数量：%d\\n"
                                 + "输出 ID：%d（%s）\n模型池：4 个个体\n实际训练步数：%d / 10,000\n"
-                                + "训练平均交叉熵：%.5f\n独立尾段验证交叉熵：%s\n"
+                                + "训练平均交叉熵：%.5f\n独立尾段验证损失（前 -> 后）：%.5f -> %s\n"
                                 + "进化代数：%d\n最终 PSS：%.1f MiB\n最终 RSS：%.1f MiB\n"
                                 + "内存采样点：%d\n报告：files/super_neuron_memory_report.json\n"
                                 + "检查点：files/super_neuron_checkpoint.json\n\n"
@@ -307,6 +311,7 @@ public final class SuperNeuronLabActivity extends Activity {
                         safetyStopped[0] || pool.wasStoppedEarly() ? "（安全停止）" : "完成",
                         allTokens.length, tokenizer.getVocabularySize(), prediction,
                         tokenizer.tokenAt(prediction), pool.getLastTrainingSteps(), trainLoss,
+                        initialValidationLoss,
                         Double.isFinite(validationLoss) ? String.format(Locale.US, "%.5f", validationLoss) : "未完成",
                         pool.getGeneration(), finalPss / 1024.0, finalRss / 1024.0, samples.length());
                 result += curveText.toString();
