@@ -159,11 +159,20 @@ public final class NeuronIndividualManagerActivity extends Activity {
     }
 
     private void createIndividual() {
+        final String[] sizes = {"32 个神经元", "64 个神经元", "128 个神经元",
+                "256 个神经元", "512 个神经元", "768 个神经元"};
+        final int[] neuronCounts = {32, 64, 128, 256, 512, 768};
+        new AlertDialog.Builder(this).setTitle("选择新个体的神经元规模")
+                .setItems(sizes, (dialog, which) -> promptIndividualName(neuronCounts[which]))
+                .setNegativeButton("取消", null).show();
+    }
+
+    private void promptIndividualName(int neuronCount) {
         final EditText nameInput = new EditText(this);
         nameInput.setSingleLine(true);
         nameInput.setHint("个体名称，例如：迷宫探索-01");
         nameInput.setText("神经网络-" + (individuals.size() + 1));
-        new AlertDialog.Builder(this).setTitle("创建独立网络个体")
+        new AlertDialog.Builder(this).setTitle("命名 " + neuronCount + " 神经元个体")
                 .setView(nameInput)
                 .setNegativeButton("取消", null)
                 .setPositiveButton("创建", (dialog, which) -> {
@@ -171,10 +180,10 @@ public final class NeuronIndividualManagerActivity extends Activity {
                     String fileName = id + ".json";
                     String name = nameInput.getText().toString().trim();
                     if (name.isEmpty()) name = "神经网络-" + id.substring(0, 8);
-                    // Eight sensor ports and four action readouts; the rest are ordinary,
-                    // freely connected nodes, not a fixed hidden layer.
+                    int initialEdges = Math.min(8000, Math.max(80, neuronCount * 3));
                     SelfOrganizingNeuronGraph graph = SelfOrganizingNeuronGraph
-                            .createRandomGraph(8, 4, 32, 80, System.nanoTime());
+                            .createRandomGraph(8, 4, neuronCount, initialEdges, System.nanoTime());
+                    graph.setActiveNeuronBudget(Math.min(neuronCount, Math.max(12, neuronCount / 4)));
                     Individual individual = new Individual(id, name, fileName, graph);
                     individuals.add(individual);
                     current = individual;
@@ -186,10 +195,33 @@ public final class NeuronIndividualManagerActivity extends Activity {
                         toast("已创建并保存完整个体");
                     } catch (Exception e) {
                         individuals.remove(individual);
+                        selectedIds.remove(id);
                         current = individuals.isEmpty() ? null : individuals.get(0);
                         showError("创建保存失败", e);
                     }
                 }).show();
+    }
+
+    private void chooseActiveBudget() {
+        if (current == null) { toast("请先创建或选择个体"); return; }
+        final Individual target = current;
+        java.util.ArrayList<Integer> budgets = new java.util.ArrayList<>();
+        int[] candidates = {8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1000};
+        for (int value : candidates) {
+            if (value >= target.graph.getInputCount() && value <= target.graph.getNeuronCount()
+                    && !budgets.contains(value)) budgets.add(value);
+        }
+        if (budgets.isEmpty()) budgets.add(target.graph.getNeuronCount());
+        String[] labels = new String[budgets.size()];
+        for (int i = 0; i < budgets.size(); i++)
+            labels[i] = budgets.get(i) + " 个活动神经元 / tick"
+                    + (budgets.get(i) == target.graph.getActiveNeuronBudget() ? "（当前）" : "");
+        new AlertDialog.Builder(this).setTitle("设置每个传播 tick 的激活预算")
+                .setItems(labels, (dialog, which) -> {
+                    target.graph.setActiveNeuronBudget(budgets.get(which));
+                    try { writeIndividual(target); refresh(); }
+                    catch (Exception e) { showError("保存激活预算失败", e); }
+                }).setNegativeButton("取消", null).show();
     }
 
     private JSONObject envelope(Individual item) throws JSONException {
