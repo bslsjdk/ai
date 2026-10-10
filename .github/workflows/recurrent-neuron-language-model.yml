@@ -6,6 +6,7 @@ on:
       - feat/mobile-neuron-unit-runtime
     paths:
       - "scripts/train_recurrent_neuron_lm.py"
+      - "scripts/run_recurrent_neuron_lm.py"
       - ".github/workflows/recurrent-neuron-language-model.yml"
 
 permissions:
@@ -60,7 +61,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m py_compile scripts/train_recurrent_neuron_lm.py
+          python -m py_compile scripts/train_recurrent_neuron_lm.py scripts/run_recurrent_neuron_lm.py
           for seed in 20261010 20261011 20261012; do
             mkdir -p "experiments/recurrent-neuron-lm/latest/seed-$seed"
             python scripts/train_recurrent_neuron_lm.py \
@@ -69,6 +70,10 @@ jobs:
               --hidden 64 --context 64 --epochs 30 --steps-per-epoch 240 \
               --batch-size 32 --learning-rate 0.003 --seed "$seed" \
               2>&1 | tee "experiments/recurrent-neuron-lm/latest/seed-$seed/terminal.log"
+            python scripts/run_recurrent_neuron_lm.py \
+              --model "experiments/recurrent-neuron-lm/latest/seed-$seed/model.json" \
+              --prompt "Alice " --max-chars 80 --seed "$seed" \
+              --output "experiments/recurrent-neuron-lm/latest/seed-$seed/inference-smoke.txt"
           done
       - name: Aggregate and validate metrics
         shell: bash
