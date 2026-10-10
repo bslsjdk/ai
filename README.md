@@ -46,3 +46,4 @@ The app keeps applicationId = bslsjdk.ornithnpu and the existing persistent sign
 - app/src/main/java/bslsjdk/mcnpu/NpuNeuronForward.java — QNN HTP V73 INT8 matrix forward diagnostic.
 - docs/NEURON_WORKBENCH_DESIGN.md — resource competition, training and scaling safety plan.
 - docs/PROJECT_MEMORY.md — project direction and verification record.
+- docs/VN_MOBILE_5_IMPLEMENTATION.md — experimental VN energy/phase propagation bridge and its verification gates.
