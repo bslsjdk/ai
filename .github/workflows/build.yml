@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [main, bonsai2-pq2-baseline, feat/mobile-neuron-unit-runtime]
+    branches: [main, bonsai2-pq2-baseline, feat/mobile-neuron-unit-runtime, feat/scalable-neuron-architecture-v2]
   workflow_dispatch:
 permissions:
   contents: write
