@@ -452,6 +452,90 @@ public final class SuperNeuronV2 {
     }
 
     /**
+     * Train against a soft target distribution (knowledge distillation).
+     * The target must be a normalized probability distribution over output classes.
+     * Returns cross-entropy against the teacher distribution.
+     */
+    public double trainDistribution(double[] targetDistribution, double learningRate) {
+        if (!hasForward) throw new IllegalStateException("forward must run before trainDistribution");
+        if (targetDistribution == null || targetDistribution.length != outputCount)
+            throw new IllegalArgumentException("target distribution length must equal output count");
+        if (!Double.isFinite(learningRate) || learningRate <= 0.0 || learningRate > 0.1)
+            throw new IllegalArgumentException("learningRate must be in (0, 0.1]");
+        double sum = 0.0;
+        for (double target : targetDistribution) {
+            if (!Double.isFinite(target) || target < 0.0 || target > 1.0)
+                throw new IllegalArgumentException("target probabilities must be finite and within [0,1]");
+            sum += target;
+        }
+        if (Math.abs(sum - 1.0) > 1.0e-4)
+            throw new IllegalArgumentException("target distribution must sum to 1");
+        double loss = 0.0;
+        for (int o = 0; o < outputCount; o++) {
+            if (targetDistribution[o] > 0.0)
+                loss -= targetDistribution[o] * Math.log(Math.max(1.0e-12, lastProbabilities[o]));
+        }
+        Arrays.fill(latentGradient, 0.0);
+        Arrays.fill(hiddenGradient, 0.0);
+        for (int o = 0; o < outputCount; o++) {
+            double grad = lastProbabilities[o] - targetDistribution[o];
+            int base = o * outputRank;
+            for (int r = 0; r < outputRank; r++) {
+                latentGradient[r] += grad * outputEmbedding[base + r];
+                outputEmbedding[base + r] = clamp(
+                        outputEmbedding[base + r] - learningRate * grad * lastLatent[r],
+                        -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
+            }
+            outputBias[o] = clamp(outputBias[o] - learningRate * grad,
+                    -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
+        }
+        for (int h = 0; h < hiddenSize; h++) {
+            for (int r = 0; r < outputRank; r++) {
+                int index = h * outputRank + r;
+                hiddenGradient[h] += latentGradient[r] * hiddenToOutputRank[index];
+                hiddenToOutputRank[index] = clamp(hiddenToOutputRank[index]
+                        - learningRate * latentGradient[r] * lastHidden[h],
+                        -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
+            }
+        }
+        for (int p = 0; p < inputCount; p++) {
+            double dGate = 0.0;
+            double dDirectInput = 0.0;
+            for (int h = 0; h < hiddenSize; h++) {
+                double preGradient = hiddenGradient[h] * (1.0 - lastHidden[h] * lastHidden[h]);
+                double projection = inputProjection[p * hiddenSize + h];
+                dGate += preGradient * projection * lastInput[p];
+                dDirectInput += preGradient * projection * lastGate[p];
+            }
+            gateGradientScratch[p] = dGate * lastGate[p] * (1.0 - lastGate[p]);
+            lastInputGradient[p] = clamp(
+                    dDirectInput + gateGradientScratch[p] * gateWeight[p], -10.0, 10.0);
+        }
+        for (int h = 0; h < hiddenSize; h++) {
+            double preGradient = hiddenGradient[h] * (1.0 - lastHidden[h] * lastHidden[h]);
+            recurrentScale[h] = clamp(recurrentScale[h]
+                    - learningRate * preGradient * lastPreviousState[h], -1.0, 1.0);
+            for (int p = 0; p < inputCount; p++) {
+                int index = p * hiddenSize + h;
+                double gatedInput = lastInput[p] * lastGate[p];
+                inputProjection[index] = clamp(inputProjection[index]
+                        - learningRate * preGradient * gatedInput,
+                        -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
+            }
+        }
+        for (int p = 0; p < inputCount; p++) {
+            double gateGradient = gateGradientScratch[p];
+            gateWeight[p] = clamp(gateWeight[p] - learningRate * gateGradient * lastInput[p],
+                    -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
+            gateBias[p] = clamp(gateBias[p] - learningRate * gateGradient,
+                    -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
+        }
+        trainSteps++;
+        hasForward = false;
+        return loss;
+    }
+
+    /**
      * Apply a scalar reward through this neuron's bounded local eligibility traces.
      * Positive reward reinforces recent local activity; negative reward weakens it.
      * This does not run backpropagation through time or retain an activation graph.
