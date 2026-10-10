@@ -69,6 +69,8 @@ def main():
     dtype = torch.float16 if device == "cuda" else torch.float32
     print(f"Loading teacher {args.model} on {device}; this stage is offline and does not run on Android.")
     tokenizer = AutoTokenizer.from_pretrained(args.model, use_fast=True)
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token = tokenizer.eos_token
     if not tokenizer.is_fast:
         raise SystemExit("A fast tokenizer with offset_mapping is required for safe character contexts.")
     model = AutoModelForCausalLM.from_pretrained(
