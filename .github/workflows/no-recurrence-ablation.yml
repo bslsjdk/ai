@@ -70,6 +70,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          root="experiments/no-recurrence-ablation/latest"
           python - <<'PY'
           import hashlib, json, statistics
           from pathlib import Path
