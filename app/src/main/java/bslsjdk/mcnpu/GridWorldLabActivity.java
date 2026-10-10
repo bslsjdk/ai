@@ -397,6 +397,7 @@ public final class GridWorldLabActivity extends Activity {
         log.setText("输入=相对(dx,dy)+BFS距离+3×3局部墙视野+上一步动作；固定验证集选择精英，独立固定测试集只在结束时评估。旧168维模型和回放文件保持隔离。");
         worker.execute(() -> {
             long started = System.currentTimeMillis();
+            try {
             Random evolutionRng = new Random(0xE7016L ^ System.nanoTime());
             EvoNet16 elite = evo16.copy(System.nanoTime());
             EvoNet16 validationChampion = elite.copy(System.nanoTime());
@@ -428,6 +429,9 @@ public final class GridWorldLabActivity extends Activity {
                     if (c > 0) candidate.mutate(sigma, evolutionRng);
                     EvolutionScore score = scoreEvo16(candidate, java.util.Arrays.asList(generationMaps));
                     evaluations += mapsCount;
+                    // Sample after every candidate, not only after an entire generation.
+                    sampleEvo16ProcessMemory();
+                    if (cancelTraining) break;
                     generationSteps += score.steps;
                     if (c == 0) parentScore = score.score;
                     if (generationBest == null || score.score > generationBestScore.score) {
@@ -495,18 +499,46 @@ public final class GridWorldLabActivity extends Activity {
             final double doneSigma = sigma;
             final long doneSteps = environmentSteps;
             main.post(() -> {
-                useEvo16 = true;
-                evaluatePolicy(100);
-                try { saveEvo16Checkpoint(); saveEvo16Report(); }
-                catch (Exception e) { lastAutosaveError = e.getClass().getSimpleName() + ": " + e.getMessage(); }
-                status.setText(cancelTraining ? "16维进化已停止并保存精英网络。" : "16维进化预算完成，固定测试集评估已完成。");
-                log.setText(String.format(Locale.US,
-                        "16维进化结束\n候选地图评估：%d\n进化代数：%d\n固定测试集成功率：%d/100（%.1f%%）\n验证集最佳评分：%.0f\n外置精英块：%d/8\n变异强度：%.4f\n累计环境步数：%d\n用时：%.1f秒\n旧168维模型与经验回放未覆盖。",
-                        doneEvaluations, doneGenerations, evalSuccesses, evalSuccesses,
-                        evo16BestValidationScore, evo16Bank.size(), doneSigma, doneSteps,
-                        lastTrainingElapsedMs / 1000.0));
-                refreshReadout();
+                try {
+                    useEvo16 = true;
+                    evaluatePolicy(100);
+                    try { saveEvo16Checkpoint(); saveEvo16Report(); }
+                    catch (Exception e) { lastAutosaveError = e.getClass().getSimpleName() + ": " + e.getMessage(); }
+                    status.setText(cancelTraining ? "16维进化已停止并保存精英网络。" : "16维进化预算完成，固定测试集评估已完成。");
+                    log.setText(String.format(Locale.US,
+                            "16维进化结束\n候选地图评估：%d\n进化代数：%d\n固定测试集成功率：%d/100（%.1f%%）\n验证集最佳评分：%.0f\n外置精英块：%d/8\n变异强度：%.4f\n累计环境步数：%d\n用时：%.1f秒\n旧168维模型与经验回放未覆盖。",
+                            doneEvaluations, doneGenerations, evalSuccesses, evalSuccesses,
+                            evo16BestValidationScore, evo16Bank.size(), doneSigma, doneSteps,
+                            lastTrainingElapsedMs / 1000.0));
+                    refreshReadout();
+                } catch (Throwable failure) {
+                    training = false;
+                    cancelTraining = true;
+                    lastAutosaveError = "Evo16 finalization failed: " + failure.getClass().getSimpleName()
+                            + (failure.getMessage() == null ? "" : ": " + failure.getMessage());
+                    status.setText("16维训练已停止：最终评估/保存发生异常");
+                    log.setText(lastAutosaveError + "\n模型状态已保留在内存中；可复制报告排查，不应静默退出训练页。");
+                }
             });
+            } catch (Throwable failure) {
+                cancelTraining = true;
+                training = false;
+                final String error = "Evo16 worker failed: " + failure.getClass().getSimpleName()
+                        + (failure.getMessage() == null ? "" : ": " + failure.getMessage());
+                lastAutosaveError = error;
+                try {
+                    if (evo16 != null) saveEvo16Checkpoint();
+                    saveEvo16Report();
+                } catch (Throwable saveFailure) {
+                    lastAutosaveError = error + "\nSave failed: " + saveFailure.getClass().getSimpleName();
+                }
+                final String visibleError = lastAutosaveError;
+                main.post(() -> {
+                    status.setText("16维训练异常停止，已尝试保存当前进度");
+                    log.setText(visibleError + "\n请复制训练报告和日志定位问题，训练异常不再静默消失。");
+                    refreshReadout();
+                });
+            }
         });
     }
 
@@ -587,8 +619,11 @@ public final class GridWorldLabActivity extends Activity {
     private EvolutionScore scoreEvo16(EvoNet16 candidate, List<MapData> maps) {
         int wins = 0, fastWins = 0;
         long actualStepsTotal = 0L, penalizedStepsTotal = 0L, shapedProgress = 0L;
+        int mapIndex = 0;
         for (MapData map : maps) {
             Evo16EpisodeResult result = runEvo16Episode(candidate, map);
+            // Training-time memory checks during long validation/bank scoring batches too.
+            if (training && (++mapIndex % 4 == 0)) sampleEvo16ProcessMemory();
             int shortest = shortestDistance(map);
             shapedProgress += result.potentialDelta;
             actualStepsTotal += result.steps;
