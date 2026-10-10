@@ -140,6 +140,7 @@ def main():
     p.add_argument("--max-tokens", type=int, default=64)
     p.add_argument("--timeout", type=int, default=90)
     p.add_argument("--limit", type=int, default=0)
+    p.add_argument("--mode", choices=("single", "verify"), default="single")
     args = p.parse_args()
     cases = build_cases()
     if args.limit: cases = cases[:args.limit]
@@ -147,7 +148,7 @@ def main():
     manifest = {
         "format": "aimeng-llm-pk-report/v2", "model": args.model, "baseUrl": args.base_url,
         "caseCount": len(cases), "datasetSha256": hashlib.sha256(json.dumps(cases, sort_keys=True).encode()).hexdigest(),
-        "decoding": {"temperature": 0, "seed": 1234, "maxTokens": args.max_tokens},
+        "decoding": {"temperature": 0, "seed": 1234, "maxTokens": args.max_tokens}, "mode": args.mode,
         "suiteVersion": 2, "note": "Generated phase-two diagnostic benchmark; distinct logic templates and unique context-recall entities. Not a public leaderboard or proof of general intelligence."
     }
     rows = []
@@ -156,6 +157,24 @@ def main():
         started = time.perf_counter()
         try:
             output, latency, usage = completion(args.base_url, args.model, case["prompt"], args.max_tokens, args.timeout)
+            if args.mode == "verify":
+                draft = output
+                verify_prompt = (
+                    "Solve the task independently, without trusting the proposed answer. "
+                    "Check every step and correct the answer if needed. Follow the original output-format instructions.\n\n"
+                    f"Original task:\n{case['prompt']}\n\nProposed answer to check:\n{draft}\n\n"
+                    "Return only the final answer in the requested format."
+                )
+                output, second_latency, second_usage = completion(
+                    args.base_url, args.model, verify_prompt, args.max_tokens, args.timeout)
+                latency += second_latency
+                usage = {
+                    "prompt_tokens": usage.get("prompt_tokens", 0) + second_usage.get("prompt_tokens", 0),
+                    "completion_tokens": usage.get("completion_tokens", 0) + second_usage.get("completion_tokens", 0),
+                    "total_tokens": usage.get("total_tokens", 0) + second_usage.get("total_tokens", 0),
+                }
+                row["draftOutput"] = draft
+                row["verificationOutput"] = output
             row.update({"output": output, "latencySeconds": round(latency, 4),
                         "correct": matches(case["category"], case["expected"], output), "usage": usage, "error": None})
         except Exception as exc:
