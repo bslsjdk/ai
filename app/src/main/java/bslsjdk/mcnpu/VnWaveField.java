@@ -52,6 +52,7 @@ public final class VnWaveField {
     private final double[] nextActivation;
     private final double[] incoming;
     private final double[] phaseTorque;
+    private final double[] incomingScale;
     private final boolean[] selected;
     private long ticks;
     private int lastActiveSources;
@@ -84,6 +85,7 @@ public final class VnWaveField {
         nextActivation = new double[nodeCount];
         incoming = new double[nodeCount];
         phaseTorque = new double[nodeCount];
+        incomingScale = new double[nodeCount];
         selected = new boolean[nodeCount];
     }
 
@@ -102,6 +104,7 @@ public final class VnWaveField {
         edgeFrom[id] = from;
         edgeTo[id] = to;
         edgeWeight[id] = weight;
+        incomingScale[to] += Math.abs(weight);
         return id;
     }
 
@@ -133,6 +136,9 @@ public final class VnWaveField {
             }
 
             for (int i = 0; i < nodeCount; i++) {
+                double normalizer = Math.max(1.0, incomingScale[i]);
+                incoming[i] /= normalizer;
+                phaseTorque[i] /= normalizer;
                 double disturbance = t == 0 ? seed[i] : 0.0;
                 double wave = coupling * incoming[i];
                 nextEnergy[i] = clamp((1.0 - damping) * energy[i]
@@ -168,7 +174,7 @@ public final class VnWaveField {
     public synchronized long estimatedPayloadBytes() {
         return 8L * (energy.length + phase.length + activation.length
                 + nextEnergy.length + nextPhase.length + nextActivation.length
-                + incoming.length + phaseTorque.length)
+                + incoming.length + phaseTorque.length + incomingScale.length)
                 + selected.length
                 + 16L * edgeFrom.length;
     }
