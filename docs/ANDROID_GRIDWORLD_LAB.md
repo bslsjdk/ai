@@ -4,23 +4,30 @@
 
 1. Install the newest signed APK from the repository's `latest-apk` release after the corresponding Android build has succeeded.
 2. Open **AIMENG 神经元实验**.
-3. On the **总览** page, tap **打开迷宫实验 · 观看神经网络学习**.
-4. Start with **训练 1,000 局**. The training runs on a background thread; the page periodically updates its progress.
-5. When training finishes, use **观看策略（自动走）** to watch the blue agent attempt to reach the green goal. **单步执行** lets you inspect one decision at a time.
-6. Inspect the 16 hidden-unit activation values and four action Q values. The larger Q value is the action the policy currently prefers; it is not a probability or a guarantee of success.
-7. Tap **保存网络与报告** to save the checkpoint and evaluation report in the app's private `files/gridworld-lab/` directory.
+3. On the grid-world lab page, choose the hidden-layer size and select either TD training or neuroevolution training.
+4. Start with a small run (for example, 5,000 episodes/evaluations) and inspect the report before requesting a very large run. Training runs on a background worker and can be stopped.
+5. Use the policy playback and single-step controls to inspect decisions, hidden activations and action Q values.
+6. Copy the training report when comparing runs. Reports include throughput and held-out random-map evaluation; training wins are not the same as generalization success.
+7. Checkpoints and replay memory are saved in the app's private grid-world lab directory.
 
-## What is being tested
+## Current Android experiment
 
-- A small on-device neural Q-learning model: 8 inputs, 16 ReLU hidden units, 4 action values.
-- Epsilon-greedy exploration and temporal-difference updates.
-- A fixed 5×5 map with walls and a goal; evaluation checks the policy from all valid starting cells.
-- Visible board state, recent path, hidden activations, action values, episode count, reward and fixed-start success rate.
+- Map: 12 × 12, with randomly generated solvable wall layouts.
+- Input size: 168 = 8 local features + 144 wall-map cells + the last 8 positions represented as (x,y).
+- Output: 4 action values (up, right, down, left).
+- The hidden layer size is configurable. Recurrent hidden-to-hidden communication uses a bounded fan-in; two thought/communication cycles are used by the current configuration.
+- TD mode uses epsilon-greedy action selection, shortest-path distance shaping, a bounded replay buffer, and periodic independent-map evaluation.
+- Neuroevolution mode is separate: it mutates candidate weights, compares candidates on shared maps, retains an elite, and validates periodically. It does not use TD gradients or replay updates.
+- The recurrent Q-network and its TD/BPTT updates currently run on Java CPU. The GLES 3.1 GPU path in the separate numeric Neuron Workspace is not automatically used by this grid-world Q-network.
 
-The game model is a **separate experiment network**. It does not silently replace or mutate the general numeric network in the main Neuron Workspace. The report is an actual Android run report, distinct from the standalone Python benchmark under `scripts/test_neural_gridworld.py`.
+## Training performance work
 
-## Resource limits and current limitations
+- The per-episode wall-map feature projection is cached because those 144 input features stay constant throughout one episode.
+- The cache is incrementally updated whenever live TD or replay updates change input weights. Replay updates account for overlapping walls between the replay map and the current map; the projection is recomputed every 64 steps to limit floating-point drift.
+- The general numeric Neuron Workspace reuses gradient, output, loss-evaluation, and GPU staging buffers to reduce per-epoch allocations and garbage collection.
+- The numeric workspace's GPU hybrid path is only enabled for eligible workloads after numerical comparison and a measured speed win. It accelerates part of the hidden-layer forward pass; output projection, gradient accumulation, backpropagation and Adam remain CPU work.
+- CPU-side optimizations and GPU/NPU operator probes must not be described as full hardware-accelerated training. No speedup percentage should be claimed until measured on the target phone.
 
-The model is deliberately tiny and uses only Java/Android APIs; no Python runtime or third-party numerical package is loaded. Training runs off the UI thread, and the page exposes only small arrays and a 5×5 board. As with any mobile experiment, keep an eye on device temperature and memory during longer runs.
+## Resource and evaluation notes
 
-This is the first visual benchmark, not a general-purpose Python terminal. Arbitrary shell/Python execution is not exposed because it needs an explicit runtime, cancellation, output capture, storage boundaries and resource limits. A later task runner should launch approved scripts in an isolated workspace with bounded memory/time rather than execute unrestricted commands inside the app.
+The application must remain below the hard 4 GiB runtime RAM limit. Large populations, training datasets and GPU staging buffers must remain bounded. Independent random-map evaluation and the goal-adjacent action check are more useful than training reward alone; a high training win count does not prove generalization.
