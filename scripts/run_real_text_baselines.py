@@ -127,11 +127,10 @@ def chunked_training_batch(all_ids, train_end, context, chunk_size, batch_size, 
     starts = rng.integers(0, max_start + 1, size=batch_size)
     offsets = rng.integers(0, chunk_size, size=batch_size)
     input_positions = starts + offsets
+    positions = input_positions[:, None] - context + 1 + np.arange(context)[None, :]
+    valid = positions >= starts[:, None]
     x = np.full((batch_size, context), int(pad_id), dtype=np.int32)
-    for i, (start, position) in enumerate(zip(starts, input_positions)):
-        values = all_ids[max(int(start), int(position)-context+1):int(position)+1]
-        if len(values):
-            x[i, -len(values):] = values
+    x[valid] = all_ids[positions[valid]]
     y = all_ids[input_positions + 1]
     return x, y
 
