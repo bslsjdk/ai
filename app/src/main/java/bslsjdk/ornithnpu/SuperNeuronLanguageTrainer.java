@@ -127,6 +127,66 @@ public final class SuperNeuronLanguageTrainer {
         return totalLoss / steps;
     }
 
+    /**
+     * One bounded distillation update for a context and a teacher character distribution.
+     * The recurrent state is rebuilt from this sample's context; no sequence-wide tape is kept.
+     */
+    public double trainSoftTarget(int[] contextTokenIds, double[] teacherProbabilities, double learningRate) {
+        if (contextTokenIds == null || contextTokenIds.length < 1 || contextTokenIds.length > 256)
+            throw new IllegalArgumentException("context must contain 1..256 tokens");
+        if (teacherProbabilities == null || teacherProbabilities.length != vocabularySize)
+            throw new IllegalArgumentException("teacher distribution length must match vocabulary");
+        validateSequenceForContext(contextTokenIds);
+        double sum = 0.0;
+        for (double p : teacherProbabilities) {
+            if (!Double.isFinite(p) || p < 0.0 || p > 1.0)
+                throw new IllegalArgumentException("teacher probabilities must be within [0,1]");
+            sum += p;
+        }
+        if (Math.abs(sum - 1.0) > 1.0e-4)
+            throw new IllegalArgumentException("teacher probabilities must sum to 1");
+        if (!Double.isFinite(learningRate) || learningRate <= 0.0 || learningRate > 0.05)
+            throw new IllegalArgumentException("learningRate must be in (0, 0.05]");
+        model.resetState();
+        for (int i = 0; i < contextTokenIds.length; i++) {
+            copyEmbedding(contextTokenIds[i], inputScratch);
+            model.forwardInto(inputScratch, outputScratch);
+            if (i + 1 < contextTokenIds.length) {
+                // Context tokens update recurrent state only; the final token receives the target gradient.
+                continue;
+            }
+            double loss = model.trainDistribution(teacherProbabilities, learningRate);
+            model.copyLastInputGradient(gradientScratch);
+            int base = contextTokenIds[i] * embeddingSize;
+            for (int d = 0; d < embeddingSize; d++) {
+                double grad = Math.max(-5.0, Math.min(5.0, gradientScratch[d]));
+                embeddings[base + d] = clamp(
+                        embeddings[base + d] - learningRate * grad,
+                        -MAX_ABS_EMBEDDING, MAX_ABS_EMBEDDING);
+            }
+            trainedTokenTargets++;
+            return loss;
+        }
+        throw new IllegalStateException("distillation update did not run");
+    }
+
+    /** Returns next-character probabilities after rebuilding recurrent state from a context. */
+    public double[] predictDistribution(int[] contextTokenIds) {
+        if (contextTokenIds == null || contextTokenIds.length < 1 || contextTokenIds.length > 256)
+            throw new IllegalArgumentException("context must contain 1..256 tokens");
+        validateSequenceForContext(contextTokenIds);
+        model.resetState();
+        for (int token : contextTokenIds) {
+            copyEmbedding(token, inputScratch);
+            model.forwardInto(inputScratch, outputScratch);
+        }
+        return java.util.Arrays.copyOf(outputScratch, outputScratch.length);
+    }
+
+    private void validateSequenceForContext(int[] tokenIds) {
+        for (int token : tokenIds) checkToken(token);
+    }
+
     /** Mean next-token cross-entropy without updating any learned parameters. */
     public double evaluateSequence(int[] tokenIds) {
         validateSequence(tokenIds);
