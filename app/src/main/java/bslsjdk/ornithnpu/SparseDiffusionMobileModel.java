@@ -120,9 +120,7 @@ public final class SparseDiffusionMobileModel {
     public synchronized boolean isLoaded() { return loaded; }
 
     public synchronized String backendStatus() {
-        return OpenClGpuBackend.isAvailable()
-                ? "GPU/OpenCL：" + OpenClGpuBackend.deviceName() + "（大矩阵走 GPU，小矩阵走 CPU）"
-                : "CPU 兜底（未检测到可用 OpenCL GPU）";
+        return OpenClGpuBackend.statusText();
     }
 
     public synchronized String generate(String prompt, int count) {
