@@ -370,6 +370,375 @@ public final class GridWorldLabActivity extends Activity {
     }
 
     /**
+     * Isolated 16-input evolutionary experiment. No TD gradients or replay are used.
+     * The fixed validation maps select champions; the separate fixed test maps are
+     * only used for final reporting. All model files are separate from q_network.json.
+     */
+    private void startEvolution16Training(int evaluationBudget) {
+        if (training) { toast("训练已经在运行。"); return; }
+        try { ensureEvo16Benchmarks(); }
+        catch (Exception e) { toast("固定评估集创建失败：" + e.getMessage()); return; }
+        watching = false;
+        cancelTraining = false;
+        stoppedByMastery = false;
+        fastWinStreak = 0;
+        lastTrainingAlgorithm = "neuroevolution_16d_mutation_bank";
+        if (evo16 == null) evo16 = new EvoNet16(20261016L, net.hiddenSize);
+        useEvo16 = true;
+        training = true;
+        status.setText("16维神经元进化开始：无反向传播、无经验回放，评估预算 " + evaluationBudget);
+        log.setText("输入=相对(dx,dy)+BFS距离+3×3局部墙视野+上一步动作；固定验证集选择精英，独立固定测试集只在结束时评估。旧168维模型和回放文件保持隔离。");
+        worker.execute(() -> {
+            long started = System.currentTimeMillis();
+            Random evolutionRng = new Random(0xE7016L ^ System.nanoTime());
+            EvoNet16 elite = evo16.copy(System.nanoTime());
+            EvoNet16 validationChampion = elite.copy(System.nanoTime());
+            double bestValidation = scoreEvo16(validationChampion, evo16ValidationMaps).score;
+            long evaluations = 0L, environmentSteps = 0L;
+            int generations = 0;
+            double sigma = 0.20;
+            final int population = EVOLUTION_POPULATION;
+            final int mapsPerCandidate = EVOLUTION_MAPS_PER_CANDIDATE;
+
+            while (evaluations < evaluationBudget && !cancelTraining) {
+                int remaining = (int)Math.min(Integer.MAX_VALUE, evaluationBudget - evaluations);
+                int candidateCount = Math.min(population, Math.max(1, remaining / mapsPerCandidate));
+                int mapsCount = Math.min(mapsPerCandidate, Math.max(1, remaining / candidateCount));
+                MapData[] generationMaps = new MapData[mapsCount];
+                for (int i = 0; i < mapsCount; i++) generationMaps[i] = generateMap(evolutionRng);
+
+                EvoNet16 generationBest = null;
+                EvolutionScore generationBestScore = null;
+                long parentScore = scoreEvo16(elite, java.util.Arrays.asList(generationMaps)).score;
+                long generationSteps = 0L;
+                for (int c = 0; c < candidateCount && evaluations < evaluationBudget && !cancelTraining; c++) {
+                    EvoNet16 parent = elite;
+                    // Rotate 30% of offspring through compatible saved elite blocks.
+                    if (c > 0 && !evo16Bank.isEmpty() && evolutionRng.nextDouble() < 0.30) {
+                        parent = evo16Bank.get(evolutionRng.nextInt(evo16Bank.size()));
+                    }
+                    EvoNet16 candidate = parent.copy(evolutionRng.nextLong());
+                    if (c > 0) candidate.mutate(sigma, evolutionRng);
+                    EvolutionScore score = scoreEvo16(candidate, java.util.Arrays.asList(generationMaps));
+                    evaluations += mapsCount;
+                    generationSteps += score.steps;
+                    if (generationBest == null || score.score > generationBestScore.score) {
+                        generationBest = candidate;
+                        generationBestScore = score;
+                    }
+                }
+                if (generationBest == null) break;
+                boolean improvedOnGeneration = generationBestScore.score > parentScore;
+                if (improvedOnGeneration) {
+                    elite = generationBest;
+                    sigma = Math.max(0.025, sigma * 0.94);
+                } else {
+                    sigma = Math.min(0.80, sigma * 1.08);
+                }
+                generations++;
+                environmentSteps += generationSteps;
+                evo16 = elite;
+                evo16Evaluations = evaluations;
+                evo16Generations = generations;
+                lastMutationSigma = sigma;
+                lastTrainingElapsedMs = Math.max(1L, System.currentTimeMillis() - started);
+                lastTrainingEnvironmentSteps = environmentSteps;
+                lastTrainingEpisodesPerSecond = evaluations * 1000.0 / lastTrainingElapsedMs;
+                lastTrainingStepsPerSecond = environmentSteps * 1000.0 / lastTrainingElapsedMs;
+
+                // Fixed validation is used only for checkpoint/elite selection, never as mutation fitness.
+                if (generations % 5 == 0 || evaluations >= evaluationBudget) {
+                    EvolutionScore validation = scoreEvo16(generationBest, evo16ValidationMaps);
+                    if (validation.score > bestValidation) {
+                        bestValidation = validation.score;
+                        validationChampion = generationBest.copy(System.nanoTime());
+                    }
+                    addEvo16BankCandidate(validationChampion, bestValidation);
+                    evo16 = validationChampion;
+                    evo16BestValidationScore = bestValidation;
+                    saveEvo16Checkpoint();
+                    final long e = evaluations;
+                    final int g = generations;
+                    final double mutation = sigma;
+                    final long valScore = (long)bestValidation;
+                    main.post(() -> {
+                        status.setText("16维进化中：" + e + "/" + evaluationBudget + " 次地图评估，第 " + g + " 代");
+                        log.setText(String.format(Locale.US,
+                                "算法：16维变异+筛选+外置精英轮换\n候选地图评估：%d/%d\n进化代数：%d\n固定验证集最佳评分：%d\n外置精英块：%d/8\n变异强度：%.4f\n固定测试集：100张，尚未用于本阶段选拔",
+                                e, evaluationBudget, g, valScore, evo16Bank.size(), mutation));
+                        refreshReadout();
+                    });
+                }
+            }
+
+            evo16 = validationChampion;
+            evo16Evaluations = evaluations;
+            evo16Generations = generations;
+            evo16BestValidationScore = bestValidation;
+            lastMutationSigma = sigma;
+            lastTrainingElapsedMs = Math.max(1L, System.currentTimeMillis() - started);
+            lastTrainingEnvironmentSteps = environmentSteps;
+            lastTrainingEpisodesPerSecond = evaluations * 1000.0 / lastTrainingElapsedMs;
+            lastTrainingStepsPerSecond = environmentSteps * 1000.0 / lastTrainingElapsedMs;
+            training = false;
+            final long doneEvaluations = evaluations;
+            final int doneGenerations = generations;
+            final double doneSigma = sigma;
+            final long doneSteps = environmentSteps;
+            main.post(() -> {
+                useEvo16 = true;
+                evaluatePolicy(100);
+                try { saveEvo16Checkpoint(); saveEvo16Report(); }
+                catch (Exception e) { lastAutosaveError = e.getClass().getSimpleName() + ": " + e.getMessage(); }
+                status.setText(cancelTraining ? "16维进化已停止并保存精英网络。" : "16维进化预算完成，固定测试集评估已完成。");
+                log.setText(String.format(Locale.US,
+                        "16维进化结束\n候选地图评估：%d\n进化代数：%d\n固定测试集成功率：%d/100（%.1f%%）\n验证集最佳评分：%.0f\n外置精英块：%d/8\n变异强度：%.4f\n累计环境步数：%d\n用时：%.1f秒\n旧168维模型与经验回放未覆盖。",
+                        doneEvaluations, doneGenerations, evalSuccesses, evalSuccesses,
+                        evo16BestValidationScore, evo16Bank.size(), doneSigma, doneSteps,
+                        lastTrainingElapsedMs / 1000.0));
+                refreshReadout();
+            });
+        });
+    }
+
+    private void activateEvo16Policy() {
+        if (training) { toast("训练运行中，不能切换模型。"); return; }
+        if (evo16 == null) loadEvo16Checkpoint();
+        if (evo16 == null) { toast("还没有保存的16维进化网络，请先运行16维进化训练。"); return; }
+        try { ensureEvo16Benchmarks(); }
+        catch (Exception e) { toast("固定评估集读取失败：" + e.getMessage()); return; }
+        useEvo16 = true;
+        resetEpisode();
+        evaluatePolicy(100);
+        status.setText("已切换到独立16维进化网络。");
+        log.setText(String.format(Locale.US, "固定测试集成功率：%d/100（%.1f%%）。该结果不参与进化选拔。", evalSuccesses, evalSuccesses));
+        refreshReadout();
+    }
+
+    private double[] evo16Observe(int pos, int target, Set<Integer> mapWalls, int[] distances, int lastAction) {
+        double[] x = new double[EvoNet16.INPUTS];
+        int px = pos % SIZE, py = pos / SIZE;
+        int gx = target % SIZE, gy = target / SIZE;
+        x[0] = (gx - px) / (double)(SIZE - 1);
+        x[1] = (gy - py) / (double)(SIZE - 1);
+        int distance = distances == null ? -1 : distances[pos];
+        x[2] = distance < 0 ? 1.0 : Math.min(1.0, distance / (double)CELLS);
+        int k = 3;
+        for (int oy = -1; oy <= 1; oy++) {
+            for (int ox = -1; ox <= 1; ox++) {
+                int nx = px + ox, ny = py + oy;
+                x[k++] = nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE
+                        || mapWalls.contains(ny * SIZE + nx) ? 1.0 : 0.0;
+            }
+        }
+        if (lastAction >= 0 && lastAction < 4) x[12 + lastAction] = 1.0;
+        return x;
+    }
+
+    private int greedyEvo16Steps(EvoNet16 candidate, MapData map) {
+        int p = map.start, last = -1;
+        int[] distances = distanceMap(map);
+        Set<Integer> seen = new HashSet<>();
+        for (int step = 1; step <= MAX_STEPS; step++) {
+            int action = argmax(candidate.forward(evo16Observe(p, map.goal, map.walls, distances, last)));
+            Transition tr = transition(p, action, map);
+            p = tr.next;
+            last = action;
+            if (tr.done) return step;
+            if (!seen.add(p * 4 + action)) return -1;
+        }
+        return -1;
+    }
+
+    private EvolutionScore scoreEvo16(EvoNet16 candidate, List<MapData> maps) {
+        int wins = 0, fastWins = 0;
+        long stepsTotal = 0L, score = 0L;
+        for (MapData map : maps) {
+            int steps = greedyEvo16Steps(candidate, map);
+            int shortest = shortestDistance(map);
+            if (steps > 0) {
+                wins++;
+                stepsTotal += steps;
+                if (steps <= shortest * FAST_STEP_FACTOR + FAST_STEP_ALLOWANCE) fastWins++;
+            } else {
+                stepsTotal += MAX_STEPS;
+            }
+        }
+        score = wins * 100000L + fastWins * 1000L - stepsTotal;
+        return new EvolutionScore(score, wins, fastWins, stepsTotal);
+    }
+
+    private void addEvo16BankCandidate(EvoNet16 candidate, double candidateScore) {
+        if (candidate == null) return;
+        for (EvoNet16 existing : evo16Bank) {
+            if (existing == candidate) return;
+        }
+        if (evo16Bank.size() < 8) {
+            evo16Bank.add(candidate.copy(System.nanoTime()));
+            return;
+        }
+        int worstIndex = -1;
+        double worstScore = Double.POSITIVE_INFINITY;
+        for (int i = 0; i < evo16Bank.size(); i++) {
+            double value = scoreEvo16(evo16Bank.get(i), evo16ValidationMaps).score;
+            if (value < worstScore) { worstScore = value; worstIndex = i; }
+        }
+        if (worstIndex >= 0 && candidateScore > worstScore) {
+            evo16Bank.set(worstIndex, candidate.copy(System.nanoTime()));
+        }
+    }
+
+    private File evo16Directory() {
+        return new File(getFilesDir(), "gridworld-lab");
+    }
+
+    private void ensureEvo16Benchmarks() throws Exception {
+        if (evo16ValidationMaps.size() == 100 && evo16TestMaps.size() == 100) return;
+        File dir = evo16Directory();
+        if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("无法创建实验目录");
+        File file = new File(dir, "evo16_benchmarks.json");
+        if (file.isFile()) {
+            try (java.io.FileInputStream in = new java.io.FileInputStream(file)) {
+                byte[] bytes = new byte[(int)Math.min(file.length(), 1024 * 1024)];
+                int n = in.read(bytes);
+                JSONObject root = new JSONObject(new String(bytes, 0, Math.max(0, n), StandardCharsets.UTF_8));
+                if ("aimeng-evo16-benchmarks/v1".equals(root.optString("format"))) {
+                    evo16ValidationMaps = parseMapArray(root.getJSONArray("validation"));
+                    evo16TestMaps = parseMapArray(root.getJSONArray("test"));
+                    if (evo16ValidationMaps.size() == 100 && evo16TestMaps.size() == 100) return;
+                }
+            } catch (Exception ignored) { }
+        }
+        evo16ValidationMaps = new ArrayList<>();
+        evo16TestMaps = new ArrayList<>();
+        Random vr = new Random(0x16A11D01L);
+        Random tr = new Random(0x16A11D02L);
+        for (int i = 0; i < 100; i++) {
+            evo16ValidationMaps.add(generateMap(vr));
+            evo16TestMaps.add(generateMap(tr));
+        }
+        JSONObject root = new JSONObject();
+        root.put("format", "aimeng-evo16-benchmarks/v1");
+        root.put("mapSize", SIZE);
+        root.put("validationSeed", "0x16A11D01");
+        root.put("testSeed", "0x16A11D02");
+        root.put("validation", mapArrayJson(evo16ValidationMaps));
+        root.put("test", mapArrayJson(evo16TestMaps));
+        writeAtomic(file, root.toString());
+    }
+
+    private JSONArray mapArrayJson(List<MapData> maps) throws Exception {
+        JSONArray array = new JSONArray();
+        for (MapData map : maps) {
+            JSONObject o = new JSONObject();
+            o.put("start", map.start);
+            o.put("goal", map.goal);
+            JSONArray wallsJson = new JSONArray();
+            List<Integer> sorted = new ArrayList<>(map.walls);
+            Collections.sort(sorted);
+            for (int wall : sorted) wallsJson.put(wall);
+            o.put("walls", wallsJson);
+            array.put(o);
+        }
+        return array;
+    }
+
+    private List<MapData> parseMapArray(JSONArray array) throws Exception {
+        List<MapData> maps = new ArrayList<>();
+        for (int i = 0; i < array.length(); i++) {
+            JSONObject o = array.getJSONObject(i);
+            int start = o.getInt("start"), goal = o.getInt("goal");
+            if (start < 0 || start >= CELLS || goal < 0 || goal >= CELLS || start == goal)
+                throw new IllegalArgumentException("fixed map endpoints invalid");
+            Set<Integer> mapWalls = new HashSet<>();
+            JSONArray wallsJson = o.getJSONArray("walls");
+            for (int j = 0; j < wallsJson.length(); j++) {
+                int wall = wallsJson.getInt(j);
+                if (wall < 0 || wall >= CELLS || wall == start || wall == goal)
+                    throw new IllegalArgumentException("fixed map wall invalid");
+                mapWalls.add(wall);
+            }
+            MapData map = new MapData(start, goal, mapWalls, null);
+            if (!reachable(map)) throw new IllegalArgumentException("fixed map unreachable");
+            maps.add(map);
+        }
+        return maps;
+    }
+
+    private void loadEvo16Checkpoint() {
+        try {
+            File file = new File(evo16Directory(), "evo16_network.json");
+            if (!file.isFile()) return;
+            byte[] bytes = new byte[(int)Math.min(file.length(), 2 * 1024 * 1024)];
+            try (java.io.FileInputStream in = new java.io.FileInputStream(file)) {
+                int n = in.read(bytes);
+                if (n <= 0) return;
+                JSONObject root = new JSONObject(new String(bytes, 0, n, StandardCharsets.UTF_8));
+                evo16 = EvoNet16.fromJson(root.getJSONObject("champion"));
+                evo16Evaluations = root.optLong("evaluations", 0L);
+                evo16Generations = root.optInt("generations", 0);
+                evo16BestValidationScore = root.optDouble("bestValidationScore", Double.NEGATIVE_INFINITY);
+                lastMutationSigma = root.optDouble("mutationSigma", 0.20);
+                evo16Bank.clear();
+                JSONArray bank = root.optJSONArray("bank");
+                if (bank != null) for (int i = 0; i < Math.min(8, bank.length()); i++) {
+                    try { evo16Bank.add(EvoNet16.fromJson(bank.getJSONObject(i))); }
+                    catch (Exception ignored) { }
+                }
+            }
+        } catch (Exception ignored) { evo16 = null; evo16Bank.clear(); }
+    }
+
+    private void saveEvo16Checkpoint() {
+        if (evo16 == null) return;
+        try {
+            File dir = evo16Directory();
+            if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("无法创建实验目录");
+            JSONObject root = new JSONObject();
+            root.put("format", "aimeng-evo16-checkpoint/v1");
+            root.put("savedAt", System.currentTimeMillis());
+            root.put("evaluations", evo16Evaluations);
+            root.put("generations", evo16Generations);
+            root.put("bestValidationScore", evo16BestValidationScore);
+            root.put("mutationSigma", lastMutationSigma);
+            root.put("champion", evo16.toJson());
+            JSONArray bank = new JSONArray();
+            for (EvoNet16 block : evo16Bank) bank.put(block.toJson());
+            root.put("bank", bank);
+            root.put("externalBankMeaning", "up to 8 input-compatible elite policies; 30% offspring may use a bank parent");
+            writeAtomic(new File(dir, "evo16_network.json"), root.toString());
+            lastAutosaveError = "";
+        } catch (Exception e) { lastAutosaveError = e.getClass().getSimpleName() + ": " + e.getMessage(); }
+    }
+
+    private void saveEvo16Report() throws Exception {
+        ensureEvo16Benchmarks();
+        JSONObject report = new JSONObject();
+        report.put("format", "aimeng-android-evolution-gridworld-report/v1");
+        report.put("inputSize", EvoNet16.INPUTS);
+        report.put("inputFeatures", "dx,dy normalized relative goal + BFS shortest distance + 3x3 local obstacle/boundary view + previous action one-hot");
+        report.put("trainingAlgorithm", "weight mutation and selection; no backpropagation; no replay buffer");
+        report.put("evaluations", evo16Evaluations);
+        report.put("generations", evo16Generations);
+        report.put("externalEliteBlocks", evo16Bank.size());
+        report.put("externalEliteRotationRate", 0.30);
+        report.put("validationMapCount", evo16ValidationMaps.size());
+        report.put("testMapCount", evo16TestMaps.size());
+        report.put("validationMapsFile", "gridworld-lab/evo16_benchmarks.json");
+        report.put("testMapsAreUsedForSelection", false);
+        report.put("testSuccesses", evalSuccesses);
+        report.put("testSuccessRate", evalSuccesses / (double)Math.max(1, evalEpisodes));
+        report.put("testPathEfficiencyRule", "success and steps <= BFS shortest path * 1.6 + 2");
+        report.put("memoryConstraint", "small 16-input policy; Java CPU; no GPU/NPU; must remain below 4 GiB runtime RAM");
+        report.put("legacyModelIsolation", "q_network.json and replay_memory.bin are not read or overwritten by this experiment");
+        report.put("elapsedMs", lastTrainingElapsedMs);
+        report.put("candidateMapsPerSecond", lastTrainingEpisodesPerSecond);
+        report.put("environmentStepsPerSecond", lastTrainingStepsPerSecond);
+        report.put("autosaveError", lastAutosaveError);
+        writeAtomic(new File(evo16Directory(), "evo16_report.json"), report.toString(2));
+    }
+
+    /**
      * Weight-only neuroevolution experiment. It deliberately does not use TD gradients
      * or replay samples. The existing TD model and replay file are preserved unless
      * the user explicitly runs this mode and its selected champion is checkpointed.
