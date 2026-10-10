@@ -39,6 +39,7 @@ public final class SuperNeuronV2 {
     private final double[] latentGradient;
     private final double[] hiddenGradient;
     private final double[] gateGradientScratch;
+    private final double[] lastInputGradient;
     private final double[] outputBias;
     private final double[] state;
 
@@ -73,6 +74,7 @@ public final class SuperNeuronV2 {
         latentGradient = new double[outputRank];
         hiddenGradient = new double[hiddenSize];
         gateGradientScratch = new double[inputCount];
+        lastInputGradient = new double[inputCount];
         outputBias = new double[outputCount];
         state = new double[hiddenSize];
         lastInput = new double[inputCount];
@@ -201,11 +203,18 @@ public final class SuperNeuronV2 {
         // uses the same parameter snapshot as the forward pass.
         for (int p = 0; p < inputCount; p++) {
             double dGate = 0.0;
+            double dDirectInput = 0.0;
             for (int h = 0; h < hiddenSize; h++) {
                 double preGradient = hiddenGradient[h] * (1.0 - lastHidden[h] * lastHidden[h]);
-                dGate += preGradient * inputProjection[p * hiddenSize + h] * lastInput[p];
+                double projection = inputProjection[p * hiddenSize + h];
+                dGate += preGradient * projection * lastInput[p];
+                dDirectInput += preGradient * projection * lastGate[p];
             }
             gateGradientScratch[p] = dGate * lastGate[p] * (1.0 - lastGate[p]);
+            // Cache dL/dinput before any parameters are updated. A trainable token
+            // embedding table can use this gradient without retaining a sequence tape.
+            lastInputGradient[p] = clamp(
+                    dDirectInput + gateGradientScratch[p] * gateWeight[p], -10.0, 10.0);
         }
 
         for (int h = 0; h < hiddenSize; h++) {
@@ -247,6 +256,13 @@ public final class SuperNeuronV2 {
     public int getInputCount() { return inputCount; }
     public int getHiddenSize() { return hiddenSize; }
     public int getOutputCount() { return outputCount; }
+    /** Copies dL/dinput from the immediately preceding trainClass() call. */
+    public void copyLastInputGradient(double[] destination) {
+        if (destination == null || destination.length != inputCount)
+            throw new IllegalArgumentException("gradient destination length must equal inputCount");
+        System.arraycopy(lastInputGradient, 0, destination, 0, inputCount);
+    }
+
     public long getForwardSteps() { return forwardSteps; }
     public long getTrainSteps() { return trainSteps; }
     public int getOutputRank() { return outputRank; }
@@ -265,7 +281,7 @@ public final class SuperNeuronV2 {
                 + state.length + lastInput.length + lastGate.length
                 + lastHidden.length + lastPreviousState.length + lastProbabilities.length
                 + lastLatent.length + latentGradient.length + hiddenGradient.length
-                + gateGradientScratch.length;
+                + gateGradientScratch.length + lastInputGradient.length;
         return doubles * Double.BYTES;
     }
 
