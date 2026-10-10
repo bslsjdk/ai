@@ -37,7 +37,7 @@
         <activity android:name=".DiffusionMonitorActivity" android:exported="false" android:label="扩散状态监控" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".DiffusionProbeActivity" android:exported="false" android:label="扩散数值探针" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".SparseDiffusionActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ChatActivity" android:exported="false"
+        <activity android:name=".AimengChatActivity" android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <receiver android:name=".NpuWakeReceiver" android:exported="true" android:enabled="true">
             <intent-filter>
