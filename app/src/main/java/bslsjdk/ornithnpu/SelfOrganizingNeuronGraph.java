@@ -40,6 +40,7 @@ public final class SelfOrganizingNeuronGraph {
     private final double[] state;
     private final double[] previous;
     private final double[] activityMean;
+    private final double[] scratchSum;
     private final int[] edgeFrom;
     private final int[] edgeTo;
     private final double[] edgeWeight;
@@ -75,6 +76,7 @@ public final class SelfOrganizingNeuronGraph {
         state = new double[maxNeurons];
         previous = new double[maxNeurons];
         activityMean = new double[maxNeurons];
+        scratchSum = new double[maxNeurons];
         edgeFrom = new int[maxEdges];
         edgeTo = new int[maxEdges];
         edgeWeight = new double[maxEdges];
@@ -170,16 +172,20 @@ public final class SelfOrganizingNeuronGraph {
             if (inputPort[i]) state[i] = clamp(inputs[p++], -1.0, 1.0);
         }
         for (int round = 0; round < propagationRounds; round++) {
-            Arrays.fill(previous, 0, neuronCount, 0.0);
-            for (int i = 0; i < neuronCount; i++) previous[i] = state[i];
+            System.arraycopy(state, 0, previous, 0, neuronCount);
+            for (int i = 0; i < neuronCount; i++)
+                scratchSum[i] = enabled[i] && !inputPort[i] ? bias[i] : 0.0;
+            // One sparse edge pass per propagation round: O(V + E), not O(V * E).
+            for (int e = 0; e < edgeCount; e++) {
+                if (edgeEnabled[e]) {
+                    int target = edgeTo[e];
+                    if (enabled[target] && !inputPort[target])
+                        scratchSum[target] += previous[edgeFrom[e]] * edgeWeight[e];
+                }
+            }
             for (int i = 0; i < neuronCount; i++) {
                 if (!enabled[i] || inputPort[i]) continue;
-                double sum = bias[i];
-                for (int e = 0; e < edgeCount; e++) {
-                    if (edgeEnabled[e] && edgeTo[e] == i)
-                        sum += state[edgeFrom[e]] * edgeWeight[e];
-                }
-                state[i] = Math.tanh(clamp(sum, -8.0, 8.0));
+                state[i] = Math.tanh(clamp(scratchSum[i], -8.0, 8.0));
             }
         }
         for (int i = 0; i < neuronCount; i++) {
