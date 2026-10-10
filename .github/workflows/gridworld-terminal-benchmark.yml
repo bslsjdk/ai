@@ -17,6 +17,7 @@ on:
       - "scripts/test_gridworld_generalization.py"
       - "scripts/compare_parameter_matched_qnets.py"
       - "scripts/compare_online_td_vs_replay.py"
+      - "scripts/compare_potential_reward_shaping.py"
       - ".github/workflows/gridworld-terminal-benchmark.yml"
 
 permissions:
@@ -54,7 +55,7 @@ jobs:
             exit 0
           fi
           set +e
-          python3 -m py_compile scripts/test_neural_gridworld.py scripts/run_gridworld_benchmark_suite.py scripts/test_gridworld_generalization.py scripts/compare_parameter_matched_qnets.py scripts/compare_online_td_vs_replay.py 2>&1 | tee experiments/gridworld/latest/terminal.log
+          python3 -m py_compile scripts/test_neural_gridworld.py scripts/run_gridworld_benchmark_suite.py scripts/test_gridworld_generalization.py scripts/compare_parameter_matched_qnets.py scripts/compare_online_td_vs_replay.py scripts/compare_potential_reward_shaping.py 2>&1 | tee experiments/gridworld/latest/terminal.log
           COMPILE_STATUS=${PIPESTATUS[0]}
           if [ "$COMPILE_STATUS" -eq 0 ]; then
             python3 scripts/run_gridworld_benchmark_suite.py "$EPISODES" experiments/gridworld/latest/results 2>&1 | tee -a experiments/gridworld/latest/terminal.log
@@ -65,11 +66,14 @@ jobs:
             ARCHITECTURE_STATUS=${PIPESTATUS[0]}
             python3 scripts/compare_online_td_vs_replay.py --episodes "$EPISODES" --seeds 3 --out experiments/gridworld/latest/replay-comparison 2>&1 | tee -a experiments/gridworld/latest/terminal.log
             REPLAY_STATUS=${PIPESTATUS[0]}
+            python3 scripts/compare_potential_reward_shaping.py --episodes "$EPISODES" --seeds 3 --out experiments/gridworld/latest/reward-shaping 2>&1 | tee -a experiments/gridworld/latest/terminal.log
+            SHAPING_STATUS=${PIPESTATUS[0]}
             STATUS=0
             if [ "$SUITE_STATUS" -ne 0 ]; then STATUS="$SUITE_STATUS"; fi
             if [ "$GENERALIZATION_STATUS" -ne 0 ] && [ "$STATUS" -eq 0 ]; then STATUS="$GENERALIZATION_STATUS"; fi
             if [ "$ARCHITECTURE_STATUS" -ne 0 ] && [ "$STATUS" -eq 0 ]; then STATUS="$ARCHITECTURE_STATUS"; fi
             if [ "$REPLAY_STATUS" -ne 0 ] && [ "$STATUS" -eq 0 ]; then STATUS="$REPLAY_STATUS"; fi
+            if [ "$SHAPING_STATUS" -ne 0 ] && [ "$STATUS" -eq 0 ]; then STATUS="$SHAPING_STATUS"; fi
           else
             STATUS="$COMPILE_STATUS"
           fi
