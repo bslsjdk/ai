@@ -118,6 +118,7 @@ public final class SparseDiffusionMobileModel {
         residentEnergy = new float[neurons];
         loaded = true;
         lastTrace.clear();
+        diffusionTrace.clear();
         // Probe the phone GPU once after a valid model is loaded. Failure is normal
         // on devices without an exposed OpenCL GPU runtime; the CPU path remains valid.
         OpenClGpuBackend.initialize();
@@ -485,6 +486,7 @@ public final class SparseDiffusionMobileModel {
         if (residentState != null) Arrays.fill(residentState, 0f);
         if (residentEnergy != null) Arrays.fill(residentEnergy, 0f);
         lastTrace.clear();
+        diffusionTrace.clear();
     }
 
     public synchronized String getLastDiffusionTraceText() {
