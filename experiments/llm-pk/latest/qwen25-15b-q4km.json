@@ -1,0 +1,1685 @@
+{
+  "format": "aimeng-llm-pk-report/v1",
+  "model": "qwen25-15b-q4km",
+  "baseUrl": "http://127.0.0.1:8080",
+  "caseCount": 90,
+  "datasetSha256": "aca47730ccf0bed950813527cc84a9a9c8c2a8f54cfeb292641ff9c3e3a64951",
+  "decoding": {
+    "temperature": 0,
+    "seed": 1234,
+    "maxTokens": 64
+  },
+  "note": "Generated phase-one diagnostic benchmark, not a public leaderboard or proof of general intelligence.",
+  "overall": {
+    "correct": 64,
+    "accuracy": 0.7111111111111111,
+    "meanLatencySeconds": 0.5337066666666667,
+    "errors": 0
+  },
+  "categories": {
+    "arithmetic": {
+      "cases": 24,
+      "correct": 23,
+      "accuracy": 0.9583333333333334,
+      "meanLatencySeconds": 0.35992083333333336,
+      "errors": 0
+    },
+    "context_recall": {
+      "cases": 16,
+      "correct": 16,
+      "accuracy": 1.0,
+      "meanLatencySeconds": 0.93909375,
+      "errors": 0
+    },
+    "deduction": {
+      "cases": 16,
+      "correct": 8,
+      "accuracy": 0.5,
+      "meanLatencySeconds": 0.5110250000000001,
+      "errors": 0
+    },
+    "instruction": {
+      "cases": 10,
+      "correct": 6,
+      "accuracy": 0.6,
+      "meanLatencySeconds": 0.40709,
+      "errors": 0
+    },
+    "sequence": {
+      "cases": 12,
+      "correct": 11,
+      "accuracy": 0.9166666666666666,
+      "meanLatencySeconds": 0.496975,
+      "errors": 0
+    },
+    "state_update": {
+      "cases": 12,
+      "correct": 0,
+      "accuracy": 0.0,
+      "meanLatencySeconds": 0.51325,
+      "errors": 0
+    }
+  },
+  "results": [
+    {
+      "id": "arithmetic-001",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 22 + 13. Return only the integer answer.",
+      "expected": "35",
+      "output": "35",
+      "latencySeconds": 0.7367,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 50,
+        "total_tokens": 53,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-002",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 95 - 59. Return only the integer answer.",
+      "expected": "36",
+      "output": "36",
+      "latencySeconds": 0.3467,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 50,
+        "total_tokens": 53,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-003",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 4 * 5. Return only the integer answer.",
+      "expected": "20",
+      "output": "20",
+      "latencySeconds": 0.2957,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 48,
+        "total_tokens": 51,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-004",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 25 / 5. Return only the integer answer.",
+      "expected": "5",
+      "output": "5",
+      "latencySeconds": 0.3239,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 49,
+        "total_tokens": 51,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-005",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 170 + 16. Return only the integer answer.",
+      "expected": "186",
+      "output": "186",
+      "latencySeconds": 0.3888,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 4,
+        "prompt_tokens": 51,
+        "total_tokens": 55,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-006",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 49 - 10. Return only the integer answer.",
+      "expected": "39",
+      "output": "49 - 10 = 39",
+      "latencySeconds": 0.5792,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 11,
+        "prompt_tokens": 50,
+        "total_tokens": 61,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-007",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 8 * 9. Return only the integer answer.",
+      "expected": "72",
+      "output": "72",
+      "latencySeconds": 0.2929,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 48,
+        "total_tokens": 51,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-008",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 18 / 2. Return only the integer answer.",
+      "expected": "9",
+      "output": "9",
+      "latencySeconds": 0.3018,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 49,
+        "total_tokens": 51,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-009",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 121 + 19. Return only the integer answer.",
+      "expected": "140",
+      "output": "140",
+      "latencySeconds": 0.3757,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 4,
+        "prompt_tokens": 51,
+        "total_tokens": 55,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-010",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 200 - 158. Return only the integer answer.",
+      "expected": "42",
+      "output": "42",
+      "latencySeconds": 0.3695,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 52,
+        "total_tokens": 55,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-011",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 12 * 4. Return only the integer answer.",
+      "expected": "48",
+      "output": "48",
+      "latencySeconds": 0.3305,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 49,
+        "total_tokens": 52,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-012",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 78 / 6. Return only the integer answer.",
+      "expected": "13",
+      "output": "13",
+      "latencySeconds": 0.3355,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 49,
+        "total_tokens": 52,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-013",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 72 + 22. Return only the integer answer.",
+      "expected": "94",
+      "output": "94",
+      "latencySeconds": 0.3309,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 50,
+        "total_tokens": 53,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-014",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 154 - 109. Return only the integer answer.",
+      "expected": "45",
+      "output": "45",
+      "latencySeconds": 0.3696,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 52,
+        "total_tokens": 55,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-015",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 4 * 8. Return only the integer answer.",
+      "expected": "32",
+      "output": "32",
+      "latencySeconds": 0.2925,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 48,
+        "total_tokens": 51,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-016",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 6 / 3. Return only the integer answer.",
+      "expected": "2",
+      "output": "2",
+      "latencySeconds": 0.2634,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 48,
+        "total_tokens": 50,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-017",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 23 + 25. Return only the integer answer.",
+      "expected": "48",
+      "output": "48",
+      "latencySeconds": 0.3462,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 50,
+        "total_tokens": 53,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-018",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 108 - 60. Return only the integer answer.",
+      "expected": "48",
+      "output": "48",
+      "latencySeconds": 0.3598,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 51,
+        "total_tokens": 54,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-019",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 8 * 3. Return only the integer answer.",
+      "expected": "24",
+      "output": "24",
+      "latencySeconds": 0.2927,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 48,
+        "total_tokens": 51,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-020",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 42 / 7. Return only the integer answer.",
+      "expected": "6",
+      "output": "6",
+      "latencySeconds": 0.3021,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 49,
+        "total_tokens": 51,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-021",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 171 + 28. Return only the integer answer.",
+      "expected": "199",
+      "output": "199",
+      "latencySeconds": 0.3891,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 4,
+        "prompt_tokens": 51,
+        "total_tokens": 55,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-022",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 62 - 11. Return only the integer answer.",
+      "expected": "51",
+      "output": "51",
+      "latencySeconds": 0.3458,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 50,
+        "total_tokens": 53,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-023",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 12 * 7. Return only the integer answer.",
+      "expected": "84",
+      "output": "84",
+      "latencySeconds": 0.3311,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 49,
+        "total_tokens": 52,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-024",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 40 / 4. Return only the integer answer.",
+      "expected": "10",
+      "output": "10",
+      "latencySeconds": 0.338,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 49,
+        "total_tokens": 52,
+        "prompt_tokens_details": {
+          "cached_tokens": 32
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-001",
+      "category": "deduction",
+      "prompt": "Use only these premises: All dax are wugs. All wugs are green. Must every dax be green? Answer only yes or no.",
+      "expected": "yes",
+      "output": "No.",
+      "latencySeconds": 0.5624,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 64,
+        "total_tokens": 67,
+        "prompt_tokens_details": {
+          "cached_tokens": 28
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-002",
+      "category": "deduction",
+      "prompt": "Use only these premises: No nims are tall. All zors are nims. Can any zor be tall under these rules? Answer only yes or no.",
+      "expected": "no",
+      "output": "No.",
+      "latencySeconds": 0.5392,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 67,
+        "total_tokens": 70,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-003",
+      "category": "deduction",
+      "prompt": "Use only these premises: All peks are round. Some round things are blue. Must some peks be blue? Answer only yes or no.",
+      "expected": "no",
+      "output": "Yes.",
+      "latencySeconds": 0.506,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 63,
+        "total_tokens": 66,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-004",
+      "category": "deduction",
+      "prompt": "Use only these premises: Some glips are red. All red things are warm. Must at least one glip be warm? Answer only yes or no.",
+      "expected": "yes",
+      "output": "Yes.",
+      "latencySeconds": 0.5071,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 65,
+        "total_tokens": 68,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-005",
+      "category": "deduction",
+      "prompt": "Use only these premises: All dax are wugs. All wugs are green. Must every dax be green? Answer only yes or no.",
+      "expected": "yes",
+      "output": "No",
+      "latencySeconds": 0.4888,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 64,
+        "total_tokens": 66,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-006",
+      "category": "deduction",
+      "prompt": "Use only these premises: No nims are tall. All zors are nims. Can any zor be tall under these rules? Answer only yes or no.",
+      "expected": "no",
+      "output": "No.",
+      "latencySeconds": 0.537,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 67,
+        "total_tokens": 70,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-007",
+      "category": "deduction",
+      "prompt": "Use only these premises: All peks are round. Some round things are blue. Must some peks be blue? Answer only yes or no.",
+      "expected": "no",
+      "output": "Yes.",
+      "latencySeconds": 0.5024,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 63,
+        "total_tokens": 66,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-008",
+      "category": "deduction",
+      "prompt": "Use only these premises: Some glips are red. All red things are warm. Must at least one glip be warm? Answer only yes or no.",
+      "expected": "yes",
+      "output": "Yes.",
+      "latencySeconds": 0.4824,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 65,
+        "total_tokens": 68,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-009",
+      "category": "deduction",
+      "prompt": "Use only these premises: All dax are wugs. All wugs are green. Must every dax be green? Answer only yes or no.",
+      "expected": "yes",
+      "output": "No",
+      "latencySeconds": 0.4879,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 64,
+        "total_tokens": 66,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-010",
+      "category": "deduction",
+      "prompt": "Use only these premises: No nims are tall. All zors are nims. Can any zor be tall under these rules? Answer only yes or no.",
+      "expected": "no",
+      "output": "No.",
+      "latencySeconds": 0.5412,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 67,
+        "total_tokens": 70,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-011",
+      "category": "deduction",
+      "prompt": "Use only these premises: All peks are round. Some round things are blue. Must some peks be blue? Answer only yes or no.",
+      "expected": "no",
+      "output": "Yes.",
+      "latencySeconds": 0.5026,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 63,
+        "total_tokens": 66,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-012",
+      "category": "deduction",
+      "prompt": "Use only these premises: Some glips are red. All red things are warm. Must at least one glip be warm? Answer only yes or no.",
+      "expected": "yes",
+      "output": "Yes.",
+      "latencySeconds": 0.4825,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 65,
+        "total_tokens": 68,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-013",
+      "category": "deduction",
+      "prompt": "Use only these premises: All dax are wugs. All wugs are green. Must every dax be green? Answer only yes or no.",
+      "expected": "yes",
+      "output": "No",
+      "latencySeconds": 0.4888,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 64,
+        "total_tokens": 66,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-014",
+      "category": "deduction",
+      "prompt": "Use only these premises: No nims are tall. All zors are nims. Can any zor be tall under these rules? Answer only yes or no.",
+      "expected": "no",
+      "output": "No.",
+      "latencySeconds": 0.5411,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 67,
+        "total_tokens": 70,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-015",
+      "category": "deduction",
+      "prompt": "Use only these premises: All peks are round. Some round things are blue. Must some peks be blue? Answer only yes or no.",
+      "expected": "no",
+      "output": "Yes.",
+      "latencySeconds": 0.5101,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 63,
+        "total_tokens": 66,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-016",
+      "category": "deduction",
+      "prompt": "Use only these premises: Some glips are red. All red things are warm. Must at least one glip be warm? Answer only yes or no.",
+      "expected": "yes",
+      "output": "Yes.",
+      "latencySeconds": 0.4969,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 65,
+        "total_tokens": 68,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-001",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 2, 4, 6, 8, 10, ?. Return only the integer.",
+      "expected": "12",
+      "output": "12",
+      "latencySeconds": 0.5685,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 64,
+        "total_tokens": 67,
+        "prompt_tokens_details": {
+          "cached_tokens": 28
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-002",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 3, 6, 9, 12, 15, ?. Return only the integer.",
+      "expected": "18",
+      "output": "18",
+      "latencySeconds": 0.4779,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 65,
+        "total_tokens": 68,
+        "prompt_tokens_details": {
+          "cached_tokens": 38
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-003",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 4, 8, 12, 16, 20, ?. Return only the integer.",
+      "expected": "24",
+      "output": "24",
+      "latencySeconds": 0.4812,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 66,
+        "total_tokens": 69,
+        "prompt_tokens_details": {
+          "cached_tokens": 38
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-004",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 5, 10, 15, 20, 25, ?. Return only the integer.",
+      "expected": "30",
+      "output": "30",
+      "latencySeconds": 0.4956,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 67,
+        "total_tokens": 70,
+        "prompt_tokens_details": {
+          "cached_tokens": 38
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-005",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 6, 12, 18, 24, 30, ?. Return only the integer.",
+      "expected": "36",
+      "output": "36",
+      "latencySeconds": 0.4965,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 67,
+        "total_tokens": 70,
+        "prompt_tokens_details": {
+          "cached_tokens": 38
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-006",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 7, 9, 11, 13, 15, ?. Return only the integer.",
+      "expected": "17",
+      "output": "17",
+      "latencySeconds": 0.4828,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 66,
+        "total_tokens": 69,
+        "prompt_tokens_details": {
+          "cached_tokens": 38
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-007",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 8, 11, 14, 17, 20, ?. Return only the integer.",
+      "expected": "23",
+      "output": "23",
+      "latencySeconds": 0.4965,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 67,
+        "total_tokens": 70,
+        "prompt_tokens_details": {
+          "cached_tokens": 38
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-008",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 9, 13, 17, 21, 25, ?. Return only the integer.",
+      "expected": "29",
+      "output": "31",
+      "latencySeconds": 0.4923,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 67,
+        "total_tokens": 70,
+        "prompt_tokens_details": {
+          "cached_tokens": 38
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-009",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 10, 15, 20, 25, 30, ?. Return only the integer.",
+      "expected": "35",
+      "output": "35",
+      "latencySeconds": 0.5033,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 68,
+        "total_tokens": 71,
+        "prompt_tokens_details": {
+          "cached_tokens": 38
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-010",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 11, 17, 23, 29, 35, ?. Return only the integer.",
+      "expected": "41",
+      "output": "41",
+      "latencySeconds": 0.4903,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 68,
+        "total_tokens": 71,
+        "prompt_tokens_details": {
+          "cached_tokens": 39
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-011",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 12, 14, 16, 18, 20, ?. Return only the integer.",
+      "expected": "22",
+      "output": "22",
+      "latencySeconds": 0.4898,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 68,
+        "total_tokens": 71,
+        "prompt_tokens_details": {
+          "cached_tokens": 39
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-012",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 13, 16, 19, 22, 25, ?. Return only the integer.",
+      "expected": "28",
+      "output": "28",
+      "latencySeconds": 0.489,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 68,
+        "total_tokens": 71,
+        "prompt_tokens_details": {
+          "cached_tokens": 39
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-001",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: copper, jade, plum",
+      "expected": "plum,jade,copper",
+      "output": "plum,jade,copper",
+      "latencySeconds": 0.6044,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 7,
+        "prompt_tokens": 57,
+        "total_tokens": 64,
+        "prompt_tokens_details": {
+          "cached_tokens": 28
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-002",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: north, west, south, east",
+      "expected": "east,south,west,north",
+      "output": "east, south, west, north",
+      "latencySeconds": 0.4303,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 8,
+        "prompt_tokens": 59,
+        "total_tokens": 67,
+        "prompt_tokens_details": {
+          "cached_tokens": 47
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-003",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: violet, amber",
+      "expected": "amber,violet",
+      "output": "amber, violet",
+      "latencySeconds": 0.262,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 4,
+        "prompt_tokens": 55,
+        "total_tokens": 59,
+        "prompt_tokens_details": {
+          "cached_tokens": 47
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-004",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: oak, elm, pine, ash, fir",
+      "expected": "fir,ash,pine,elm,oak",
+      "output": "fir, ash, pine, elm, oak",
+      "latencySeconds": 0.5177,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 10,
+        "prompt_tokens": 61,
+        "total_tokens": 71,
+        "prompt_tokens_details": {
+          "cached_tokens": 47
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-005",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: red, cyan, gold",
+      "expected": "gold,cyan,red",
+      "output": "cyan, gold, red",
+      "latencySeconds": 0.3486,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 6,
+        "prompt_tokens": 57,
+        "total_tokens": 63,
+        "prompt_tokens_details": {
+          "cached_tokens": 47
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-006",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: cat, fox, yak, owl",
+      "expected": "owl,yak,fox,cat",
+      "output": "owl, yak, fox, cat",
+      "latencySeconds": 0.4311,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 8,
+        "prompt_tokens": 59,
+        "total_tokens": 67,
+        "prompt_tokens_details": {
+          "cached_tokens": 47
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-007",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: one, four, nine, six",
+      "expected": "six,nine,four,one",
+      "output": "nine, six, four, one",
+      "latencySeconds": 0.4323,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 8,
+        "prompt_tokens": 59,
+        "total_tokens": 67,
+        "prompt_tokens_details": {
+          "cached_tokens": 47
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-008",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: alpha, delta, beta",
+      "expected": "beta,delta,alpha",
+      "output": "delta, beta, alpha",
+      "latencySeconds": 0.3495,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 6,
+        "prompt_tokens": 57,
+        "total_tokens": 63,
+        "prompt_tokens_details": {
+          "cached_tokens": 47
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-009",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: river, cloud, stone, leaf",
+      "expected": "leaf,stone,cloud,river",
+      "output": "stone, leaf, cloud, river",
+      "latencySeconds": 0.4326,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 8,
+        "prompt_tokens": 59,
+        "total_tokens": 67,
+        "prompt_tokens_details": {
+          "cached_tokens": 47
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-010",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: tea, rice",
+      "expected": "rice,tea",
+      "output": "rice, tea",
+      "latencySeconds": 0.2624,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 4,
+        "prompt_tokens": 55,
+        "total_tokens": 59,
+        "prompt_tokens_details": {
+          "cached_tokens": 47
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-001",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nMira owns a notebook.\nThe notebook is stored in the desk.\nMira's assigned color is ochre.\nTomas owns a key.\nNia owns a marble.\nOren owns a ribbon.\nPavel owns a coin.\nQuestion: Where is the notebook owned by Mira stored? Return only the place name.",
+      "expected": "desk",
+      "output": "desk",
+      "latencySeconds": 1.0142,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 103,
+        "total_tokens": 105,
+        "prompt_tokens_details": {
+          "cached_tokens": 28
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-002",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nSuki owns a shell.\nPavel owns a coin.\nOren owns a ribbon.\nNia owns a marble.\nTomas's assigned color is silver.\nThe shell is stored in the pouch.\nTomas owns a shell.\nQuestion: Where is the shell owned by Tomas stored? Return only the place name.",
+      "expected": "pouch",
+      "output": "pouch",
+      "latencySeconds": 0.9433,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 101,
+        "total_tokens": 104,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-003",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nNia owns a marble.\nThe marble is stored in the drawer.\nNia's assigned color is amber.\nOren owns a ribbon.\nPavel owns a coin.\nSuki owns a shell.\nLena owns a compass.\nQuestion: Where is the marble owned by Nia stored? Return only the place name.",
+      "expected": "drawer",
+      "output": "drawer",
+      "latencySeconds": 0.933,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 102,
+        "total_tokens": 104,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-004",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nIdris owns a lantern.\nLena owns a compass.\nSuki owns a shell.\nPavel owns a coin.\nOren's assigned color is indigo.\nThe lantern is stored in the crate.\nOren owns a lantern.\nQuestion: Where is the lantern owned by Oren stored? Return only the place name.",
+      "expected": "crate",
+      "output": "crate",
+      "latencySeconds": 0.9417,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 103,
+        "total_tokens": 105,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-005",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nPavel owns a coin.\nThe coin is stored in the cabinet.\nPavel's assigned color is mint.\nSuki owns a shell.\nLena owns a compass.\nIdris owns a lantern.\nKira owns a notebook.\nQuestion: Where is the coin owned by Pavel stored? Return only the place name.",
+      "expected": "cabinet",
+      "output": "cabinet",
+      "latencySeconds": 0.9437,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 101,
+        "total_tokens": 104,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-006",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nBram owns a key.\nKira owns a notebook.\nIdris owns a lantern.\nLena owns a compass.\nSuki's assigned color is teal.\nThe key is stored in the basket.\nSuki owns a key.\nQuestion: Where is the key owned by Suki stored? Return only the place name.",
+      "expected": "basket",
+      "output": "basket",
+      "latencySeconds": 0.9306,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 102,
+        "total_tokens": 104,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-007",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nLena owns a compass.\nThe compass is stored in the box.\nLena's assigned color is coral.\nIdris owns a lantern.\nKira owns a notebook.\nBram owns a key.\nYuna owns a marble.\nQuestion: Where is the compass owned by Lena stored? Return only the place name.",
+      "expected": "box",
+      "output": "box",
+      "latencySeconds": 0.9132,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 101,
+        "total_tokens": 103,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-008",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nFelix owns a ribbon.\nYuna owns a marble.\nBram owns a key.\nKira owns a notebook.\nIdris's assigned color is plum.\nThe ribbon is stored in the shelf.\nIdris owns a ribbon.\nQuestion: Where is the ribbon owned by Idris stored? Return only the place name.",
+      "expected": "shelf",
+      "output": "shelf",
+      "latencySeconds": 0.9424,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 103,
+        "total_tokens": 105,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-009",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nKira owns a notebook.\nThe notebook is stored in the desk.\nKira's assigned color is ochre.\nBram owns a key.\nYuna owns a marble.\nFelix owns a ribbon.\nZara owns a coin.\nQuestion: Where is the notebook owned by Kira stored? Return only the place name.",
+      "expected": "desk",
+      "output": "desk",
+      "latencySeconds": 0.9412,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 103,
+        "total_tokens": 105,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-010",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nHugo owns a shell.\nZara owns a coin.\nFelix owns a ribbon.\nYuna owns a marble.\nBram's assigned color is silver.\nThe shell is stored in the pouch.\nBram owns a shell.\nQuestion: Where is the shell owned by Bram stored? Return only the place name.",
+      "expected": "pouch",
+      "output": "pouch",
+      "latencySeconds": 0.9426,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 101,
+        "total_tokens": 104,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-011",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nYuna owns a marble.\nThe marble is stored in the drawer.\nYuna's assigned color is amber.\nFelix owns a ribbon.\nZara owns a coin.\nHugo owns a shell.\nAsha owns a compass.\nQuestion: Where is the marble owned by Yuna stored? Return only the place name.",
+      "expected": "drawer",
+      "output": "drawer",
+      "latencySeconds": 0.9313,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 102,
+        "total_tokens": 104,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-012",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nNoel owns a lantern.\nAsha owns a compass.\nHugo owns a shell.\nZara owns a coin.\nFelix's assigned color is indigo.\nThe lantern is stored in the crate.\nFelix owns a lantern.\nQuestion: Where is the lantern owned by Felix stored? Return only the place name.",
+      "expected": "crate",
+      "output": "crate",
+      "latencySeconds": 0.9299,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 102,
+        "total_tokens": 104,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-013",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nZara owns a coin.\nThe coin is stored in the cabinet.\nZara's assigned color is mint.\nHugo owns a shell.\nAsha owns a compass.\nNoel owns a lantern.\nMira owns a notebook.\nQuestion: Where is the coin owned by Zara stored? Return only the place name.",
+      "expected": "cabinet",
+      "output": "cabinet",
+      "latencySeconds": 0.96,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 102,
+        "total_tokens": 105,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-014",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nTomas owns a key.\nMira owns a notebook.\nNoel owns a lantern.\nAsha owns a compass.\nHugo's assigned color is teal.\nThe key is stored in the basket.\nHugo owns a key.\nQuestion: Where is the key owned by Hugo stored? Return only the place name.",
+      "expected": "basket",
+      "output": "basket",
+      "latencySeconds": 0.9149,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 101,
+        "total_tokens": 103,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-015",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nAsha owns a compass.\nThe compass is stored in the box.\nAsha's assigned color is coral.\nNoel owns a lantern.\nMira owns a notebook.\nTomas owns a key.\nNia owns a marble.\nQuestion: Where is the compass owned by Asha stored? Return only the place name.",
+      "expected": "box",
+      "output": "box",
+      "latencySeconds": 0.9298,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 102,
+        "total_tokens": 104,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-016",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nOren owns a ribbon.\nNia owns a marble.\nTomas owns a key.\nMira owns a notebook.\nNoel's assigned color is plum.\nThe ribbon is stored in the shelf.\nNoel owns a ribbon.\nQuestion: Where is the ribbon owned by Noel stored? Return only the place name.",
+      "expected": "shelf",
+      "output": "shelf",
+      "latencySeconds": 0.9137,
+      "correct": true,
+      "usage": {
+        "completion_tokens": 2,
+        "prompt_tokens": 101,
+        "total_tokens": 103,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-001",
+      "category": "state_update",
+      "prompt": "A counter starts at 17. First increase it by 4. Then decrease it by 1. What is the final value? Return only the integer.",
+      "expected": "20",
+      "output": "12",
+      "latencySeconds": 0.5887,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 66,
+        "total_tokens": 69,
+        "prompt_tokens_details": {
+          "cached_tokens": 28
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-002",
+      "category": "state_update",
+      "prompt": "A counter starts at 20. First increase it by 5. Then decrease it by 2. What is the final value? Return only the integer.",
+      "expected": "23",
+      "output": "13",
+      "latencySeconds": 0.5226,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 66,
+        "total_tokens": 69,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-003",
+      "category": "state_update",
+      "prompt": "A counter starts at 23. First increase it by 6. Then decrease it by 3. What is the final value? Return only the integer.",
+      "expected": "26",
+      "output": "16",
+      "latencySeconds": 0.4824,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 66,
+        "total_tokens": 69,
+        "prompt_tokens_details": {
+          "cached_tokens": 34
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-004",
+      "category": "state_update",
+      "prompt": "A counter starts at 26. First increase it by 7. Then decrease it by 4. What is the final value? Return only the integer.",
+      "expected": "29",
+      "output": "23",
+      "latencySeconds": 0.483,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 66,
+        "total_tokens": 69,
+        "prompt_tokens_details": {
+          "cached_tokens": 34
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-005",
+      "category": "state_update",
+      "prompt": "A counter starts at 29. First increase it by 8. Then decrease it by 5. What is the final value? Return only the integer.",
+      "expected": "32",
+      "output": "29",
+      "latencySeconds": 0.4823,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 66,
+        "total_tokens": 69,
+        "prompt_tokens_details": {
+          "cached_tokens": 34
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-006",
+      "category": "state_update",
+      "prompt": "A counter starts at 32. First increase it by 9. Then decrease it by 1. What is the final value? Return only the integer.",
+      "expected": "40",
+      "output": "22",
+      "latencySeconds": 0.5272,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 66,
+        "total_tokens": 69,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-007",
+      "category": "state_update",
+      "prompt": "A counter starts at 35. First increase it by 10. Then decrease it by 2. What is the final value? Return only the integer.",
+      "expected": "43",
+      "output": "23",
+      "latencySeconds": 0.5218,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 67,
+        "total_tokens": 70,
+        "prompt_tokens_details": {
+          "cached_tokens": 34
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-008",
+      "category": "state_update",
+      "prompt": "A counter starts at 38. First increase it by 11. Then decrease it by 3. What is the final value? Return only the integer.",
+      "expected": "46",
+      "output": "34",
+      "latencySeconds": 0.5244,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 67,
+        "total_tokens": 70,
+        "prompt_tokens_details": {
+          "cached_tokens": 34
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-009",
+      "category": "state_update",
+      "prompt": "A counter starts at 41. First increase it by 12. Then decrease it by 4. What is the final value? Return only the integer.",
+      "expected": "49",
+      "output": "39",
+      "latencySeconds": 0.5383,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 67,
+        "total_tokens": 70,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-010",
+      "category": "state_update",
+      "prompt": "A counter starts at 44. First increase it by 4. Then decrease it by 5. What is the final value? Return only the integer.",
+      "expected": "43",
+      "output": "39",
+      "latencySeconds": 0.4837,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 66,
+        "total_tokens": 69,
+        "prompt_tokens_details": {
+          "cached_tokens": 34
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-011",
+      "category": "state_update",
+      "prompt": "A counter starts at 47. First increase it by 5. Then decrease it by 1. What is the final value? Return only the integer.",
+      "expected": "51",
+      "output": "43",
+      "latencySeconds": 0.4824,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 66,
+        "total_tokens": 69,
+        "prompt_tokens_details": {
+          "cached_tokens": 34
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-012",
+      "category": "state_update",
+      "prompt": "A counter starts at 50. First increase it by 6. Then decrease it by 2. What is the final value? Return only the integer.",
+      "expected": "54",
+      "output": "44",
+      "latencySeconds": 0.5222,
+      "correct": false,
+      "usage": {
+        "completion_tokens": 3,
+        "prompt_tokens": 66,
+        "total_tokens": 69,
+        "prompt_tokens_details": {
+          "cached_tokens": 33
+        }
+      },
+      "error": null
+    }
+  ]
+}
