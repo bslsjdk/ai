@@ -32,7 +32,7 @@ public final class SparseDiffusionMobileModel {
     private int lastChosen = -1;
     private java.util.List<LearningTrace> lastTrace = new java.util.ArrayList<>();
     private long learningUpdates = 0;
-    private String baseDecoderHash = "";
+    private String baseModelFingerprint = "";
 
     private static final class LearningTrace {
         final float[] pooled;
@@ -105,7 +105,7 @@ public final class SparseDiffusionMobileModel {
         require("gate.bias"); require("decoder.weight"); require("decoder.bias");
         require("halt_head.weight"); require("halt_head.bias");
         loaded = true;
-        baseDecoderHash = decoderFingerprint();
+        baseModelFingerprint = modelFingerprint();
         lastTrace.clear();
     }
 
@@ -329,7 +329,7 @@ public final class SparseDiffusionMobileModel {
         if (!loaded || stateFile == null || !stateFile.isFile()) return;
         JSONObject state = new JSONObject(new String(Files.readAllBytes(stateFile.toPath()), StandardCharsets.UTF_8));
         if (!"aimeng-mobile-learning-v1".equals(state.optString("format"))
-                || !baseDecoderHash.equals(state.optString("base_decoder_hash"))
+                || !baseModelFingerprint.equals(state.optString("base_model_fingerprint"))
                 || state.optInt("vocab", -1) != itos.length
                 || state.optInt("width", -1) != width) return;
         JSONArray savedW = state.getJSONArray("decoder_weight");
@@ -345,7 +345,7 @@ public final class SparseDiffusionMobileModel {
     private void saveLearningState(File stateFile) throws Exception {
         JSONObject root = new JSONObject();
         root.put("format", "aimeng-mobile-learning-v1");
-        root.put("base_decoder_hash", baseDecoderHash);
+        root.put("base_model_fingerprint", baseModelFingerprint);
         root.put("vocab", itos.length);
         root.put("width", width);
         root.put("updates", learningUpdates);
@@ -370,10 +370,16 @@ public final class SparseDiffusionMobileModel {
         }
     }
 
-    private String decoderFingerprint() {
-        int h = Arrays.hashCode(w("decoder.weight"));
-        h = 31 * h + Arrays.hashCode(w("decoder.bias"));
-        return Integer.toHexString(h) + ":" + itos.length + ":" + width;
+    private String modelFingerprint() {
+        String[] keys = weights.keySet().toArray(new String[0]);
+        Arrays.sort(keys);
+        int h = 1;
+        for (String key : keys) {
+            h = 31 * h + key.hashCode();
+            h = 31 * h + Arrays.hashCode(weights.get(key));
+            h = 31 * h + Arrays.hashCode(shapes.get(key));
+        }
+        return Integer.toHexString(h) + ":" + itos.length + ":" + neurons + ":" + width;
     }
 
     private static float[] probabilities(float[] logits, float temperature) {
