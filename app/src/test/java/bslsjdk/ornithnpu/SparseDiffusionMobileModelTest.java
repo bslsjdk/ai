@@ -125,4 +125,24 @@ public class SparseDiffusionMobileModelTest {
         assertEquals("reset must clear the learning counter", 0L, restored.getLearningUpdates());
         assertFalse("reset must remove the persisted adaptation", state.exists());
     }
+
+    @Test public void diffusionTraceAndResidentStateSurviveCheckpoint() throws Exception {
+        File bundle = makeBundle();
+        File runtime = new File(temp.getRoot(), "neuron-residual.bin");
+        SparseDiffusionMobileModel model = new SparseDiffusionMobileModel();
+        model.load(bundle);
+        model.debugLogits("a🙂");
+        String trace = model.getLastDiffusionTraceText();
+        assertTrue("trace should report actual diffusion steps", trace.contains("扩散步 1"));
+        assertTrue("trace should include state-change measurement", trace.contains("状态平均变化"));
+        model.saveRuntimeState(runtime);
+        assertTrue("resident state checkpoint should exist", runtime.isFile());
+        assertTrue("checkpoint should stay compact", runtime.length() < 2_000_000L);
+
+        SparseDiffusionMobileModel restored = new SparseDiffusionMobileModel();
+        restored.load(bundle);
+        assertTrue("matching base model should restore residual state", restored.loadRuntimeState(runtime));
+        restored.debugLogits("b");
+        assertTrue(restored.getLastDiffusionTraceText().contains("停止概率"));
+    }
 }
