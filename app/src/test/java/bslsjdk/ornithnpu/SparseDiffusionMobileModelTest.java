@@ -145,4 +145,15 @@ public class SparseDiffusionMobileModelTest {
         restored.debugLogits("b");
         assertTrue(restored.getLastDiffusionTraceText().contains("停止概率"));
     }
+
+    @Test public void modelLoadsCanonicalBinaryBundle() throws Exception {
+        File json = makeBundle();
+        File aimg = new File(temp.getRoot(), "mobile_diffusion.aimg");
+        AimengModelFormat.packJsonFile(json, aimg);
+        SparseDiffusionMobileModel model = new SparseDiffusionMobileModel();
+        model.load(aimg);
+        assertTrue(model.isLoaded());
+        assertEquals(4, model.debugLogits("a🙂").length);
+        assertTrue(model.getModelSummary().contains("神经元 8"));
+    }
 }
