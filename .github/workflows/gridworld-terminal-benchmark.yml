@@ -52,7 +52,7 @@ jobs:
             exit 0
           fi
           set +e
-          python3 -m py_compile scripts/test_neural_gridworld.py scripts/run_gridworld_benchmark_suite.py 2>&1 | tee experiments/gridworld/latest/terminal.log
+          python3 -m py_compile scripts/test_neural_gridworld.py scripts/run_gridworld_benchmark_suite.py scripts/test_gridworld_generalization.py 2>&1 | tee experiments/gridworld/latest/terminal.log
           COMPILE_STATUS=${PIPESTATUS[0]}
           if [ "$COMPILE_STATUS" -eq 0 ]; then
             python3 scripts/run_gridworld_benchmark_suite.py "$EPISODES" experiments/gridworld/latest/results 2>&1 | tee -a experiments/gridworld/latest/terminal.log
