@@ -89,11 +89,11 @@ public class SelfOrganizingNeuronGraphTest {
         assertTrue(graph.markOutputPort(firstCreated));
         assertTrue(graph.addConnection(input, secondCreated, 1.0));
         assertTrue(graph.addConnection(input, firstCreated, -1.0));
-        graph.setActiveNeuronBudget(2);
+        graph.setActiveNeuronBudget(3);
 
         SelfOrganizingNeuronGraph restored =
                 SelfOrganizingNeuronGraph.fromJson(graph.toJson(), 99L);
-        assertEquals(2, restored.getActiveNeuronBudget());
+        assertEquals(3, restored.getActiveNeuronBudget());
         double[] output = restored.step(new double[]{1.0}, 1);
         assertEquals(Math.tanh(1.0), output[0], 1e-9);
         assertEquals(Math.tanh(-1.0), output[1], 1e-9);
