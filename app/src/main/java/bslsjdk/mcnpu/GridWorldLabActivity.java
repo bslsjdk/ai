@@ -8,6 +8,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.os.Bundle;
+import android.os.Debug;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
@@ -92,6 +93,10 @@ public final class GridWorldLabActivity extends Activity {
     private volatile long evo16Evaluations;
     private volatile int evo16Generations;
     private volatile double evo16BestValidationScore = Double.NEGATIVE_INFINITY;
+    private volatile int evo16TestFastWins;
+    private volatile double evo16TestMeanPathRatio;
+    private volatile double evo16TestMeanSuccessfulSteps;
+    private volatile long evo16SampledPeakPssBytes;
     private final List<Integer> path = new ArrayList<>();
     private TextView status, metrics, activationText, qText, log, hiddenActivationTitle;
     private EditText hiddenSizeInput;
@@ -438,6 +443,7 @@ public final class GridWorldLabActivity extends Activity {
                 }
                 generations++;
                 environmentSteps += generationSteps;
+                sampleEvo16ProcessMemory();
                 evo16 = elite;
                 evo16Evaluations = evaluations;
                 evo16Generations = generations;
@@ -609,6 +615,12 @@ public final class GridWorldLabActivity extends Activity {
         }
     }
 
+    private long sampleEvo16ProcessMemory() {
+        long pss = Math.max(0L, (long)Debug.getPss() * 1024L);
+        if (pss > evo16SampledPeakPssBytes) evo16SampledPeakPssBytes = pss;
+        return pss;
+    }
+
     private File evo16Directory() {
         return new File(getFilesDir(), "gridworld-lab");
     }
@@ -749,6 +761,17 @@ public final class GridWorldLabActivity extends Activity {
         report.put("testMapsAreUsedForSelection", false);
         report.put("testSuccesses", evalSuccesses);
         report.put("testSuccessRate", evalSuccesses / (double)Math.max(1, evalEpisodes));
+        report.put("testFastPathSuccesses", evo16TestFastWins);
+        report.put("testFastPathSuccessRate", evo16TestFastWins / (double)Math.max(1, evalEpisodes));
+        report.put("meanPathLengthToBfsShortestPathRatioAmongSuccesses", evo16TestMeanPathRatio);
+        report.put("meanSuccessfulPathSteps", evo16TestMeanSuccessfulSteps);
+        report.put("usesPrivilegedBfsDistanceFeature", true);
+        report.put("interpretationCaveat", "This policy receives the true BFS shortest distance as an input feature; its score does not measure fully blind navigation.");
+        report.put("sampledPeakProcessPssBytes", evo16SampledPeakPssBytes);
+        report.put("finalProcessPssBytes", sampleEvo16ProcessMemory());
+        report.put("processMemoryLimitBytes", 4L * 1024L * 1024L * 1024L);
+        report.put("sampledProcessMemoryWithin4GiB", evo16SampledPeakPssBytes < 4L * 1024L * 1024L * 1024L);
+        report.put("processMemoryMeasurementNote", "Android Debug.getPss() sampled at generation boundaries and test-map boundaries; sampled peak can miss short transient peaks.");
         report.put("testPathEfficiencyRule", "success and steps <= BFS shortest path * 1.6 + 2");
         report.put("memoryConstraint", "small 16-input policy; Java CPU; no GPU/NPU; must remain below 4 GiB runtime RAM");
         report.put("legacyModelIsolation", "q_network.json and replay_memory.bin are not read or overwritten by this experiment");
@@ -1038,7 +1061,23 @@ public final class GridWorldLabActivity extends Activity {
             try { ensureEvo16Benchmarks(); } catch (Exception ignored) { }
             evalEpisodes = evo16TestMaps.size();
             evalSuccesses = 0;
-            for (MapData map : evo16TestMaps) if (greedyEvo16Steps(evo16, map) > 0) evalSuccesses++;
+            evo16TestFastWins = 0;
+            double ratioSum = 0.0, stepSum = 0.0;
+            int successful = 0;
+            for (MapData map : evo16TestMaps) {
+                int steps = greedyEvo16Steps(evo16, map);
+                int shortest = shortestDistance(map);
+                if (steps > 0) {
+                    evalSuccesses++;
+                    successful++;
+                    ratioSum += steps / (double)Math.max(1, shortest);
+                    stepSum += steps;
+                    if (steps <= shortest * FAST_STEP_FACTOR + FAST_STEP_ALLOWANCE) evo16TestFastWins++;
+                }
+                sampleEvo16ProcessMemory();
+            }
+            evo16TestMeanPathRatio = successful == 0 ? 0.0 : ratioSum / successful;
+            evo16TestMeanSuccessfulSteps = successful == 0 ? 0.0 : stepSum / successful;
             return;
         }
         evalEpisodes = episodes;
