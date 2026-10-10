@@ -160,6 +160,194 @@ public final class SuperNeuronLabActivity extends Activity {
         return field;
     }
 
+
+    private void trainCharacterStory(Button storyButton) {
+        final String story = storyField.getText().toString().trim();
+        final CharacterTokenizer tokenizer;
+        final int[] allTokens;
+        try {
+            int charCount = story.codePointCount(0, story.length());
+            if (charCount < 40) throw new IllegalArgumentException("故事至少需要 40 个 Unicode 字符");
+            if (charCount > 1000) throw new IllegalArgumentException("本次基准故事最多 1000 个字符");
+            tokenizer = CharacterTokenizer.fit(story);
+            allTokens = tokenizer.encode(story);
+            if (tokenizer.getVocabularySize() > 256)
+                throw new IllegalArgumentException("字符词表超过 256，请缩短或简化故事");
+        } catch (Exception e) {
+            Toast.makeText(this, e.getMessage() == null ? "故事配置无效" : e.getMessage(),
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        trainButton.setEnabled(false);
+        storyButton.setEnabled(false);
+        resultView.setText("正在运行字符级故事基准：4 个个体、总计 10,000 次目标更新。每 1,000 步记录 PSS/RSS；触及 2.5 GiB PSS 红线会保存检查点并安全停止。");
+        new Thread(() -> {
+            JSONArray samples = new JSONArray();
+            JSONObject report = new JSONObject();
+            boolean[] safetyStopped = {false};
+            String[] stopReason = {"completed"};
+            try {
+                int split = Math.max(2, Math.min(allTokens.length - 2, (int) (allTokens.length * 0.8)));
+                int[] training = Arrays.copyOfRange(allTokens, 0, split);
+                int[] validation = Arrays.copyOfRange(allTokens, split - 1, allTokens.length);
+                SuperNeuronEvolutionPool pool = new SuperNeuronEvolutionPool(
+                        4, tokenizer.getVocabularySize(), 8, 16, 20261010L);
+                report.put("format", "aimeng-character-story-memory-report/v1");
+                report.put("status", "running");
+                report.put("storyCodePoints", story.codePointCount(0, story.length()));
+                report.put("vocabularySizeAndOutputCount", tokenizer.getVocabularySize());
+                report.put("targetTrainingSteps", 10000);
+                report.put("populationSize", pool.getPopulationSize());
+                report.put("memoryLimitPssKiB", 2621440L);
+                report.put("baselinePssKiB", Debug.getPss());
+                report.put("baselineRssKiB", readRssKb());
+                report.put("samples", samples);
+                writeJsonAtomically("super_neuron_memory_report.json", report);
+
+                double[] lossWindow = {0.0};
+                long[] windowCount = {0};
+                double trainLoss = pool.trainAndEvolve(training, validation, 10000L, 0.015,
+                        (completed, stepLoss) -> {
+                            lossWindow[0] += stepLoss;
+                            windowCount[0]++;
+                            if (completed == 0 || completed % 1000L != 0L) return true;
+                            double meanWindowLoss = lossWindow[0] / Math.max(1L, windowCount[0]);
+                            lossWindow[0] = 0.0;
+                            windowCount[0] = 0;
+                            long pssKb = Debug.getPss();
+                            long rssKb = readRssKb();
+                            try {
+                                JSONObject sample = new JSONObject();
+                                sample.put("step", completed);
+                                sample.put("windowMeanCrossEntropy", meanWindowLoss);
+                                sample.put("pssKiB", pssKb);
+                                sample.put("rssKiB", rssKb);
+                                sample.put("timestampEpochMs", System.currentTimeMillis());
+                                samples.put(sample);
+                                report.put("lastCompletedStep", completed);
+                                report.put("samples", samples);
+                                writeJsonAtomically("super_neuron_memory_report.json", report);
+
+                                SuperNeuronLanguageTrainer current = pool.getCurrentTrainer();
+                                if (current != null) {
+                                    JSONObject checkpoint = new JSONObject();
+                                    checkpoint.put("format", "aimeng-super-neuron-safe-checkpoint/v1");
+                                    checkpoint.put("completedGlobalSteps", completed);
+                                    checkpoint.put("reason", pssKb > 2621440L ? "PSS_LIMIT_EXCEEDED" : "periodic");
+                                    checkpoint.put("tokenizer", tokenizer.toJson());
+                                    checkpoint.put("trainer", current.toJson());
+                                    checkpoint.put("memoryReport", report);
+                                    writeJsonAtomically("super_neuron_checkpoint.json", checkpoint);
+                                }
+                                if (pssKb > 2621440L) {
+                                    safetyStopped[0] = true;
+                                    stopReason[0] = "PSS 超过 2.5 GiB，已保存检查点并停止训练";
+                                    report.put("status", "stopped_memory_limit");
+                                    report.put("stopReason", stopReason[0]);
+                                    writeJsonAtomically("super_neuron_memory_report.json", report);
+                                    return false;
+                                }
+                                return true;
+                            } catch (Exception e) {
+                                safetyStopped[0] = true;
+                                stopReason[0] = "报告或检查点写入失败，已请求停止：" + e.getClass().getSimpleName();
+                                return false;
+                            }
+                        });
+
+                SuperNeuronLanguageTrainer best = pool.getBestTrainer();
+                double validationLoss = pool.wasStoppedEarly() ? Double.NaN : pool.getBestValidationLoss();
+                int lastId = validation[validation.length - 1];
+                best.resetContext();
+                int prediction = best.predictNextToken(lastId);
+                long finalPss = Debug.getPss();
+                long finalRss = readRssKb();
+                report.put("status", safetyStopped[0] || pool.wasStoppedEarly() ? "stopped" : "completed");
+                report.put("stopReason", stopReason[0]);
+                report.put("completedSteps", pool.getLastTrainingSteps());
+                report.put("generationAfterEvolution", pool.getGeneration());
+                report.put("meanTrainingCrossEntropy", trainLoss);
+                report.put("heldOutValidationCrossEntropy",
+                        Double.isFinite(validationLoss) ? validationLoss : JSONObject.NULL);
+                report.put("predictedTokenId", prediction);
+                report.put("predictedCharacter", tokenizer.tokenAt(prediction));
+                report.put("finalPssKiB", finalPss);
+                report.put("finalRssKiB", finalRss);
+                report.put("samples", samples);
+                writeJsonAtomically("super_neuron_memory_report.json", report);
+
+                JSONObject checkpoint = new JSONObject();
+                checkpoint.put("format", "aimeng-super-neuron-safe-checkpoint/v1");
+                checkpoint.put("completedGlobalSteps", pool.getLastTrainingSteps());
+                checkpoint.put("reason", stopReason[0]);
+                checkpoint.put("tokenizer", tokenizer.toJson());
+                checkpoint.put("trainer", best.toJson());
+                checkpoint.put("memoryReport", report);
+                writeJsonAtomically("super_neuron_checkpoint.json", checkpoint);
+
+                String result = String.format(Locale.US,
+                        "字符级故事实验%s\n\n字符数：%d\n字符词表 / 固定输出数量：%d\n"
+                                + "输出 ID：%d（%s）\n模型池：4 个个体\n实际训练步数：%d / 10,000\n"
+                                + "训练平均交叉熵：%.5f\n独立尾段验证交叉熵：%s\n"
+                                + "进化代数：%d\n最终 PSS：%.1f MiB\n最终 RSS：%.1f MiB\n"
+                                + "内存采样点：%d\n报告：files/super_neuron_memory_report.json\n"
+                                + "检查点：files/super_neuron_checkpoint.json\n\n"
+                                + "注意：单故事拟合不等于语言泛化；内存曲线来自本次 Android 运行。",
+                        safetyStopped[0] || pool.wasStoppedEarly() ? "（安全停止）" : "完成",
+                        allTokens.length, tokenizer.getVocabularySize(), prediction,
+                        tokenizer.tokenAt(prediction), pool.getLastTrainingSteps(), trainLoss,
+                        Double.isFinite(validationLoss) ? String.format(Locale.US, "%.5f", validationLoss) : "未完成",
+                        pool.getGeneration(), finalPss / 1024.0, finalRss / 1024.0, samples.length());
+                main.post(() -> {
+                    trainer = best;
+                    resultView.setText(result);
+                    trainButton.setEnabled(true);
+                    storyButton.setEnabled(true);
+                });
+            } catch (Throwable e) {
+                try {
+                    report.put("status", "failed");
+                    report.put("error", e.getClass().getSimpleName() + ": " + String.valueOf(e.getMessage()));
+                    report.put("samples", samples);
+                    writeJsonAtomically("super_neuron_memory_report.json", report);
+                } catch (Exception ignored) { }
+                main.post(() -> {
+                    resultView.setText("字符故事训练失败：" + e.getClass().getSimpleName()
+                            + ": " + String.valueOf(e.getMessage()));
+                    trainButton.setEnabled(true);
+                    storyButton.setEnabled(true);
+                });
+            }
+        }, "super-neuron-character-story").start();
+    }
+
+    private long readRssKb() {
+        try (BufferedReader reader = new BufferedReader(new FileReader("/proc/self/status"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("VmRSS:")) {
+                    String[] parts = line.trim().split("\\s+");
+                    return parts.length >= 2 ? Long.parseLong(parts[1]) : -1L;
+                }
+            }
+        } catch (Exception ignored) { }
+        return -1L;
+    }
+
+    private void writeJsonAtomically(String name, JSONObject json) throws IOException, JSONException {
+        File target = new File(getFilesDir(), name);
+        File temporary = new File(getFilesDir(), name + ".tmp");
+        byte[] bytes = json.toString(2).getBytes(StandardCharsets.UTF_8);
+        try (FileOutputStream output = new FileOutputStream(temporary)) {
+            output.write(bytes);
+            output.flush();
+            output.getFD().sync();
+        }
+        if (target.exists() && !target.delete()) throw new IOException("cannot replace " + name);
+        if (!temporary.renameTo(target)) throw new IOException("cannot atomically rename " + name);
+    }
+
     private void train() {
         final int vocab, embedding, hidden, epochs;
         final double lr;
