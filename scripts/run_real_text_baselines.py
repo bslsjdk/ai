@@ -37,57 +37,66 @@ def make_examples_at_positions(all_ids, targets, context):
     return x, all_ids[targets]
 
 
-def ngram_baselines(train_ids, all_ids, test_positions, vocab_size, orders=(2, 3, 4, 5), alpha=0.1):
-    counts_by_order = {}
-    totals_by_order = {}
+def ngram_baselines(train_ids, all_ids, validation_positions, test_positions, vocab_size,
+                    orders=(2, 3, 4, 5), alphas=(0.001, 0.01, 0.1, 1.0, 10.0)):
+    counts_by_order, totals_by_order = {}, {}
     for order in orders:
-        counts = defaultdict(Counter)
-        totals = Counter()
+        counts, totals = defaultdict(Counter), Counter()
         for i in range(order - 1, len(train_ids)):
             ctx = tuple(int(v) for v in train_ids[i-order+1:i])
             token = int(train_ids[i])
             counts[ctx][token] += 1
             totals[ctx] += 1
-        counts_by_order[order] = counts
-        totals_by_order[order] = totals
-
+        counts_by_order[order], totals_by_order[order] = counts, totals
     unigram_counts = np.bincount(train_ids, minlength=vocab_size).astype(np.float64)
-    # Additive smoothing for the base distribution.
-    unigram_probs = (unigram_counts + alpha) / (unigram_counts.sum() + alpha * vocab_size)
 
-    def prob(token, context, order):
-        if order == 1:
-            return float(unigram_probs[token])
-        ctx = tuple(context[-(order-1):])
-        c = counts_by_order[order][ctx][token]
-        total = totals_by_order[order][ctx]
-        lower = prob(token, ctx[1:], order - 1)
-        return (c + alpha * lower) / (total + alpha)
+    def probability_fn(alpha):
+        unigram_probs = (unigram_counts + alpha) / (unigram_counts.sum() + alpha * vocab_size)
+        def prob(token, context, order):
+            if order == 1:
+                return float(unigram_probs[token])
+            ctx = tuple(context[-(order-1):])
+            count = counts_by_order[order][ctx][token]
+            total = totals_by_order[order][ctx]
+            lower = prob(token, ctx[1:], order - 1)
+            return (count + alpha * lower) / (total + alpha)
+        return prob
 
     results = {}
-    test_ids = all_ids[test_positions]
-    losses, correct = {n: 0.0 for n in orders}, {n: 0 for n in orders}
-    for t, token_value in zip(test_positions, test_ids):
-        t = int(t)
-        token = int(token_value)
-        for order in orders:
+    val_ids, test_ids = all_ids[validation_positions], all_ids[test_positions]
+    for order in orders:
+        selected_alpha, best_val_loss = None, float("inf")
+        for alpha in alphas:
+            prob = probability_fn(alpha)
+            total_loss = 0.0
+            for t, token_value in zip(validation_positions, val_ids):
+                t, token = int(t), int(token_value)
+                context = all_ids[max(0, t-order+1):t]
+                total_loss -= math.log(max(prob(token, context, order), 1e-300))
+            val_loss = total_loss / max(len(val_ids), 1)
+            if val_loss < best_val_loss:
+                selected_alpha, best_val_loss = alpha, val_loss
+
+        prob = probability_fn(selected_alpha)
+        total_loss, correct = 0.0, 0
+        for t, token_value in zip(test_positions, test_ids):
+            t, token = int(t), int(token_value)
             context = all_ids[max(0, t-order+1):t]
-            p = max(prob(token, context, order), 1e-300)
-            losses[order] += -math.log(p)
-            # Exact argmax over vocabulary using the same interpolated distribution.
+            total_loss -= math.log(max(prob(token, context, order), 1e-300))
             best_token, best_p = 0, -1.0
             for candidate in range(vocab_size):
                 candidate_p = prob(candidate, context, order)
                 if candidate_p > best_p:
                     best_token, best_p = candidate, candidate_p
-            correct[order] += int(best_token == token)
-    n = len(test_ids)
-    for order in orders:
+            correct += int(best_token == token)
+        n = len(test_ids)
         results[str(order)] = {
-            "order": order, "context_characters": order - 1, "alpha": alpha,
-            "test_characters_scored": n, "test_loss": losses[order] / n,
-            "test_bits_per_char": losses[order] / n / math.log(2),
-            "test_char_accuracy": correct[order] / n,
+            "order": order, "context_characters": order - 1,
+            "selected_alpha_from_validation": selected_alpha,
+            "validation_loss_at_selected_alpha": best_val_loss,
+            "test_characters_scored": n, "test_loss": total_loss / n,
+            "test_bits_per_char": total_loss / n / math.log(2),
+            "test_char_accuracy": correct / n,
         }
     return results
 
@@ -188,14 +197,15 @@ def main():
         for start in range(0, len(test_text) - recurrent_context, recurrent_context)
     ])
     test_x, test_y = make_examples_at_positions(all_ids, test_positions, args.context)
+    validation_positions = np.arange(train_end, val_end, dtype=np.int32)
     train_positions = np.arange(args.context, train_end, dtype=np.int32)
     data_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
 
-    print("NGRAM_START "+json.dumps({"orders":[2,3,4,5],"alpha":args.ngram_alpha,
+    print("NGRAM_START "+json.dumps({"orders":[2,3,4,5],"alpha_grid":[0.001,0.01,0.1,1.0,10.0],
                                      "train":len(train_text),"validation":len(val_text),
                                      "test":len(test_text)},sort_keys=True),flush=True)
     ngram_started = time.perf_counter()
-    ngram = ngram_baselines(train_ids, all_ids, test_positions, len(vocab), alpha=args.ngram_alpha)
+    ngram = ngram_baselines(train_ids, all_ids, validation_positions, test_positions, len(vocab))
     ngram_seconds = time.perf_counter()-ngram_started
     for order, row in ngram.items():
         print("NGRAM_RESULT "+json.dumps(row,sort_keys=True),flush=True)
@@ -258,7 +268,8 @@ def main():
                  "test_characters":len(test_text),"test_characters_scored":len(test_positions),
                  "vocabulary_size":len(vocab)},
         "ngram":{"smoothing":"recursive Dirichlet interpolation; unigram base uses additive smoothing",
-                 "alpha":args.ngram_alpha,"wall_seconds":round(ngram_seconds,3),
+                 "alpha_selection":"selected per order by minimum validation loss; test set is not used for tuning",
+                 "alpha_grid":[0.001,0.01,0.1,1.0,10.0],"wall_seconds":round(ngram_seconds,3),
                  "orders":ngram},
         "fixed_window":{"context_characters":args.context,"hidden_neurons":args.hidden,
                         "parameter_count":run_rows[0]["parameter_count"],
