@@ -44,11 +44,11 @@ jobs:
               text = r.read().decode("utf-8", errors="replace")
           start = text.find("*** START OF THE PROJECT GUTENBERG EBOOK")
           if start >= 0:
-              text = text[text.find("\\n", start)+1:]
+              text = text[text.find("\n", start)+1:]
           end = text.find("*** END OF THE PROJECT GUTENBERG EBOOK")
           if end >= 0:
               text = text[:end]
-          text = text.replace("\\r\\n", "\\n").replace("\\r", "\\n")
+          text = text.replace("\r\n", "\n").replace("\r", "\n")
           Path("experiments/no-recurrence-ablation/latest/alice.txt").write_text(text, encoding="utf-8")
           print("CORPUS_CHARACTERS", len(text))
           PY
@@ -59,11 +59,11 @@ jobs:
           python -m py_compile scripts/train_no_recurrence_ablation.py
           for seed in 20261010 20261011 20261012; do
             mkdir -p "experiments/no-recurrence-ablation/latest/seed-$seed"
-            python scripts/train_no_recurrence_ablation.py \\
-              --text-file experiments/no-recurrence-ablation/latest/alice.txt \\
-              --output-dir "experiments/no-recurrence-ablation/latest/seed-$seed" \\
-              --hidden 64 --context 64 --epochs 30 --steps-per-epoch 240 \\
-              --batch-size 32 --learning-rate 0.003 --seed "$seed" \\
+            python scripts/train_no_recurrence_ablation.py \
+              --text-file experiments/no-recurrence-ablation/latest/alice.txt \
+              --output-dir "experiments/no-recurrence-ablation/latest/seed-$seed" \
+              --hidden 64 --context 64 --epochs 30 --steps-per-epoch 240 \
+              --batch-size 32 --learning-rate 0.003 --seed "$seed" \
               2>&1 | tee "experiments/no-recurrence-ablation/latest/seed-$seed/terminal.log"
           done
       - name: Aggregate, validate and commit results
@@ -136,7 +136,7 @@ jobs:
                   "Three seeds provide a preliminary estimate of run-to-run variation, not strong statistical evidence."
               ]
           }
-          (root / "summary.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+          (root / "summary.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           print("NO_RECURRENCE_AGGREGATE", json.dumps(report["aggregate_test"], sort_keys=True))
           PY
           git config user.name "github-actions[bot]"
