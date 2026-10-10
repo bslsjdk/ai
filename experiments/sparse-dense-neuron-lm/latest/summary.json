@@ -26,14 +26,14 @@
       "mean_parameters": 1426.0,
       "mean_heldout_loss": 2.3822100162506104,
       "mean_heldout_accuracy": 0.3859160958904109,
-      "mean_wall_seconds": 1.5365333333333335
+      "mean_wall_seconds": 1.7772666666666668
     },
     "dense_parameter_matched": {
       "runs": 3,
       "mean_parameters": 1569.0,
       "mean_heldout_loss": 1.290815273920695,
       "mean_heldout_accuracy": 0.7112585616438357,
-      "mean_wall_seconds": 1.0407
+      "mean_wall_seconds": 1.0738999999999999
     }
   },
   "runs": [
@@ -44,7 +44,7 @@
       "parameter_count": 1426,
       "heldout_loss": 2.4152023792266846,
       "heldout_accuracy": 0.3615154109589041,
-      "wall_seconds": 1.6359,
+      "wall_seconds": 2.2273,
       "history": [
         {
           "epoch": 1,
@@ -157,7 +157,7 @@
       "parameter_count": 1569,
       "heldout_loss": 1.3022308349609375,
       "heldout_accuracy": 0.7183219178082192,
-      "wall_seconds": 1.0389,
+      "wall_seconds": 1.043,
       "history": [
         {
           "epoch": 1,
@@ -270,7 +270,7 @@
       "parameter_count": 1426,
       "heldout_loss": 2.3581931591033936,
       "heldout_accuracy": 0.4233732876712329,
-      "wall_seconds": 1.4879,
+      "wall_seconds": 1.5248,
       "history": [
         {
           "epoch": 1,
@@ -383,7 +383,7 @@
       "parameter_count": 1569,
       "heldout_loss": 1.327238917350769,
       "heldout_accuracy": 0.712970890410959,
-      "wall_seconds": 1.0372,
+      "wall_seconds": 1.1116,
       "history": [
         {
           "epoch": 1,
@@ -496,7 +496,7 @@
       "parameter_count": 1426,
       "heldout_loss": 2.373234510421753,
       "heldout_accuracy": 0.3728595890410959,
-      "wall_seconds": 1.4858,
+      "wall_seconds": 1.5797,
       "history": [
         {
           "epoch": 1,
@@ -609,7 +609,7 @@
       "parameter_count": 1569,
       "heldout_loss": 1.2429760694503784,
       "heldout_accuracy": 0.7024828767123288,
-      "wall_seconds": 1.046,
+      "wall_seconds": 1.0671,
       "history": [
         {
           "epoch": 1,
