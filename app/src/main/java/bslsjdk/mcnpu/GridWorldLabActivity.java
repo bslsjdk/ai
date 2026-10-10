@@ -214,7 +214,17 @@ public final class GridWorldLabActivity extends Activity {
                 double[] stateBuffer = new double[INPUT_SIZE];
                 double[] nextBuffer = new double[INPUT_SIZE];
                 double[] wallFeatures = new double[CELLS];
-                for (int cell = 0; cell < CELLS; cell++) wallFeatures[cell] = map.walls.contains(cell) ? 1.0 : 0.0;
+                int mapWallCount = 0;
+                for (int cell = 0; cell < CELLS; cell++) {
+                    if (map.walls.contains(cell)) {
+                        wallFeatures[cell] = 1.0;
+                        mapWallCount++;
+                    }
+                }
+                // The wall-map part of the observation is constant for this episode.
+                // Cache its input projection and update that cache analytically as the
+                // corresponding weights learn, avoiding repeated wall-feature dot products.
+                double[] mapProjection = net.projectMap(wallFeatures);
                 int steps = 0;
                 boolean reachedGoal = false;
                 for (; steps < MAX_STEPS && !cancelTraining; steps++) {
@@ -228,7 +238,7 @@ public final class GridWorldLabActivity extends Activity {
                     if (rng.nextDouble() < epsilon) {
                         action = rng.nextInt(4);
                     } else {
-                        currentForward = net.forward(s);
+                        currentForward = net.forward(s, mapProjection);
                         action = argmax(currentForward.q);
                     }
                     Transition tr = transition(pos, action, map);
@@ -243,8 +253,8 @@ public final class GridWorldLabActivity extends Activity {
                     }
                     observeInto(nextBuffer, tr.next, map.goal, map.walls, nextHistory, wallFeatures);
                     // TD target needs only max(Q), not a retained Forward/BPTT cache.
-                    double target = tr.done ? reward : reward + 0.92 * net.maxQ(nextBuffer);
-                    net.update(s, currentForward, action, target);
+                    double target = tr.done ? reward : reward + 0.92 * net.maxQ(nextBuffer, mapProjection);
+                    net.update(s, currentForward, action, target, mapProjection, mapWallCount);
                     replay.add(s, action, reward, nextBuffer, tr.done);
                     globalEnvironmentSteps++;
                     // Revisit a random past transition at the configured interval.
@@ -1246,14 +1256,42 @@ public final class GridWorldLabActivity extends Activity {
             }
         }
 
+        double[] projectMap(double[] wallFeatures) {
+            if (wallFeatures == null || wallFeatures.length != MAP_FEATURES)
+                throw new IllegalArgumentException("wall feature length mismatch");
+            double[] projection = new double[hiddenSize];
+            int mapOffset = BASE_FEATURES;
+            for (int j = 0; j < hiddenSize; j++) {
+                double sum = 0.0;
+                for (int cell = 0; cell < MAP_FEATURES; cell++) {
+                    if (wallFeatures[cell] != 0.0)
+                        sum += w1[j][mapOffset + cell] * wallFeatures[cell];
+                }
+                projection[j] = sum;
+            }
+            return projection;
+        }
+
         Forward forward(double[] x) {
+            return forward(x, null);
+        }
+
+        Forward forward(double[] x, double[] mapProjection) {
             double[][] h = thoughtHCache;
             double[][] pre = thoughtPreCache;
             double[] q = qCache;
             // Store the shared input projection in pre[0], avoiding another vector allocation.
+            // When an episode-local map projection is supplied, skip its constant feature block.
             for (int j = 0; j < hiddenSize; j++) {
                 double v = b1[j];
-                for (int i = 0; i < inputSize; i++) if (x[i] != 0.0) v += w1[j][i] * x[i];
+                if (mapProjection == null) {
+                    for (int i = 0; i < inputSize; i++) if (x[i] != 0.0) v += w1[j][i] * x[i];
+                } else {
+                    for (int i = 0; i < BASE_FEATURES; i++) if (x[i] != 0.0) v += w1[j][i] * x[i];
+                    v += mapProjection[j];
+                    for (int i = BASE_FEATURES + MAP_FEATURES; i < inputSize; i++)
+                        if (x[i] != 0.0) v += w1[j][i] * x[i];
+                }
                 pre[0][j] = v;
                 h[0][j] = Math.max(0.0, v);
             }
@@ -1280,9 +1318,20 @@ public final class GridWorldLabActivity extends Activity {
 
         /** Allocation-free inference for next-state TD targets; no gradient cache is needed. */
         double maxQ(double[] x) {
+            return maxQ(x, null);
+        }
+
+        double maxQ(double[] x, double[] mapProjection) {
             for (int j = 0; j < hiddenSize; j++) {
                 double v = b1[j];
-                for (int i = 0; i < inputSize; i++) if (x[i] != 0.0) v += w1[j][i] * x[i];
+                if (mapProjection == null) {
+                    for (int i = 0; i < inputSize; i++) if (x[i] != 0.0) v += w1[j][i] * x[i];
+                } else {
+                    for (int i = 0; i < BASE_FEATURES; i++) if (x[i] != 0.0) v += w1[j][i] * x[i];
+                    v += mapProjection[j];
+                    for (int i = BASE_FEATURES + MAP_FEATURES; i < inputSize; i++)
+                        if (x[i] != 0.0) v += w1[j][i] * x[i];
+                }
                 maxQProjection[j] = v;
                 maxQFirst[j] = Math.max(0.0, v);
             }
@@ -1329,7 +1378,12 @@ public final class GridWorldLabActivity extends Activity {
         }
 
         void update(double[] x, Forward f, int action, double target) {
-            if (f == null) f = forward(x);
+            update(x, f, action, target, null, 0);
+        }
+
+        void update(double[] x, Forward f, int action, double target,
+                    double[] mapProjection, int mapWallCount) {
+            if (f == null) f = forward(x, mapProjection);
             double grad = Math.max(-1.0, Math.min(1.0, f.q[action] - target));
             double[][] h = f.thoughtH;
             double[][] pre = f.thoughtPre;
@@ -1362,6 +1416,9 @@ public final class GridWorldLabActivity extends Activity {
                 double combined = first + last;
                 if (combined != 0.0) {
                     for (int i = 0; i < inputSize; i++) if (x[i] != 0.0) w1[j][i] -= lr * combined * x[i];
+                    // On the live episode, x's map block equals the binary wall map.
+                    // Its cached projection therefore changes by -lr*combined*wallCount.
+                    if (mapProjection != null) mapProjection[j] -= lr * combined * mapWallCount;
                 }
                 if (THOUGHT_CYCLES > 1 && last != 0.0) {
                     int[] sources = recurrentSources[j];
