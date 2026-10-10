@@ -103,6 +103,7 @@ public final class GridWorldLabActivity extends Activity {
     private volatile int lastEvolutionGenerations;
     private volatile int lastEvolutionBestWins;
     private volatile int lastEvolutionBestFastWins;
+    private volatile int lastEvolutionValidationFastWins;
     private volatile double lastMutationSigma = 0.20;
     private double[] lastHidden = new double[DEFAULT_HIDDEN];
     private double[] lastQ = new double[4];
@@ -348,6 +349,7 @@ public final class GridWorldLabActivity extends Activity {
         lastEvolutionGenerations = 0;
         lastEvolutionBestWins = 0;
         lastEvolutionBestFastWins = 0;
+        lastEvolutionValidationFastWins = 0;
         lastMutationSigma = 0.20;
         training = true;
         status.setText("进化训练：复制优秀网络、随机变异、同图竞争并淘汰低分后代。评估预算 " + evaluationBudget + " 局。");
@@ -419,7 +421,8 @@ public final class GridWorldLabActivity extends Activity {
                     validationEpisodes += MASTERY_EVAL_EPISODES;
                     fastWinStreak = fastWins >= Math.ceil(MASTERY_EVAL_EPISODES * MASTERY_FAST_RATE_REQUIRED)
                             ? fastWinStreak + 1 : 0;
-                    lastEpisodeSteps = fastWins;
+                    lastEpisodeSteps = -1;
+                    lastEvolutionValidationFastWins = fastWins;
                     lastEvolutionValidationEpisodes = validationEpisodes;
                     if (fastWinStreak >= FAST_STREAK_REQUIRED) stoppedByMastery = true;
                 }
@@ -429,13 +432,16 @@ public final class GridWorldLabActivity extends Activity {
                     final int g = generations;
                     final double currentSigma = sigma;
                     final int gw = bestWins, gf = bestFastWins;
+                    final long validationCount = validationEpisodes;
+                    final int validationFast = lastEvolutionValidationFastWins;
+                    final int streak = fastWinStreak;
                     main.post(() -> {
                         status.setText("进化中：评估 " + e + "/" + evaluationBudget + "，第 " + g + " 代");
                         log.setText(String.format(Locale.US,
                                 "算法：变异+筛选（无反向传播）\\n候选评估：%d/%d\\n进化代数：%d\\n最近一代最佳：%d/%d 到达目标，快速通关 %d/%d\\n变异强度：%.4f\\n独立验证累计：%d 局\\n连续达标验证批次：%d/%d",
                                 e, evaluationBudget, g, gw, EVOLUTION_MAPS_PER_CANDIDATE,
-                                gf, EVOLUTION_MAPS_PER_CANDIDATE, currentSigma, validationEpisodes,
-                                fastWinStreak, FAST_STREAK_REQUIRED));
+                                gf, EVOLUTION_MAPS_PER_CANDIDATE, currentSigma, validationCount,
+                                streak, FAST_STREAK_REQUIRED));
                         refreshReadout();
                     });
                 }
@@ -453,17 +459,24 @@ public final class GridWorldLabActivity extends Activity {
             lastTrainingStepsPerSecond = totalSteps * 1000.0 / lastTrainingElapsedMs;
             lastCompletedEpisode = (int)Math.min(Integer.MAX_VALUE, evaluations);
             training = false;
+            final long finalEvaluations = evaluations;
+            final int finalGenerations = generations;
+            final int finalBestWins = bestWins, finalBestFastWins = bestFastWins;
+            final long finalValidationEpisodes = validationEpisodes;
+            final double finalSigma = sigma;
+            final boolean finalCancelled = cancelTraining;
+            final boolean finalMastery = stoppedByMastery;
             main.post(() -> {
                 evaluatePolicy(100);
                 saveCheckpoint();
-                status.setText(cancelTraining ? "进化训练已停止并保存当前精英网络。"
-                        : stoppedByMastery ? "进化训练达到连续快速通关验证门槛。"
+                status.setText(finalCancelled ? "进化训练已停止并保存当前精英网络。"
+                        : finalMastery ? "进化训练达到连续快速通关验证门槛。"
                         : "进化评估预算已完成，当前精英网络已保存。");
                 log.setText(String.format(Locale.US,
                         "进化训练完成\\n候选评估：%d\\n进化代数：%d\\n最近一代最佳：到达目标 %d/%d，快速通关 %d/%d\\n独立随机地图测试：%d/100（%.1f%%）\\n验证局数：%d\\n变异强度：%.4f",
-                        evaluations, generations, bestWins, EVOLUTION_MAPS_PER_CANDIDATE, bestFastWins,
+                        finalEvaluations, finalGenerations, finalBestWins, EVOLUTION_MAPS_PER_CANDIDATE, finalBestFastWins,
                         EVOLUTION_MAPS_PER_CANDIDATE, evalSuccesses, 100.0 * evalSuccesses / Math.max(1, evalEpisodes),
-                        validationEpisodes, sigma));
+                        finalValidationEpisodes, finalSigma));
                 refreshReadout();
             });
         });
@@ -891,6 +904,7 @@ public final class GridWorldLabActivity extends Activity {
             report.put("evolutionGenerations", lastEvolutionGenerations);
             report.put("evolutionBestWins", lastEvolutionBestWins);
             report.put("evolutionBestFastWins", lastEvolutionBestFastWins);
+            report.put("evolutionValidationFastWinsLastBatch", lastEvolutionValidationFastWins);
             report.put("evolutionMutationSigma", lastMutationSigma);
             report.put("experienceReplay", lastTrainingAlgorithm.equals("neuroevolution_mutation_selection")
                     ? "not used by the evolutionary trainer; existing replay file preserved for TD trainer"
