@@ -65,6 +65,8 @@ public final class GridWorldLabActivity extends Activity {
     private static final int REPLAY_CAPACITY = 2048;
     private static final int REPLAY_WARMUP = 64;
     private static final int REPLAY_UPDATE_INTERVAL = 8;
+    private static final int EVOLUTION_POPULATION = 8;
+    private static final int EVOLUTION_MAPS_PER_CANDIDATE = 10;
     private static final int FAST_STREAK_REQUIRED = 5;
     private static final int MASTERY_CHECK_INTERVAL = 100;
     private static final int MASTERY_EVAL_EPISODES = 20;
@@ -95,6 +97,13 @@ public final class GridWorldLabActivity extends Activity {
     private volatile int fastWinStreak;
     private volatile int lastEpisodeSteps = -1;
     private volatile boolean stoppedByMastery;
+    private volatile String lastTrainingAlgorithm = "td_q_learning_with_replay";
+    private volatile long lastEvolutionEvaluations;
+    private volatile long lastEvolutionValidationEpisodes;
+    private volatile int lastEvolutionGenerations;
+    private volatile int lastEvolutionBestWins;
+    private volatile int lastEvolutionBestFastWins;
+    private volatile double lastMutationSigma = 0.20;
     private double[] lastHidden = new double[DEFAULT_HIDDEN];
     private double[] lastQ = new double[4];
 
@@ -146,7 +155,8 @@ public final class GridWorldLabActivity extends Activity {
         LinearLayout controls = new LinearLayout(this);
         controls.setOrientation(LinearLayout.VERTICAL);
         root.addView(controls);
-        addButton(controls, "训练 5,000 局", () -> startTraining(5000));
+        addButton(controls, "训练 5,000 局（TD 学习）", () -> startTraining(5000));
+        addButton(controls, "进化训练 5,000 次评估（变异/筛选）", () -> startEvolutionTraining(5000));
         addButton(controls, "训练 10,000 局", () -> startTraining(10000));
         addButton(controls, "训练 100,000 局", () -> startTraining(100000));
         addButton(controls, "训练 1,000,000 局", () -> startTraining(1000000));
@@ -183,6 +193,7 @@ public final class GridWorldLabActivity extends Activity {
         lastEpisodeSteps = -1;
         stoppedByMastery = false;
         training = true;
+        lastTrainingAlgorithm = "td_q_learning_with_replay";
         status.setText("开始循环思考训练：每次决策进行 " + THOUGHT_CYCLES + " 轮神经元信息传递；最多 " + count + " 局。");
         log.setText("隐藏神经元通过可训练的循环连接互相传递激活，并用 BPTT 学习连接权重。每 " + MASTERY_CHECK_INTERVAL + " 局评估 " + MASTERY_EVAL_EPISODES + " 张独立地图；连续 " + FAST_STREAK_REQUIRED + " 批达标才提前停止。");
         worker.execute(() -> {
@@ -235,7 +246,7 @@ public final class GridWorldLabActivity extends Activity {
                     net.update(s, currentForward, action, target);
                     replay.add(s, action, reward, nextBuffer, tr.done);
                     globalEnvironmentSteps++;
-                    // Revisit a random past transition every four environment steps.
+                    // Revisit a random past transition at the configured interval.
                     // This reuses experience without multiplying compute by a large factor.
                     if (replay.size >= REPLAY_WARMUP
                             && globalEnvironmentSteps % REPLAY_UPDATE_INTERVAL == 0) {
@@ -316,6 +327,223 @@ public final class GridWorldLabActivity extends Activity {
                 refreshReadout();
             });
         });
+    }
+
+    /**
+     * Weight-only neuroevolution experiment. It deliberately does not use TD gradients
+     * or replay samples. The existing TD model and replay file are preserved unless
+     * the user explicitly runs this mode and its selected champion is checkpointed.
+     */
+    private void startEvolutionTraining(int evaluationBudget) {
+        if (training) { toast("训练已经在运行。"); return; }
+        watching = false;
+        cancelTraining = false;
+        lastCompletedEpisode = 0;
+        fastWinStreak = 0;
+        lastEpisodeSteps = -1;
+        stoppedByMastery = false;
+        lastTrainingAlgorithm = "neuroevolution_mutation_selection";
+        lastEvolutionEvaluations = 0L;
+        lastEvolutionValidationEpisodes = 0L;
+        lastEvolutionGenerations = 0;
+        lastEvolutionBestWins = 0;
+        lastEvolutionBestFastWins = 0;
+        lastMutationSigma = 0.20;
+        training = true;
+        status.setText("进化训练：复制优秀网络、随机变异、同图竞争并淘汰低分后代。评估预算 " + evaluationBudget + " 局。");
+        log.setText("本模式不使用经验回放，也不做梯度/BPTT 更新。每代候选使用相同随机地图比较；保留精英网络，失败后代丢弃。原 replay_memory.bin 不删除，供旧 TD 模式继续使用。");
+        worker.execute(() -> {
+            long started = System.currentTimeMillis();
+            long evaluations = 0L, totalSteps = 0L, validationEpisodes = 0L;
+            int generations = 0, bestWins = 0, bestFastWins = 0;
+            double sigma = 0.20;
+            QNet elite = copyNetwork(net);
+            while (evaluations < evaluationBudget && !cancelTraining) {
+                int remaining = (int)Math.min(Integer.MAX_VALUE, evaluationBudget - evaluations);
+                int candidateCount = Math.min(EVOLUTION_POPULATION,
+                        Math.max(1, remaining / EVOLUTION_MAPS_PER_CANDIDATE));
+                int mapsCount = Math.min(EVOLUTION_MAPS_PER_CANDIDATE,
+                        Math.max(1, remaining / candidateCount));
+                MapData[] maps = new MapData[mapsCount];
+                for (int i = 0; i < mapsCount; i++) maps[i] = generateMap(rng);
+                QNet generationBest = null;
+                long generationBestScore = Long.MIN_VALUE;
+                long parentScore = Long.MIN_VALUE;
+                int generationBestWins = 0, generationBestFast = 0;
+                long generationSteps = 0L;
+                for (int c = 0; c < candidateCount && evaluations < evaluationBudget && !cancelTraining; c++) {
+                    QNet candidate = copyNetwork(elite);
+                    if (c > 0) candidate.mutate(sigma, rng);
+                    EvolutionScore score = evaluateEvolutionCandidate(candidate, maps);
+                    evaluations += mapsCount;
+                    generationSteps += score.steps;
+                    if (c == 0) parentScore = score.score;
+                    if (generationBest == null || score.score > generationBestScore) {
+                        generationBest = candidate;
+                        generationBestScore = score.score;
+                        generationBestWins = score.wins;
+                        generationBestFast = score.fastWins;
+                    }
+                }
+                if (generationBest == null) break;
+                boolean improved = generationBestScore > parentScore;
+                elite = generationBest;
+                net = elite;
+                generations++;
+                totalSteps += generationSteps;
+                if (improved) sigma = Math.max(0.025, sigma * 0.90);
+                else sigma = Math.min(0.80, sigma * 1.12);
+                bestWins = generationBestWins;
+                bestFastWins = generationBestFast;
+                lastEvolutionEvaluations = evaluations;
+                lastEvolutionGenerations = generations;
+                lastEvolutionBestWins = bestWins;
+                lastEvolutionBestFastWins = bestFastWins;
+                lastMutationSigma = sigma;
+                lastTrainingEnvironmentSteps = totalSteps;
+                lastTrainingElapsedMs = Math.max(1L, System.currentTimeMillis() - started);
+                lastTrainingEpisodesPerSecond = evaluations * 1000.0 / lastTrainingElapsedMs;
+                lastTrainingStepsPerSecond = totalSteps * 1000.0 / lastTrainingElapsedMs;
+                lastCompletedEpisode = (int)Math.min(Integer.MAX_VALUE, evaluations);
+
+                // Independent validation is not used to select mutations. Check it every
+                // fifth generation so the optimizer cannot directly fit these maps.
+                if (generations % 5 == 0 || evaluations >= evaluationBudget) {
+                    int fastWins = 0;
+                    for (int t = 0; t < MASTERY_EVAL_EPISODES; t++) {
+                        MapData testMap = generateMap(rng);
+                        int steps = greedyTestStepsFor(elite, testMap);
+                        int shortest = shortestDistance(testMap);
+                        if (steps > 0 && steps <= shortest * FAST_STEP_FACTOR + FAST_STEP_ALLOWANCE) fastWins++;
+                    }
+                    validationEpisodes += MASTERY_EVAL_EPISODES;
+                    fastWinStreak = fastWins >= Math.ceil(MASTERY_EVAL_EPISODES * MASTERY_FAST_RATE_REQUIRED)
+                            ? fastWinStreak + 1 : 0;
+                    lastEpisodeSteps = fastWins;
+                    lastEvolutionValidationEpisodes = validationEpisodes;
+                    if (fastWinStreak >= FAST_STREAK_REQUIRED) stoppedByMastery = true;
+                }
+                if (generations % 5 == 0 || evaluations >= evaluationBudget) {
+                    saveEvolutionCheckpoint(evaluations, generations, sigma);
+                    final long e = evaluations;
+                    final int g = generations;
+                    final double currentSigma = sigma;
+                    final int gw = bestWins, gf = bestFastWins;
+                    main.post(() -> {
+                        status.setText("进化中：评估 " + e + "/" + evaluationBudget + "，第 " + g + " 代");
+                        log.setText(String.format(Locale.US,
+                                "算法：变异+筛选（无反向传播）\\n候选评估：%d/%d\\n进化代数：%d\\n最近一代最佳：%d/%d 到达目标，快速通关 %d/%d\\n变异强度：%.4f\\n独立验证累计：%d 局\\n连续达标验证批次：%d/%d",
+                                e, evaluationBudget, g, gw, EVOLUTION_MAPS_PER_CANDIDATE,
+                                gf, EVOLUTION_MAPS_PER_CANDIDATE, currentSigma, validationEpisodes,
+                                fastWinStreak, FAST_STREAK_REQUIRED));
+                        refreshReadout();
+                    });
+                }
+                if (stoppedByMastery) break;
+            }
+            lastEvolutionEvaluations = evaluations;
+            lastEvolutionValidationEpisodes = validationEpisodes;
+            lastEvolutionGenerations = generations;
+            lastEvolutionBestWins = bestWins;
+            lastEvolutionBestFastWins = bestFastWins;
+            lastMutationSigma = sigma;
+            lastTrainingElapsedMs = Math.max(1L, System.currentTimeMillis() - started);
+            lastTrainingEnvironmentSteps = totalSteps;
+            lastTrainingEpisodesPerSecond = evaluations * 1000.0 / lastTrainingElapsedMs;
+            lastTrainingStepsPerSecond = totalSteps * 1000.0 / lastTrainingElapsedMs;
+            lastCompletedEpisode = (int)Math.min(Integer.MAX_VALUE, evaluations);
+            training = false;
+            main.post(() -> {
+                evaluatePolicy(100);
+                saveCheckpoint();
+                status.setText(cancelTraining ? "进化训练已停止并保存当前精英网络。"
+                        : stoppedByMastery ? "进化训练达到连续快速通关验证门槛。"
+                        : "进化评估预算已完成，当前精英网络已保存。");
+                log.setText(String.format(Locale.US,
+                        "进化训练完成\\n候选评估：%d\\n进化代数：%d\\n最近一代最佳：到达目标 %d/%d，快速通关 %d/%d\\n独立随机地图测试：%d/100（%.1f%%）\\n验证局数：%d\\n变异强度：%.4f",
+                        evaluations, generations, bestWins, EVOLUTION_MAPS_PER_CANDIDATE, bestFastWins,
+                        EVOLUTION_MAPS_PER_CANDIDATE, evalSuccesses, 100.0 * evalSuccesses / Math.max(1, evalEpisodes),
+                        validationEpisodes, sigma));
+                refreshReadout();
+            });
+        });
+    }
+
+    private EvolutionScore evaluateEvolutionCandidate(QNet candidate, MapData[] maps) {
+        int wins = 0, fastWins = 0;
+        long stepsTotal = 0L;
+        for (MapData map : maps) {
+            int steps = greedyTestStepsFor(candidate, map);
+            int shortest = shortestDistance(map);
+            if (steps > 0) {
+                wins++;
+                stepsTotal += steps;
+                if (steps <= shortest * FAST_STEP_FACTOR + FAST_STEP_ALLOWANCE) fastWins++;
+            } else {
+                stepsTotal += MAX_STEPS;
+            }
+        }
+        long score = wins * 100000L + fastWins * 1000L - stepsTotal;
+        return new EvolutionScore(score, wins, fastWins, stepsTotal);
+    }
+
+    private int greedyTestStepsFor(QNet candidate, MapData map) {
+        int p = map.start;
+        Set<Integer> seen = new HashSet<>();
+        List<Integer> history = new ArrayList<>();
+        history.add(p);
+        for (int step = 1; step <= MAX_STEPS; step++) {
+            int action = argmax(candidate.forward(observe(p, map.goal, map.walls, history)).q);
+            Transition tr = transition(p, action, map);
+            p = tr.next;
+            history = appendHistory(history, p);
+            if (tr.done) return step;
+            if (!seen.add(p * 4 + action)) return -1;
+        }
+        return -1;
+    }
+
+    private QNet copyNetwork(QNet source) {
+        QNet copy = new QNet(System.nanoTime(), source.hiddenSize);
+        for (int j = 0; j < source.hiddenSize; j++) {
+            System.arraycopy(source.w1[j], 0, copy.w1[j], 0, INPUT_SIZE);
+            System.arraycopy(source.recurrent[j], 0, copy.recurrent[j], 0, source.hiddenSize);
+            System.arraycopy(source.recurrentSources[j], 0, copy.recurrentSources[j], 0, source.recurrentFanIn);
+            copy.b1[j] = source.b1[j];
+        }
+        for (int a = 0; a < 4; a++) {
+            System.arraycopy(source.w2[a], 0, copy.w2[a], 0, source.hiddenSize);
+            copy.b2[a] = source.b2[a];
+        }
+        return copy;
+    }
+
+    private static final class EvolutionScore {
+        final long score, steps;
+        final int wins, fastWins;
+        EvolutionScore(long score, int wins, int fastWins, long steps) {
+            this.score = score; this.wins = wins; this.fastWins = fastWins; this.steps = steps;
+        }
+    }
+
+    private void saveEvolutionCheckpoint(long evaluations, int generations, double sigma) {
+        try {
+            File dir = new File(getFilesDir(), "gridworld-lab");
+            if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("无法创建实验目录");
+            JSONObject checkpoint = net.toJson();
+            checkpoint.put("episodesTrained", episodesDone);
+            checkpoint.put("rewardVersion", REWARD_VERSION);
+            checkpoint.put("savedAt", System.currentTimeMillis());
+            checkpoint.put("checkpointKind", "neuroevolution_elite");
+            checkpoint.put("trainingAlgorithm", lastTrainingAlgorithm);
+            checkpoint.put("evolutionEvaluations", evaluations);
+            checkpoint.put("evolutionGenerations", generations);
+            checkpoint.put("evolutionMutationSigma", sigma);
+            writeAtomic(new File(dir, "q_network.json"), checkpoint.toString());
+            lastAutosaveError = "";
+        } catch (Exception e) {
+            lastAutosaveError = e.getClass().getSimpleName() + ": " + String.valueOf(e.getMessage());
+        }
     }
 
     private volatile int lastCompletedEpisode;
@@ -657,7 +885,16 @@ public final class GridWorldLabActivity extends Activity {
                     ? "dense recurrent hidden-to-hidden messages"
                     : "sparse trainable recurrent messages; fixed fan-in per hidden unit");
             report.put("recurrentFanIn", net.recurrentFanIn);
-            report.put("experienceReplay", "bounded random replay buffer; sampled one transition per eight environment steps after warmup");
+            report.put("trainingAlgorithm", lastTrainingAlgorithm);
+            report.put("evolutionEvaluations", lastEvolutionEvaluations);
+            report.put("evolutionValidationEpisodes", lastEvolutionValidationEpisodes);
+            report.put("evolutionGenerations", lastEvolutionGenerations);
+            report.put("evolutionBestWins", lastEvolutionBestWins);
+            report.put("evolutionBestFastWins", lastEvolutionBestFastWins);
+            report.put("evolutionMutationSigma", lastMutationSigma);
+            report.put("experienceReplay", lastTrainingAlgorithm.equals("neuroevolution_mutation_selection")
+                    ? "not used by the evolutionary trainer; existing replay file preserved for TD trainer"
+                    : "bounded random replay buffer; sampled one transition per eight environment steps after warmup");
             report.put("experienceReplayCapacity", REPLAY_CAPACITY);
             report.put("experienceReplayWarmup", REPLAY_WARMUP);
             report.put("experienceReplayUpdates", lastReplayUpdates);
@@ -665,8 +902,12 @@ public final class GridWorldLabActivity extends Activity {
             report.put("memoryModel", "last 8 positions are episode-local short-term memory; replay_memory.bin persists up to 2048 transitions across launches; q_network.json stores persistent learned weights");
             report.put("replayMemoryPersistence", "atomic binary checkpoint alongside q_network.json");
             report.put("replayMemoryError", replayMemoryError);
-            report.put("recurrentTraining", "truncated BPTT across internal thought cycles");
-            report.put("executionBackend", "CPU Java recurrent forward/backprop; NPU/GPU not yet wired into this QNet");
+            report.put("recurrentTraining", lastTrainingAlgorithm.equals("neuroevolution_mutation_selection")
+                    ? "no gradient/BPTT in the evolutionary trainer; weights optimized by mutation and selection"
+                    : "truncated BPTT across internal thought cycles");
+            report.put("executionBackend", lastTrainingAlgorithm.equals("neuroevolution_mutation_selection")
+                    ? "CPU Java policy evaluation and weight mutation; NPU/GPU not wired into this QNet"
+                    : "CPU Java recurrent forward/backprop; NPU/GPU not yet wired into this QNet");
             report.put("rewardVersion", REWARD_VERSION);
             report.put("rewardShaping", "BFS shortest-distance delta; base rewards retained; repeated-visit penalty remains -0.08");
             int[] goalProbe = evaluateGoalAdjacent(100);
@@ -1038,6 +1279,25 @@ public final class GridWorldLabActivity extends Activity {
         int choose(double[] s, double eps, Random r) {
             if (r.nextDouble() < eps) return r.nextInt(4);
             return argmax(forward(s).q);
+        }
+
+        void mutate(double sigma, Random random) {
+            double inputSigma = sigma * (0.5 / Math.sqrt(Math.max(1, inputSize)));
+            double outputSigma = sigma * 0.10;
+            double recurrentSigma = sigma * (0.10 / Math.sqrt(Math.max(1, hiddenSize)));
+            double biasSigma = sigma * 0.02;
+            for (int j = 0; j < hiddenSize; j++) {
+                for (int i = 0; i < inputSize; i++) w1[j][i] += random.nextGaussian() * inputSigma;
+                b1[j] += random.nextGaussian() * biasSigma;
+                for (int e = 0; e < recurrentFanIn; e++) {
+                    int k = recurrentSources[j][e];
+                    recurrent[j][k] += random.nextGaussian() * recurrentSigma;
+                }
+            }
+            for (int a = 0; a < 4; a++) {
+                for (int j = 0; j < hiddenSize; j++) w2[a][j] += random.nextGaussian() * outputSigma;
+                b2[a] += random.nextGaussian() * outputSigma;
+            }
         }
 
         void update(double[] x, Forward f, int action, double target) {
