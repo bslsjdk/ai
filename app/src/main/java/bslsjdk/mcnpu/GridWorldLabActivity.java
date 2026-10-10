@@ -203,18 +203,21 @@ public final class GridWorldLabActivity extends Activity {
             ReplayMemory replay = replayMemory;
             int reportEvery = count >= 100000 ? 5000 : 500;
             long started = System.currentTimeMillis();
+            // Reuse episode/step buffers for the whole training job to avoid allocation
+            // churn and garbage collection during long runs on Android.
+            double[] stateBuffer = new double[INPUT_SIZE];
+            double[] nextBuffer = new double[INPUT_SIZE];
+            double[] wallFeatures = new double[CELLS];
+            int[] activeWallCells = new int[CELLS];
+            double[] mapProjection = new double[net.hiddenSize];
+            List<Integer> history = new ArrayList<>(HISTORY_LENGTH);
             for (int ep = 1; ep <= count && !cancelTraining; ep++) {
                 MapData map = generateMap(rng);
                 int pos = map.start;
                 int[] mapDistances = distanceMap(map);
-                List<Integer> history = new ArrayList<>();
+                history.clear();
                 history.add(pos);
-                // Reuse the two state vectors throughout this episode; observations are
-                // overwritten in place after the preceding update has consumed them.
-                double[] stateBuffer = new double[INPUT_SIZE];
-                double[] nextBuffer = new double[INPUT_SIZE];
-                double[] wallFeatures = new double[CELLS];
-                int[] activeWallCells = new int[CELLS];
+                Arrays.fill(wallFeatures, 0.0);
                 int mapWallCount = 0;
                 for (int cell = 0; cell < CELLS; cell++) {
                     if (map.walls.contains(cell)) {
@@ -225,7 +228,7 @@ public final class GridWorldLabActivity extends Activity {
                 // The wall-map part of the observation is constant for this episode.
                 // Cache its input projection and update that cache analytically as the
                 // corresponding weights learn, avoiding repeated wall-feature dot products.
-                double[] mapProjection = net.projectMap(wallFeatures);
+                net.projectMap(wallFeatures, mapProjection);
                 int steps = 0;
                 boolean reachedGoal = false;
                 for (; steps < MAX_STEPS && !cancelTraining; steps++) {
@@ -243,7 +246,6 @@ public final class GridWorldLabActivity extends Activity {
                         action = argmax(currentForward.q);
                     }
                     Transition tr = transition(pos, action, map);
-                    List<Integer> nextHistory = appendHistory(history, tr.next);
                     double reward = tr.reward;
                     if (!tr.done && history.contains(tr.next)) reward -= 0.08;
                     // Dense feedback uses the actual shortest path through walls, not Manhattan distance.
@@ -252,7 +254,8 @@ public final class GridWorldLabActivity extends Activity {
                     if (oldDistance >= 0 && nextDistance >= 0) {
                         reward += DISTANCE_REWARD_PER_STEP * (oldDistance - nextDistance);
                     }
-                    observeInto(nextBuffer, tr.next, map.goal, map.walls, nextHistory, wallFeatures);
+                    appendHistoryInPlace(history, tr.next);
+                    observeInto(nextBuffer, tr.next, map.goal, map.walls, history, wallFeatures);
                     // TD target needs only max(Q), not a retained Forward/BPTT cache.
                     double target = tr.done ? reward : reward + 0.92 * net.maxQ(nextBuffer, mapProjection);
                     net.update(s, currentForward, action, target, mapProjection, mapWallCount, activeWallCells);
@@ -279,9 +282,8 @@ public final class GridWorldLabActivity extends Activity {
                         replayUpdates++;
                     }
                     // Bound floating-point drift from incremental cache updates.
-                    if ((steps & 63) == 63) mapProjection = net.projectMap(wallFeatures);
+                    if ((steps & 63) == 63) net.projectMap(wallFeatures, mapProjection);
                     pos = tr.next;
-                    history = nextHistory;
                     if (tr.done) { wins++; reachedGoal = true; break; }
                 }
                 int episodeSteps = Math.min(steps + 1, MAX_STEPS);
@@ -828,6 +830,11 @@ public final class GridWorldLabActivity extends Activity {
         return result;
     }
 
+    private static void appendHistoryInPlace(List<Integer> history, int next) {
+        if (history.size() >= HISTORY_LENGTH) history.remove(0);
+        history.add(next);
+    }
+
     private double[] observe(int pos, int target, Set<Integer> mapWalls, List<Integer> history) {
         double[] s = new double[INPUT_SIZE];
         double[] wallFeatures = new double[CELLS];
@@ -1268,10 +1275,10 @@ public final class GridWorldLabActivity extends Activity {
             }
         }
 
-        double[] projectMap(double[] wallFeatures) {
-            if (wallFeatures == null || wallFeatures.length != MAP_FEATURES)
-                throw new IllegalArgumentException("wall feature length mismatch");
-            double[] projection = new double[hiddenSize];
+        void projectMap(double[] wallFeatures, double[] projection) {
+            if (wallFeatures == null || wallFeatures.length != MAP_FEATURES
+                    || projection == null || projection.length != hiddenSize)
+                throw new IllegalArgumentException("wall/projection dimensions mismatch");
             int mapOffset = BASE_FEATURES;
             for (int j = 0; j < hiddenSize; j++) {
                 double sum = 0.0;
@@ -1281,7 +1288,6 @@ public final class GridWorldLabActivity extends Activity {
                 }
                 projection[j] = sum;
             }
-            return projection;
         }
 
         Forward forward(double[] x) {
