@@ -8,6 +8,7 @@ small architecture experiment, not a general-purpose LLM benchmark.
 import argparse
 import importlib.util
 import json
+import time
 from pathlib import Path
 
 import numpy as np
@@ -23,6 +24,7 @@ def load_script(name, filename):
 
 def dynamic_train(model, x_train, y_train, x_test, y_test, args, seed):
     rng = np.random.default_rng(seed + 991)
+    started = time.perf_counter()
     history = []
     for epoch in range(1, args.epochs + 1):
         order = rng.permutation(len(y_train))
@@ -73,7 +75,8 @@ def dynamic_train(model, x_train, y_train, x_test, y_test, args, seed):
     loss, acc = model.evaluate(x_test, y_test)
     return {"kind": "dynamic_sparse", "seed": seed, "hidden_units": model.hidden,
             "parameter_count": model.parameter_count, "heldout_loss": loss,
-            "heldout_accuracy": acc, "history": history}
+            "heldout_accuracy": acc, "wall_seconds": round(time.perf_counter() - started, 4),
+            "history": history}
 
 
 def rewire(model, grad_x, grad_y, signed_x, signed_y, fraction, learning_rate):
@@ -116,12 +119,12 @@ def main():
     p.add_argument("--learning-rate", type=float, default=0.025)
     p.add_argument("--input-edges", type=int, default=16)
     p.add_argument("--output-edges", type=int, default=12)
-    p.add_argument("--rewire-fraction", type=float, default=0.125)
+    p.add_argument("--rewire-fractions", type=float, nargs="+", default=[0.125, 0.25, 0.375])
     p.add_argument("--rewire-start", type=int, default=2)
     p.add_argument("--rewire-every", type=int, default=1)
     args = p.parse_args()
-    if not 1 <= args.epochs <= 100 or not 0 < args.rewire_fraction <= 0.5:
-        raise SystemExit("epochs must be 1..100 and rewire-fraction in (0, 0.5]")
+    if not 1 <= args.epochs <= 100 or any(not 0 < f <= 0.5 for f in args.rewire_fractions):
+        raise SystemExit("epochs must be 1..100 and every rewire fraction must be in (0, 0.5]")
     base = load_script("base_lm", "train_composed_neuron_lm.py")
     compare = load_script("compare_lm", "compare_sparse_dense_neuron_lm.py")
     train_text, test_text = base.build_corpus()
@@ -142,27 +145,36 @@ def main():
         dense = compare.train_one("dense_parameter_matched", x_train, y_train, x_test, y_test,
                                   dense_width, seed, args)
         runs.append(dense)
-        # Dynamic topology starts with the same sparse edge budget and rewires during training.
-        model = compare.MaskedMLP(input_dim, vocab_size, sparse_width, seed, True,
-                                  args.input_edges, args.output_edges)
-        dynamic = dynamic_train(model, x_train, y_train, x_test, y_test, args, seed)
-        dynamic["target_sparse_parameter_count"] = sparse_params
-        dynamic["parameter_difference_vs_sparse_pct"] = round(
-            100.0 * (dynamic["parameter_count"] - sparse_params) / sparse_params, 3)
-        runs.append(dynamic)
-        for row in (fixed, dense, dynamic):
+        rows_to_print = [fixed, dense]
+        # Sweep rewiring rates from the same initial sparse topology for each seed.
+        for fraction in args.rewire_fractions:
+            args.rewire_fraction = fraction
+            model = compare.MaskedMLP(input_dim, vocab_size, sparse_width, seed, True,
+                                      args.input_edges, args.output_edges)
+            dynamic = dynamic_train(model, x_train, y_train, x_test, y_test, args, seed)
+            tag = str(fraction).replace(".", "_")
+            dynamic["kind"] = "dynamic_sparse_f" + tag
+            dynamic["rewire_fraction"] = fraction
+            dynamic["target_sparse_parameter_count"] = sparse_params
+            dynamic["parameter_difference_vs_sparse_pct"] = round(
+                100.0 * (dynamic["parameter_count"] - sparse_params) / sparse_params, 3)
+            runs.append(dynamic)
+            rows_to_print.append(dynamic)
+        for row in rows_to_print:
             print("DYNAMIC_SPARSE_RESULT " + json.dumps({
                 k: v for k, v in row.items() if k != "history"
             }, sort_keys=True), flush=True)
 
     aggregate = {}
-    for kind in ("sparse", "dense_parameter_matched", "dynamic_sparse"):
+    for kind in (["sparse", "dense_parameter_matched"] + [
+            "dynamic_sparse_f" + str(f).replace(".", "_") for f in args.rewire_fractions]):
         rows = [r for r in runs if r["kind"] == kind]
         aggregate[kind] = {
             "runs": len(rows),
             "mean_parameters": mean(r["parameter_count"] for r in rows),
             "mean_heldout_loss": mean(r["heldout_loss"] for r in rows),
             "mean_heldout_accuracy": mean(r["heldout_accuracy"] for r in rows),
+            "mean_wall_seconds": mean(r.get("wall_seconds", 0.0) for r in rows),
         }
     report = {
         "format": "aimeng-dynamic-sparse-neuron-lm/v1",
@@ -172,7 +184,7 @@ def main():
                      "learning_rate": args.learning_rate, "seeds": args.seeds,
                      "input_edges_per_unit": args.input_edges,
                      "output_edges_per_unit": args.output_edges,
-                     "rewire_fraction": args.rewire_fraction,
+                     "rewire_fractions": args.rewire_fractions,
                      "rewire_start": args.rewire_start, "rewire_every": args.rewire_every},
         "parameter_matching": {"sparse_parameters": sparse_params,
                                "dense_hidden_units": dense_width},
