@@ -14832,7 +14832,7 @@
     "best_validation_loss": 1.6182754380362374,
     "evaluation_protocol": "85% chronological train / 5% validation for checkpoint selection / 10% final test",
     "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
-    "wall_seconds": 68.411,
+    "wall_seconds": 67.837,
     "optimizer_steps": 7200,
     "unigram_baseline_heldout_loss": 3.1716349290706325,
     "final_heldout_loss": 1.7154150909847683,

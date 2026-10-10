@@ -9,7 +9,7 @@
   "final_heldout_loss": 1.7081730969746907,
   "final_heldout_bits_per_char": 2.464372855985329,
   "final_heldout_char_accuracy": 0.5163888888888889,
-  "wall_seconds": 68.104,
+  "wall_seconds": 67.337,
   "best_validation_epoch": 25,
   "best_validation_loss": 1.6369050911494665,
   "evaluation_protocol": "85% chronological train / 5% validation for checkpoint selection / 10% final test",
