@@ -1,0 +1,159 @@
+name: Real-text no-recurrence ablation
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/mobile-neuron-unit-runtime
+    paths:
+      - "scripts/train_no_recurrence_ablation.py"
+      - ".github/workflows/no-recurrence-ablation.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: no-recurrence-ablation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ablation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install NumPy
+        run: python -m pip install numpy
+      - name: Fetch canonical public-domain corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p experiments/no-recurrence-ablation/latest
+          python - <<'PY'
+          from urllib.request import Request, urlopen
+          from pathlib import Path
+          url = "https://www.gutenberg.org/cache/epub/11/pg11.txt"
+          req = Request(url, headers={"User-Agent": "AIMENG-Neuron-LM-Research/1.0"})
+          with urlopen(req, timeout=60) as r:
+              text = r.read().decode("utf-8", errors="replace")
+          start = text.find("*** START OF THE PROJECT GUTENBERG EBOOK")
+          if start >= 0:
+              text = text[text.find("\\n", start)+1:]
+          end = text.find("*** END OF THE PROJECT GUTENBERG EBOOK")
+          if end >= 0:
+              text = text[:end]
+          text = text.replace("\\r\\n", "\\n").replace("\\r", "\\n")
+          Path("experiments/no-recurrence-ablation/latest/alice.txt").write_text(text, encoding="utf-8")
+          print("CORPUS_CHARACTERS", len(text))
+          PY
+      - name: Train three no-recurrence models
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile scripts/train_no_recurrence_ablation.py
+          for seed in 20261010 20261011 20261012; do
+            mkdir -p "experiments/no-recurrence-ablation/latest/seed-$seed"
+            python scripts/train_no_recurrence_ablation.py \\
+              --text-file experiments/no-recurrence-ablation/latest/alice.txt \\
+              --output-dir "experiments/no-recurrence-ablation/latest/seed-$seed" \\
+              --hidden 64 --context 64 --epochs 30 --steps-per-epoch 240 \\
+              --batch-size 32 --learning-rate 0.003 --seed "$seed" \\
+              2>&1 | tee "experiments/no-recurrence-ablation/latest/seed-$seed/terminal.log"
+          done
+      - name: Aggregate, validate and commit results
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, statistics
+          from pathlib import Path
+          root = Path("experiments/no-recurrence-ablation/latest")
+          rows = []
+          for seed in (20261010, 20261011, 20261012):
+              p = root / f"seed-{seed}" / "summary.json"
+              d = json.loads(p.read_text())
+              rows.append({
+                  "seed": seed,
+                  "total_parameter_count_including_frozen_Wh": d["parameter_count"],
+                  "trainable_parameter_count": d["trainable_parameter_count"],
+                  "test_loss": d["final_heldout_loss"],
+                  "test_bits_per_char": d["final_heldout_bits_per_char"],
+                  "test_char_accuracy": d["final_heldout_char_accuracy"],
+                  "wall_seconds": d["wall_seconds"],
+                  "best_validation_epoch": d["best_validation_epoch"],
+                  "best_validation_loss": d["best_validation_loss"],
+                  "dataset_sha256": d["dataset_sha256"],
+                  "evaluation_protocol": d["evaluation_protocol"],
+                  "epochs": d["history"],
+              })
+          expected = "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
+          if {r["dataset_sha256"] for r in rows} != {expected}:
+              raise SystemExit("Dataset hash mismatch: no-recurrence scores are not comparable to the recurrent baseline")
+          if len({r["evaluation_protocol"] for r in rows}) != 1:
+              raise SystemExit("Evaluation protocols differ across seeds")
+          if any(r["trainable_parameter_count"] != 9868 for r in rows):
+              raise SystemExit("Unexpected trainable parameter count; inspect recurrence freeze")
+          def stats(key):
+              values = [r[key] for r in rows]
+              return {"mean": statistics.mean(values),
+                      "sample_stddev": statistics.stdev(values) if len(values) > 1 else 0.0}
+          report = {
+              "format": "aimeng-no-recurrence-ablation-multiseed/v1",
+              "dataset": "Project Gutenberg Alice's Adventures in Wonderland, chronological split",
+              "dataset_sha256": expected,
+              "split": {
+                  "train_fraction": 0.85, "validation_fraction": 0.05, "test_fraction": 0.10,
+                  "train_characters": 122913, "validation_characters": 7230,
+                  "test_characters": 14461, "test_characters_scored": 14400,
+                  "vocabulary_size": 76,
+                  "test_target_alignment": "same 64-character chunk targets as recurrent model; incomplete final chunk omitted"
+              },
+              "architecture": {
+                  "hidden_neurons": 64, "context_characters": 64,
+                  "recurrence_enabled": False, "recurrent_matrix_Wh": "fixed at zero; excluded from training updates",
+                  "total_parameter_count_including_frozen_Wh": rows[0]["total_parameter_count_including_frozen_Wh"],
+                  "trainable_parameter_count": rows[0]["trainable_parameter_count"]
+              },
+              "settings": {"epochs": 30, "steps_per_epoch": 240, "batch_size": 32,
+                           "learning_rate": 0.003, "seeds": [20261010, 20261011, 20261012]},
+              "aggregate_test": {
+                  "loss": stats("test_loss"), "bits_per_char": stats("test_bits_per_char"),
+                  "char_accuracy": stats("test_char_accuracy"), "wall_seconds": stats("wall_seconds"),
+                  "best_validation_epoch": stats("best_validation_epoch"),
+                  "best_validation_loss": stats("best_validation_loss")
+              },
+              "runs": rows,
+              "limitations": [
+                  "Single-book character prediction only; not a chat or reasoning benchmark.",
+                  "This is an architectural ablation, not an equal-trainable-parameter comparison: the recurrent matrix is frozen at zero.",
+                  "Use the same dataset hash and test target alignment when comparing with the recurrent model.",
+                  "Three seeds provide a preliminary estimate of run-to-run variation, not strong statistical evidence."
+              ]
+          }
+          (root / "summary.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+          print("NO_RECURRENCE_AGGREGATE", json.dumps(report["aggregate_test"], sort_keys=True))
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BACKUP_DIR="$(mktemp -d)"
+          cp -a "$root/." "$BACKUP_DIR/"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "${GITHUB_REF_NAME}"
+            git reset --hard "origin/${GITHUB_REF_NAME}"
+            mkdir -p "$root"
+            cp -a "$BACKUP_DIR/." "$root/"
+            git add "$root"
+            if git diff --cached --quiet; then echo "No changed ablation results"; exit 0; fi
+            git commit -m "Record real-text no-recurrence ablation [skip ci]"
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then rm -rf "$BACKUP_DIR"; exit 0; fi
+            sleep 2
+          done
+          rm -rf "$BACKUP_DIR"
+          echo "Could not push ablation results after retries" >&2
+          exit 1
