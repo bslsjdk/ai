@@ -61,7 +61,7 @@ public final class DiffusionMonitorActivity extends Activity {
         root.addView(refresh);
         Button chat = new Button(this);
         chat.setText("打开本地聊天并触发一次扩散");
-        chat.setOnClickListener(v -> startActivity(new Intent(this, ChatActivity.class)));
+        chat.setOnClickListener(v -> startActivity(new Intent(this, AimengChatActivity.class)));
         root.addView(chat);
         Button probe = new Button(this);
         probe.setText("打开逐步数值探针");
