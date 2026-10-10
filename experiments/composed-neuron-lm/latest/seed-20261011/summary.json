@@ -1,0 +1,159 @@
+{
+  "format": "aimeng-composed-neuron-lm-report/v1",
+  "architecture": "individually addressable hidden neuron units",
+  "hidden_neurons": 48,
+  "parameter_count": 14770,
+  "vocab_size": 34,
+  "context": 8,
+  "baseline_unigram_heldout_loss": 3.1023321865032765,
+  "final_heldout_loss": 0.7534420490264893,
+  "final_heldout_next_char_accuracy": 0.806292808219178,
+  "loss_improvement_over_unigram": 2.348890137476787,
+  "wall_seconds": 4.0848,
+  "seed": 20261011,
+  "dataset_sha256": "555005cc4ddeb0c7919af323f01c06334e4948587749f55da4f2bbed54d22e6a",
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 2.7682063579559326,
+      "train_next_char_accuracy": 0.23708333333333334,
+      "heldout_loss": 2.8217391967773438,
+      "heldout_next_char_accuracy": 0.21875
+    },
+    {
+      "epoch": 2,
+      "train_loss": 2.3462767601013184,
+      "train_next_char_accuracy": 0.377,
+      "heldout_loss": 2.4390223026275635,
+      "heldout_next_char_accuracy": 0.3433219178082192
+    },
+    {
+      "epoch": 3,
+      "train_loss": 1.969166874885559,
+      "train_next_char_accuracy": 0.5635833333333333,
+      "heldout_loss": 2.0895419120788574,
+      "heldout_next_char_accuracy": 0.532320205479452
+    },
+    {
+      "epoch": 4,
+      "train_loss": 1.637020230293274,
+      "train_next_char_accuracy": 0.6726666666666666,
+      "heldout_loss": 1.7800134420394897,
+      "heldout_next_char_accuracy": 0.646832191780822
+    },
+    {
+      "epoch": 5,
+      "train_loss": 1.3763996362686157,
+      "train_next_char_accuracy": 0.7199166666666666,
+      "heldout_loss": 1.52996826171875,
+      "heldout_next_char_accuracy": 0.6964897260273972
+    },
+    {
+      "epoch": 6,
+      "train_loss": 1.1862574815750122,
+      "train_next_char_accuracy": 0.7576666666666667,
+      "heldout_loss": 1.3461209535598755,
+      "heldout_next_char_accuracy": 0.736943493150685
+    },
+    {
+      "epoch": 7,
+      "train_loss": 1.0508756637573242,
+      "train_next_char_accuracy": 0.7781666666666667,
+      "heldout_loss": 1.2108277082443237,
+      "heldout_next_char_accuracy": 0.7521404109589042
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.9526914358139038,
+      "train_next_char_accuracy": 0.7929166666666667,
+      "heldout_loss": 1.1098047494888306,
+      "heldout_next_char_accuracy": 0.7587756849315068
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.8772547245025635,
+      "train_next_char_accuracy": 0.8094166666666667,
+      "heldout_loss": 1.0326279401779175,
+      "heldout_next_char_accuracy": 0.7780393835616438
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.8199783563613892,
+      "train_next_char_accuracy": 0.8239166666666666,
+      "heldout_loss": 0.9720667004585266,
+      "heldout_next_char_accuracy": 0.782320205479452
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.7713916897773743,
+      "train_next_char_accuracy": 0.83075,
+      "heldout_loss": 0.9289955496788025,
+      "heldout_next_char_accuracy": 0.782320205479452
+    },
+    {
+      "epoch": 12,
+      "train_loss": 0.7331286668777466,
+      "train_next_char_accuracy": 0.8371666666666666,
+      "heldout_loss": 0.8892080187797546,
+      "heldout_next_char_accuracy": 0.7842465753424658
+    },
+    {
+      "epoch": 13,
+      "train_loss": 0.7004262804985046,
+      "train_next_char_accuracy": 0.8416666666666667,
+      "heldout_loss": 0.8599075675010681,
+      "heldout_next_char_accuracy": 0.792166095890411
+    },
+    {
+      "epoch": 14,
+      "train_loss": 0.6711920499801636,
+      "train_next_char_accuracy": 0.8490833333333333,
+      "heldout_loss": 0.8383876085281372,
+      "heldout_next_char_accuracy": 0.7964469178082192
+    },
+    {
+      "epoch": 15,
+      "train_loss": 0.6482810974121094,
+      "train_next_char_accuracy": 0.8505,
+      "heldout_loss": 0.8160789012908936,
+      "heldout_next_char_accuracy": 0.8035102739726028
+    },
+    {
+      "epoch": 16,
+      "train_loss": 0.6284225583076477,
+      "train_next_char_accuracy": 0.8530833333333333,
+      "heldout_loss": 0.7975190281867981,
+      "heldout_next_char_accuracy": 0.8043664383561644
+    },
+    {
+      "epoch": 17,
+      "train_loss": 0.6094710826873779,
+      "train_next_char_accuracy": 0.8555,
+      "heldout_loss": 0.7849034667015076,
+      "heldout_next_char_accuracy": 0.8058647260273972
+    },
+    {
+      "epoch": 18,
+      "train_loss": 0.59378981590271,
+      "train_next_char_accuracy": 0.8575,
+      "heldout_loss": 0.7758002281188965,
+      "heldout_next_char_accuracy": 0.8050085616438356
+    },
+    {
+      "epoch": 19,
+      "train_loss": 0.5804309248924255,
+      "train_next_char_accuracy": 0.8585,
+      "heldout_loss": 0.7628713846206665,
+      "heldout_next_char_accuracy": 0.806292808219178
+    },
+    {
+      "epoch": 20,
+      "train_loss": 0.5683740377426147,
+      "train_next_char_accuracy": 0.8593333333333333,
+      "heldout_loss": 0.7534420490264893,
+      "heldout_next_char_accuracy": 0.806292808219178
+    }
+  ],
+  "model_file": "model.json",
+  "limitations": "Synthetic arithmetic-format corpus; fixed context, one hidden layer, character-level prediction. This is not a general-purpose assistant or a fair direct score against pretrained chat LLMs."
+}
