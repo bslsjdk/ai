@@ -1,0 +1,120 @@
+name: AIMENG real language-model PK
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Optional cases per model for a smoke run (0 = all 90 cases)"
+        required: true
+        default: "0"
+  push:
+    branches:
+      - feat/mobile-neuron-unit-runtime
+    paths:
+      - "scripts/run_llm_pk.py"
+      - ".github/workflows/llm-pk-benchmark.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aimeng-llm-pk-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  actual-language-models:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Build CPU inference runtime
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential git curl libcurl4-openssl-dev
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp.git /tmp/llama.cpp
+          cmake -S /tmp/llama.cpp -B /tmp/llama.cpp/build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DGGML_OPENMP=ON
+          cmake --build /tmp/llama.cpp/build --config Release -j2 --target llama-server
+
+      - name: Run pinned-quantization model comparison
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p experiments/llm-pk/latest
+          LIMIT="${{ inputs.limit || '0' }}"
+          if ! [[ "$LIMIT" =~ ^[0-9]+$ ]] || [ "$LIMIT" -gt 90 ]; then
+            echo "limit must be an integer in [0, 90]" | tee experiments/llm-pk/latest/terminal.log
+            echo 2 > experiments/llm-pk/latest/exit_code.txt
+            exit 0
+          fi
+          STATUS=0
+          run_model() {
+            local label="$1"
+            local repo="$2"
+            local filename="$3"
+            local model="/tmp/${label}.gguf"
+            echo "===== MODEL $label =====" | tee -a experiments/llm-pk/latest/terminal.log
+            if ! curl -L --fail --retry 3 --retry-delay 2               "https://huggingface.co/${repo}/resolve/main/${filename}?download=true" -o "$model" 2>&1 | tee -a experiments/llm-pk/latest/terminal.log; then
+              echo "MODEL_DOWNLOAD_FAILED $label" | tee -a experiments/llm-pk/latest/terminal.log
+              STATUS=1
+              return
+            fi
+            sha256sum "$model" | tee -a experiments/llm-pk/latest/terminal.log
+            /tmp/llama.cpp/build/bin/llama-server -m "$model" --host 127.0.0.1 --port 8080               -c 4096 -t 2 -tb 2 -ngl 0 --no-warmup > "experiments/llm-pk/latest/${label}-server.log" 2>&1 &
+            local server_pid=$!
+            local ready=0
+            for attempt in $(seq 1 90); do
+              if curl -fsS http://127.0.0.1:8080/health >/dev/null 2>&1; then ready=1; break; fi
+              if ! kill -0 "$server_pid" 2>/dev/null; then break; fi
+              sleep 2
+            done
+            if [ "$ready" -ne 1 ]; then
+              echo "MODEL_SERVER_FAILED $label" | tee -a experiments/llm-pk/latest/terminal.log
+              tail -n 80 "experiments/llm-pk/latest/${label}-server.log" | tee -a experiments/llm-pk/latest/terminal.log
+              kill "$server_pid" 2>/dev/null || true
+              wait "$server_pid" 2>/dev/null || true
+              STATUS=1
+              rm -f "$model"
+              return
+            fi
+            set +e
+            python3 scripts/run_llm_pk.py --base-url http://127.0.0.1:8080 --model "$label"               --output "experiments/llm-pk/latest/${label}.json" --timeout 120 --limit "$LIMIT"               2>&1 | tee -a experiments/llm-pk/latest/terminal.log
+            local test_status=${PIPESTATUS[0]}
+            set -e
+            if [ "$test_status" -ne 0 ]; then STATUS=1; fi
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+            rm -f "$model"
+          }
+          set -e
+          run_model "qwen25-05b-q4km" "bartowski/Qwen2.5-0.5B-Instruct-GGUF" "Qwen2.5-0.5B-Instruct-Q4_K_M.gguf"
+          run_model "qwen25-15b-q4km" "bartowski/Qwen2.5-1.5B-Instruct-GGUF" "Qwen2.5-1.5B-Instruct-Q4_K_M.gguf"
+          echo "$STATUS" > experiments/llm-pk/latest/exit_code.txt
+          exit 0
+
+      - name: Commit raw outputs and reports
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add experiments/llm-pk/latest
+          if git diff --cached --quiet; then
+            echo "No language-model output produced."
+          else
+            git commit -m "Record real language-model PK results [skip ci]"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      - name: Enforce benchmark execution status
+        if: always()
+        shell: bash
+        run: |
+          code="$(cat experiments/llm-pk/latest/exit_code.txt 2>/dev/null || echo 99)"
+          echo "LLM benchmark exit code: $code"
+          test "$code" = "0"
