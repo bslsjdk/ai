@@ -838,7 +838,8 @@ public final class NeuronWorkspace {
                 + (cancelled ? "（用户停止，保留当前最佳权重）" : "") + "\n"
                 + "验证集 MSE：" + format(initialValidation) + " → " + format(finalValidation) + "\n"
                 + "训练集 MSE：" + format(finalTraining) + "\n"
-                + "耗时：" + elapsed + " ms；后端：" + lastTrainingBackend + "；激活：tanh；输出：linear；优化器：Adam\n"
+                + "耗时：" + elapsed + " ms；速度：" + String.format(Locale.US, "%.2f 轮/秒，%.1f 训练样本遍历/秒", epochsRun * 1000.0 / Math.max(1L, elapsed), (long) training.size() * epochsRun * 1000.0 / Math.max(1L, elapsed)) + "\n"
+                + "后端：" + lastTrainingBackend + "；激活：tanh；输出：linear；优化器：Adam\n"
                 + "后端校准：" + trainingHybridCalibrationReport + "\n"
                 + "评分含义：score = 遮蔽该隐藏神经元后验证集 MSE 的增加量；正值越大，当前验证集越依赖它。它不是通用能力证明。";
         lastReport = report;
