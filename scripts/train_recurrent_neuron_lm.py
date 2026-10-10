@@ -174,17 +174,32 @@ def main():
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     if len(text) < 10000:
         raise SystemExit(f"real-text corpus unexpectedly small: {len(text)} characters")
-    # Keep the corpus in file order to make held-out text genuinely unseen during training.
-    split = int(len(text) * 0.9)
-    train_text, test_text = text[:split], text[split:]
+    # Chronological train/validation/test split. Validation selects the checkpoint;
+    # the final test segment is evaluated only after training is complete.
+    train_end = int(len(text) * 0.85)
+    validation_end = int(len(text) * 0.90)
+    train_text = text[:train_end]
+    validation_text = text[train_end:validation_end]
+    test_text = text[validation_end:]
     vocab_chars = sorted(set(train_text))
-    # Map unseen held-out chars to a replacement char only if necessary; report them.
     if "�" not in vocab_chars:
         vocab_chars.append("�")
     vocab = {ch: i for i, ch in enumerate(vocab_chars)}
     train_ids = np.array([vocab[ch] for ch in train_text], dtype=np.int64)
+    validation_ids = np.array([vocab.get(ch, vocab["�"]) for ch in validation_text], dtype=np.int64)
     test_ids = np.array([vocab.get(ch, vocab["�"]) for ch in test_text], dtype=np.int64)
-    all_ids = np.concatenate([train_ids, test_ids])
+
+    def evaluation_windows(ids, context):
+        xs, ys = [], []
+        for start in range(0, len(ids) - context, context):
+            xs.append(ids[start:start + context])
+            ys.append(ids[start + 1:start + context + 1])
+        if not xs:
+            raise SystemExit("evaluation segment is too small for the requested context")
+        return np.asarray(xs), np.asarray(ys)
+
+    validation_x, validation_y = evaluation_windows(validation_ids, args.context)
+    test_x, test_y = evaluation_windows(test_ids, args.context)
     model = RecurrentNeuronLM(len(vocab), args.hidden, args.seed)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(args.seed + 1)
@@ -197,25 +212,32 @@ def main():
     unigram = unigram_counts / unigram_counts.sum()
     baseline_loss = float(-np.log(unigram[test_ids]).mean())
     steps = 0
+    best_validation_loss = float("inf")
+    best_epoch = 0
+    best_parameters = None
     for epoch in range(1, args.epochs + 1):
         losses = []
         for _ in range(args.steps_per_epoch):
             x, y = batches_for(train_ids, args.context, args.batch_size, rng, 0, len(train_ids))
             steps += 1
             losses.append(model.train_batch(x, y, args.learning_rate, adam, steps))
-        # Evaluate held-out sequence in non-overlapping windows.
-        eval_x, eval_y = [], []
-        for start in range(split, len(all_ids) - args.context, args.context):
-            eval_x.append(all_ids[start:start+args.context])
-            eval_y.append(all_ids[start+1:start+args.context+1])
-        held_loss, held_acc = model.loss_accuracy(np.asarray(eval_x), np.asarray(eval_y))
+        validation_loss, validation_acc = model.loss_accuracy(validation_x, validation_y)
         row = {"epoch": epoch, "mean_train_batch_loss": float(np.mean(losses)),
-               "heldout_loss": held_loss, "heldout_bits_per_char": held_loss / math.log(2),
-               "heldout_char_accuracy": held_acc}
+               "validation_loss": validation_loss,
+               "validation_bits_per_char": validation_loss / math.log(2),
+               "validation_char_accuracy": validation_acc}
         history.append(row)
         print("RECURRENT_NEURON_LM_EPOCH " + json.dumps(row, sort_keys=True), flush=True)
+        if validation_loss < best_validation_loss:
+            best_validation_loss = validation_loss
+            best_epoch = epoch
+            best_parameters = [x.copy() for x in (model.wx, model.wh, model.bh, model.wy, model.by)]
+    if best_parameters is None:
+        raise SystemExit("training did not produce a valid checkpoint")
+    for param, best in zip((model.wx, model.wh, model.bh, model.wy, model.by), best_parameters):
+        param[...] = best
     elapsed = time.perf_counter() - started
-    final_loss, final_acc = model.loss_accuracy(np.asarray(eval_x), np.asarray(eval_y))
+    final_loss, final_acc = model.loss_accuracy(test_x, test_y)
     ablation = []
     for j in range(model.hidden):
         model.unit_enabled[j] = False
@@ -225,8 +247,11 @@ def main():
     metadata = {
         "seed": args.seed, "epochs": args.epochs, "steps_per_epoch": args.steps_per_epoch,
         "batch_size": args.batch_size, "learning_rate": args.learning_rate,
-        "training_characters": len(train_text), "heldout_characters": len(test_text),
-        "vocabulary_size": len(vocab), "context_characters": args.context,
+        "training_characters": len(train_text), "validation_characters": len(validation_text),
+        "test_characters": len(test_text), "vocabulary_size": len(vocab),
+        "context_characters": args.context, "best_validation_epoch": best_epoch,
+        "best_validation_loss": best_validation_loss,
+        "evaluation_protocol": "85% chronological train / 5% validation for checkpoint selection / 10% final test",
         "dataset_sha256": hashlib.sha256(text.encode()).hexdigest(),
         "wall_seconds": round(elapsed, 3), "optimizer_steps": steps,
         "unigram_baseline_heldout_loss": baseline_loss,
@@ -246,6 +271,8 @@ def main():
               "unigram_baseline_heldout_loss": baseline_loss,
               "final_heldout_loss": final_loss, "final_heldout_bits_per_char": final_loss / math.log(2),
               "final_heldout_char_accuracy": final_acc, "wall_seconds": round(elapsed, 3),
+              "best_validation_epoch": best_epoch, "best_validation_loss": best_validation_loss,
+              "evaluation_protocol": metadata["evaluation_protocol"],
               "generation_sample": metadata["generation_sample"],
               "unit_ablation_loss_delta_mean": metadata["unit_ablation_loss_delta_mean"],
               "unit_ablation_loss_delta_max": metadata["unit_ablation_loss_delta_max"],
