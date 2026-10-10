@@ -181,6 +181,7 @@ public final class GridWorldLabActivity extends Activity {
         addButton(controls, "单步执行", () -> { watching = false; stepGame(); });
         addButton(controls, "保存网络与报告", this::saveCheckpoint);
         addButton(controls, "复制训练报告（发给 ChatGPT）", this::copyTrainingReport);
+        addButton(controls, "复制16维固定评估集JSON", this::copyEvo16Benchmarks);
         status = text("状态", 13, true);
         metrics = text("", 12, false);
         activationText = text("", 11, false);
@@ -1429,6 +1430,23 @@ public final class GridWorldLabActivity extends Activity {
             write(new File(dir, "training_report.json"), latestReportText);
             if (status != null) status.setText("网络与报告已保存。可点“复制训练报告”直接复制内容，不必进入安卓应用内部目录。");
         } catch (Exception e) { toast("保存失败：" + e.getMessage()); }
+    }
+
+    private void copyEvo16Benchmarks() {
+        if (training) { toast("训练期间先不要导出评估集。"); return; }
+        try {
+            ensureEvo16Benchmarks();
+            File file = new File(evo16Directory(), "evo16_benchmarks.json");
+            byte[] bytes = new byte[(int)Math.min(file.length(), 1024 * 1024)];
+            int n;
+            try (java.io.FileInputStream in = new java.io.FileInputStream(file)) { n = in.read(bytes); }
+            if (n <= 0) throw new IllegalStateException("固定评估集文件为空");
+            String json = new String(bytes, 0, n, StandardCharsets.UTF_8);
+            ClipboardManager clipboard = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+            if (clipboard == null) { toast("系统剪贴板不可用。"); return; }
+            clipboard.setPrimaryClip(ClipData.newPlainText("AIMENG Evo16 固定评估集", json));
+            toast("固定验证集和独立测试集JSON已复制，共200张地图。");
+        } catch (Exception e) { toast("导出固定评估集失败：" + e.getMessage()); }
     }
 
     private void copyTrainingReport() {
