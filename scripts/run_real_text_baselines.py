@@ -218,7 +218,7 @@ def main():
         train_end, len(val_text), recurrent_context)
     test_positions, test_context_starts = chunked_evaluation_positions(
         val_end, len(test_text), recurrent_context)
-    pad_id = vocab["\\ufffd"]
+    pad_id = vocab["\ufffd"]
     val_x, val_y = make_examples_at_positions(
         all_ids, validation_positions, args.context,
         context_starts=validation_context_starts, pad_id=pad_id)
