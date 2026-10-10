@@ -188,7 +188,9 @@ public final class VnWaveField {
                     best = i;
                 }
             }
-            if (best < 0) break;
+            // A zero-energy, zero-input field is genuinely quiescent: do not spend
+            // the active-source budget waking arbitrary nodes just to fill top-k.
+            if (best < 0 || bestScore <= 1e-12) break;
             selected[best] = true;
             count++;
         }
