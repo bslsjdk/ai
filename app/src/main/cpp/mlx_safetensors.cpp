@@ -395,6 +395,8 @@ std::string mlx_affine4_npu_probe(const std::string & path,
         return "ERR MLX_NPU_PROBE backend_not_ready " + mcnpu_backend_status();
 
     constexpr uint32_t M=32, K=64, N=32;
+    uint32_t affine4Candidates=0;
+    std::string firstTileError;
     for(const auto &w: info.tensors) {
         if(w.dtype!="U32" || w.shape.size()!=2 || w.shape[0]<N || w.shape[1]<K/8u)
             continue;
@@ -407,17 +409,23 @@ std::string mlx_affine4_npu_probe(const std::string & path,
             continue;
         const uint64_t packedK=w.shape[1];
         const uint64_t logicalK=packedK*8ull;
-        if(logicalK< K || logicalK%64ull!=0 || sc->shape[0]<N ||
+        // Validate the complete affine4 triplet before selecting a candidate.
+        // A merely large-enough scales tensor is not sufficient: the tile reader
+        // correctly requires exact output-row and group dimensions.
+        if(logicalK<K || logicalK%64ull!=0 || sc->shape[0]!=w.shape[0] ||
            sc->shape[1]!=(logicalK/64ull))
             continue;
         if(sc->dtype!="F16" && sc->dtype!="BF16" && sc->dtype!="F32")
             continue;
         if(bi->dtype!=sc->dtype) continue;
+        ++affine4Candidates;
 
         std::string err;
         MlxAffine4Tile tile;
-        if(!mlx_read_affine4_tile(path,info,w.name,0,N,0,K,tile,err))
-            return "ERR MLX_NPU_PROBE tile_read="+err+" tensor="+w.name;
+        if(!mlx_read_affine4_tile(path,info,w.name,0,N,0,K,tile,err)) {
+            if(firstTileError.empty()) firstTileError=err+" tensor="+w.name;
+            continue;
+        }
         std::vector<uint32_t> packed=std::move(tile.packed_weight);
         std::vector<float> scales=std::move(tile.scales);
         std::vector<float> biases=std::move(tile.biases);
@@ -451,7 +459,11 @@ std::string mlx_affine4_npu_probe(const std::string & path,
                " max_relative_error="+std::to_string(result.max_relative_error)+
                " npu="+result.status;
     }
-    return "ERR MLX_NPU_PROBE no_compatible_affine4_tensor";
+    if(!firstTileError.empty())
+        return "ERR MLX_NPU_PROBE tile_read="+firstTileError+
+               " compatible_candidates="+std::to_string(affine4Candidates);
+    return "ERR MLX_NPU_PROBE no_compatible_affine4_tensor candidates="+
+           std::to_string(affine4Candidates);
 }
 
 MlxNpuTileResult mlx_affine4_npu_matmul_tile(
