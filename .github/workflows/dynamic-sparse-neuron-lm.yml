@@ -1,0 +1,73 @@
+name: Dynamic sparse neuron language model experiment
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/mobile-neuron-unit-runtime
+    paths:
+      - "scripts/test_dynamic_sparse_neuron_lm.py"
+      - "scripts/compare_sparse_dense_neuron_lm.py"
+      - "scripts/train_composed_neuron_lm.py"
+      - ".github/workflows/dynamic-sparse-neuron-lm.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dynamic-sparse-neuron-lm-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  train-and-compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install numeric runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+      - name: Validate and run dynamic sparse experiment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile scripts/train_composed_neuron_lm.py scripts/compare_sparse_dense_neuron_lm.py scripts/test_dynamic_sparse_neuron_lm.py
+          mkdir -p experiments/dynamic-sparse-neuron-lm/latest
+          python scripts/test_dynamic_sparse_neuron_lm.py \
+            --output-dir experiments/dynamic-sparse-neuron-lm/latest \
+            --seeds 20261010 20261011 20261012 \
+            --epochs 24 --batch-size 128 --learning-rate 0.025 \
+            --input-edges 16 --output-edges 12 \
+            --rewire-fraction 0.125 --rewire-start 2 --rewire-every 1 \
+            2>&1 | tee experiments/dynamic-sparse-neuron-lm/latest/terminal.log
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("experiments/dynamic-sparse-neuron-lm/latest/summary.json")
+          d = json.loads(p.read_text())
+          assert len(d["runs"]) == 9, f"expected 9 runs, got {len(d['runs'])}"
+          assert all(d["aggregate"][k]["runs"] == 3 for k in
+                     ("sparse", "dense_parameter_matched", "dynamic_sparse"))
+          print("DYNAMIC_SPARSE_REPORT_VALID")
+          PY
+      - name: Commit experiment reports
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add experiments/dynamic-sparse-neuron-lm/latest
+          if git diff --cached --quiet; then
+            echo "No experiment outputs to commit."
+          else
+            git commit -m "Record dynamic sparse neuron LM experiment [skip ci]"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
