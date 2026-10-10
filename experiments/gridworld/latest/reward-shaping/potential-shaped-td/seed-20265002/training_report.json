@@ -18,5 +18,5 @@
   "rewardShaping": "potential-based Manhattan shaping",
   "seed": 20265002,
   "successDelta": 0.644,
-  "trainingSeconds": 5.808
+  "trainingSeconds": 3.123
 }

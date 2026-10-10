@@ -22,7 +22,7 @@
         "finalSuccessRateMin": 0.724,
         "finalSuccessRateStdev": 0.07024401912064987,
         "initialSuccessRateMean": 0.034666666666666665,
-        "meanTrainingSeconds": 5.707,
+        "meanTrainingSeconds": 2.9506666666666668,
         "seedCount": 3,
         "seedsImproved": 3
       },
@@ -48,7 +48,7 @@
           "parameterCount": 212,
           "seed": 20263001,
           "successDelta": 0.81,
-          "trainingSeconds": 5.489
+          "trainingSeconds": 2.876
         },
         {
           "episodesTrained": 5000,
@@ -69,7 +69,7 @@
           "parameterCount": 212,
           "seed": 20263002,
           "successDelta": 0.6839999999999999,
-          "trainingSeconds": 6.208
+          "trainingSeconds": 3.158
         },
         {
           "episodesTrained": 5000,
@@ -90,7 +90,7 @@
           "parameterCount": 212,
           "seed": 20263003,
           "successDelta": 0.872,
-          "trainingSeconds": 5.424
+          "trainingSeconds": 2.818
         }
       ]
     },
@@ -101,7 +101,7 @@
         "finalSuccessRateMin": 0.802,
         "finalSuccessRateStdev": 0.040540788788028706,
         "initialSuccessRateMean": 0.06533333333333334,
-        "meanTrainingSeconds": 9.849333333333334,
+        "meanTrainingSeconds": 4.936333333333334,
         "seedCount": 3,
         "seedsImproved": 3
       },
@@ -127,7 +127,7 @@
           "parameterCount": 202,
           "seed": 20263001,
           "successDelta": 0.748,
-          "trainingSeconds": 9.318
+          "trainingSeconds": 4.691
         },
         {
           "episodesTrained": 5000,
@@ -148,7 +148,7 @@
           "parameterCount": 202,
           "seed": 20263002,
           "successDelta": 0.746,
-          "trainingSeconds": 10.092
+          "trainingSeconds": 5.046
         },
         {
           "episodesTrained": 5000,
@@ -169,7 +169,7 @@
           "parameterCount": 202,
           "seed": 20263003,
           "successDelta": 0.802,
-          "trainingSeconds": 10.138
+          "trainingSeconds": 5.072
         }
       ]
     }

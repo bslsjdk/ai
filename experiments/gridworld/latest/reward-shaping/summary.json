@@ -22,7 +22,7 @@
         "finalSuccessRateMin": 0.792,
         "finalSuccessRateStdev": 0.016970562748477105,
         "initialSuccessRateMean": 0.068,
-        "meanTrainingSeconds": 5.766,
+        "meanTrainingSeconds": 2.9036666666666666,
         "seedCount": 3,
         "seedsImproved": 3
       },
@@ -49,7 +49,7 @@
           "rewardShaping": "none",
           "seed": 20265001,
           "successDelta": 0.784,
-          "trainingSeconds": 5.805
+          "trainingSeconds": 2.967
         },
         {
           "episodesTrained": 5000,
@@ -71,7 +71,7 @@
           "rewardShaping": "none",
           "seed": 20265002,
           "successDelta": 0.688,
-          "trainingSeconds": 5.815
+          "trainingSeconds": 2.919
         },
         {
           "episodesTrained": 5000,
@@ -93,7 +93,7 @@
           "rewardShaping": "none",
           "seed": 20265003,
           "successDelta": 0.7719999999999999,
-          "trainingSeconds": 5.678
+          "trainingSeconds": 2.825
         }
       ]
     },
@@ -104,7 +104,7 @@
         "finalSuccessRateMin": 0.784,
         "finalSuccessRateStdev": 0.06042074698865174,
         "initialSuccessRateMean": 0.068,
-        "meanTrainingSeconds": 5.526666666666666,
+        "meanTrainingSeconds": 2.956,
         "seedCount": 3,
         "seedsImproved": 3
       },
@@ -131,7 +131,7 @@
           "rewardShaping": "potential-based Manhattan shaping",
           "seed": 20265001,
           "successDelta": 0.922,
-          "trainingSeconds": 5.243
+          "trainingSeconds": 2.746
         },
         {
           "episodesTrained": 5000,
@@ -153,7 +153,7 @@
           "rewardShaping": "potential-based Manhattan shaping",
           "seed": 20265002,
           "successDelta": 0.644,
-          "trainingSeconds": 5.808
+          "trainingSeconds": 3.123
         },
         {
           "episodesTrained": 5000,
@@ -175,7 +175,7 @@
           "rewardShaping": "potential-based Manhattan shaping",
           "seed": 20265003,
           "successDelta": 0.7799999999999999,
-          "trainingSeconds": 5.529
+          "trainingSeconds": 2.999
         }
       ]
     }
