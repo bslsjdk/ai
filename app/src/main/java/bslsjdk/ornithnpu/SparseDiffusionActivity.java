@@ -3,6 +3,8 @@ package bslsjdk.ornithnpu;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.ComponentName;
+import android.content.ServiceConnection;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Debug;
@@ -24,11 +26,34 @@ import java.util.concurrent.Executors;
 public final class SparseDiffusionActivity extends Activity {
     private static final int PICK = 7712;
     private static final long MAX_BUNDLE_BYTES = 32L * 1024L * 1024L;
-    private final SparseDiffusionMobileModel model = new SparseDiffusionMobileModel();
+    private SparseDiffusionMobileModel model;
+    private AimengNeuronService neuronService;
+    private boolean serviceBound;
+    private boolean residentRequested;
+    private Button residentButton;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private EditText prompt, count;
     private TextView status, result;
     private Button run, rewardButton, punishButton, learnTextButton, resetButton, pickButton;
+
+    private final ServiceConnection neuronConnection = new ServiceConnection() {
+        @Override public void onServiceConnected(ComponentName name, android.os.IBinder binder) {
+            AimengNeuronService.LocalBinder local = (AimengNeuronService.LocalBinder) binder;
+            neuronService = local.getService();
+            model = neuronService.getModel();
+            residentRequested = neuronService.isResidentEnabled();
+            residentButton.setText(residentRequested ? "停止后台驻留服务" : "启动后台驻留服务");
+            pickButton.setEnabled(true);
+            restoreSavedModel();
+        }
+        @Override public void onServiceDisconnected(ComponentName name) {
+            serviceBound = false;
+            neuronService = null;
+            model = null;
+            pickButton.setEnabled(false);
+            run.setEnabled(false);
+        }
+    };
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -60,6 +85,12 @@ public final class SparseDiffusionActivity extends Activity {
         status.setPadding(dp(12), dp(12), dp(12), dp(12));
         status.setBackgroundColor(Color.rgb(239, 244, 250));
         root.addView(status, spaced());
+
+        residentButton = new Button(this);
+        residentButton.setText("启动后台驻留服务");
+        residentButton.setEnabled(false);
+        residentButton.setOnClickListener(v -> toggleResidentService());
+        root.addView(residentButton, spaced());
 
         addSectionTitle(root, "1 · 模型");
         pickButton = new Button(this);
@@ -144,7 +175,9 @@ public final class SparseDiffusionActivity extends Activity {
         root.addView(resetButton, spaced());
 
         setContentView(page);
-        restoreSavedModel();
+        pickButton.setEnabled(false);
+        Intent serviceIntent = new Intent(this, AimengNeuronService.class);
+        serviceBound = bindService(serviceIntent, neuronConnection, BIND_AUTO_CREATE);
     }
 
     private int dp(int value) {
@@ -176,6 +209,37 @@ public final class SparseDiffusionActivity extends Activity {
         return new File(getFilesDir(), "aimeng-learning-state.json");
     }
 
+    private File runtimeStateFile() {
+        return new File(getFilesDir(), "aimeng-neuron-residual.bin");
+    }
+
+    private void saveRuntimeStateQuietly() {
+        try { if (model != null && model.isLoaded()) model.saveRuntimeState(runtimeStateFile()); }
+        catch (Throwable ignored) { }
+    }
+
+    private void toggleResidentService() {
+        if (neuronService == null || model == null || !model.isLoaded()) {
+            status.setText("先导入并加载 AIMENG 模型，再启动后台驻留。");
+            return;
+        }
+        try {
+            if (residentRequested || neuronService.isResidentEnabled()) {
+                startService(new Intent(this, AimengNeuronService.class).setAction(AimengNeuronService.ACTION_STOP));
+                residentRequested = false;
+                residentButton.setText("启动后台驻留服务");
+                status.setText("已请求停止后台驻留；当前神经元状态已尝试保存。");
+            } else {
+                startForegroundService(new Intent(this, AimengNeuronService.class).setAction(AimengNeuronService.ACTION_START));
+                residentRequested = true;
+                residentButton.setText("停止后台驻留服务");
+                status.setText("后台驻留启动请求已发送。服务会显示常驻通知，空闲时等待输入，不会持续空转。");
+            }
+        } catch (Throwable e) {
+            status.setText("无法切换后台驻留服务：" + errorText(e));
+        }
+    }
+
     private void chooseModel() {
         Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
@@ -194,9 +258,10 @@ public final class SparseDiffusionActivity extends Activity {
             try {
                 model.load(file);
                 model.loadLearningState(learningFile());
+                boolean restoredResidual = model.loadRuntimeState(runtimeStateFile());
                 long pssMiB = Debug.getPss() / 1024L;
                 runOnUiThread(() -> {
-                    status.setText("模型已自动恢复 · 本地学习 " + model.getLearningUpdates()
+                    status.setText("模型已自动恢复 · 神经元残留状态 " + (restoredResidual ? "已恢复" : "从初始状态启动") + " · 本地学习 " + model.getLearningUpdates()
                             + " 次 · 进程 PSS 约 " + pssMiB + " MiB · " + model.backendStatus());
                     setBusy(false, null);
                     setModelActionsEnabled(true);
@@ -235,6 +300,7 @@ public final class SparseDiffusionActivity extends Activity {
                 // Validate before replacing any previously working model.
                 model.load(temp);
                 model.loadLearningState(learningFile());
+                model.loadRuntimeState(runtimeStateFile());
                 Files.move(temp.toPath(), modelFile().toPath(), StandardCopyOption.REPLACE_EXISTING);
                 long pssMiB = Debug.getPss() / 1024L;
                 runOnUiThread(() -> {
@@ -263,9 +329,11 @@ public final class SparseDiffusionActivity extends Activity {
     private void setBusy(boolean busy, String message) {
         if (message != null) status.setText(message);
         pickButton.setEnabled(!busy);
-        run.setEnabled(!busy && model.isLoaded());
-        learnTextButton.setEnabled(!busy && model.isLoaded());
-        resetButton.setEnabled(!busy && model.isLoaded());
+        boolean loaded = model != null && model.isLoaded();
+        run.setEnabled(!busy && loaded);
+        learnTextButton.setEnabled(!busy && loaded);
+        resetButton.setEnabled(!busy && loaded);
+        residentButton.setEnabled(!busy && loaded);
         if (busy) {
             rewardButton.setEnabled(false);
             punishButton.setEnabled(false);
@@ -276,6 +344,7 @@ public final class SparseDiffusionActivity extends Activity {
         run.setEnabled(enabled);
         learnTextButton.setEnabled(enabled);
         resetButton.setEnabled(enabled);
+        residentButton.setEnabled(enabled);
         if (!enabled) {
             rewardButton.setEnabled(false);
             punishButton.setEnabled(false);
@@ -295,6 +364,7 @@ public final class SparseDiffusionActivity extends Activity {
             long t = System.nanoTime();
             try {
                 String text = model.generate(p, n);
+                saveRuntimeStateQuietly();
                 long ms = (System.nanoTime() - t) / 1_000_000;
                 long pssMiB = Debug.getPss() / 1024L;
                 runOnUiThread(() -> {
@@ -321,6 +391,8 @@ public final class SparseDiffusionActivity extends Activity {
         worker.execute(() -> {
             try {
                 model.resetLearningState(learningFile());
+                model.resetRuntimeState();
+                saveRuntimeStateQuietly();
                 runOnUiThread(() -> {
                     status.setText("已恢复导入时的基础模型 · 本机学习记录已清除");
                     setBusy(false, null);
@@ -346,6 +418,7 @@ public final class SparseDiffusionActivity extends Activity {
         worker.execute(() -> {
             try {
                 int examples = model.learnFromText(text, learningFile());
+                saveRuntimeStateQuietly();
                 runOnUiThread(() -> {
                     status.setText("手机本地学习完成 · 样本 " + examples + " 个 · 累计学习 "
                             + model.getLearningUpdates() + " 次 · 已保存");
@@ -368,6 +441,7 @@ public final class SparseDiffusionActivity extends Activity {
         worker.execute(() -> {
             try {
                 int changed = model.applyFeedback(reward, learningFile());
+                saveRuntimeStateQuietly();
                 runOnUiThread(() -> {
                     status.setText((reward > 0 ? "已奖励" : "已惩罚") + " · 更新参数 "
                             + changed + " 项 · 累计学习 " + model.getLearningUpdates() + " 次 · 已保存到手机");
@@ -381,7 +455,12 @@ public final class SparseDiffusionActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        saveRuntimeStateQuietly();
         worker.shutdownNow();
+        if (serviceBound) {
+            try { unbindService(neuronConnection); } catch (Throwable ignored) { }
+            serviceBound = false;
+        }
         super.onDestroy();
     }
 }
