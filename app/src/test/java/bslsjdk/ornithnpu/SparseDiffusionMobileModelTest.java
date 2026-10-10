@@ -117,5 +117,8 @@ public class SparseDiffusionMobileModelTest {
         restored.load(bundle);
         restored.loadLearningState(state);
         assertEquals("learned parameters must survive reload", 3L, restored.getLearningUpdates());
+        restored.resetLearningState(state);
+        assertEquals("reset must clear the learning counter", 0L, restored.getLearningUpdates());
+        assertFalse("reset must remove the persisted adaptation", state.exists());
     }
 }
