@@ -34,6 +34,7 @@ public final class SuperNeuronLabActivity extends Activity {
 
     private TextView output;
     private Button runButton;
+    private Button batchButton;
     private volatile boolean running;
 
     @Override protected void onCreate(Bundle state) {
@@ -62,6 +63,11 @@ public final class SuperNeuronLabActivity extends Activity {
         root.addView(runButton);
         runButton.setOnClickListener(v -> startExperiment());
 
+        batchButton = new Button(this);
+        batchButton.setText("测试批量前向与 HTP 加速");
+        root.addView(batchButton);
+        batchButton.setOnClickListener(v -> startBatchBenchmark());
+
         ScrollView scroll = new ScrollView(this);
         output = new TextView(this);
         output.setTextSize(13);
@@ -78,6 +84,7 @@ public final class SuperNeuronLabActivity extends Activity {
         if (running) return;
         running = true;
         runButton.setEnabled(false);
+        batchButton.setEnabled(false);
         output.setText("正在初始化 tokenizer 与模型……\n");
         Thread worker = new Thread(() -> runTraining(), "aimeng-character-trainer");
         worker.start();
@@ -92,7 +99,7 @@ public final class SuperNeuronLabActivity extends Activity {
             trainer = new SuperNeuronLanguageTrainer(CharacterTokenizer.VOCABULARY_SIZE, 12, 24, 20261010L);
             double initialLoss = trainer.evaluateSequence(tokens);
             StringBuilder report = new StringBuilder();
-            report.append("状态：CPU Java 参考实现（当前未接入 NPU/GPU 批量矩阵后端）\n")
+            report.append("训练路径：CPU Java 顺序参考实现；批量推理有独立 HTP 尝试路径，当前训练器尚未使用它。\n")
                     .append("故事字符数：").append(tokens.length)
                     .append("；已知字符：").append(tokenizer.getKnownCharacterCount())
                     .append("；输出词表：").append(tokenizer.getVocabularySize()).append("\n")
@@ -158,7 +165,89 @@ public final class SuperNeuronLabActivity extends Activity {
             runOnUiThread(() -> {
                 running = false;
                 runButton.setEnabled(true);
+                batchButton.setEnabled(true);
                 runButton.setText("再次运行 10,000 步训练");
+            });
+        }
+    }
+
+    private void startBatchBenchmark() {
+        if (running) return;
+        running = true;
+        runButton.setEnabled(false);
+        batchButton.setEnabled(false);
+        output.setText("正在检查 NPU 并运行批量前向对照测试……\n");
+        new Thread(this::runBatchBenchmark, "aimeng-batch-forward-benchmark").start();
+    }
+
+    private void runBatchBenchmark() {
+        try {
+            long pssBefore = pssBytes();
+            if (pssBefore >= STOP_PSS_BYTES) {
+                publish("测试取消：当前 PSS 已达到 2.5 GiB 安全阈值。\nPSS_MiB=" + fmtMiB(pssBefore));
+                return;
+            }
+
+            boolean npuReady = NpuRuntime.init(getApplicationContext());
+            String npuStatus = npuReady ? NpuRuntime.status() : NpuRuntime.getLastError();
+            final int batchSize = 16;
+            final int inputSize = 128;
+            final int hiddenSize = 128;
+            final int outputSize = 200;
+            SuperNeuronV2 batchModel = new SuperNeuronV2(inputSize, hiddenSize, outputSize, 20261010L);
+            SuperNeuronV2 cpuModel = new SuperNeuronV2(inputSize, hiddenSize, outputSize, 20261010L);
+            double[][] inputs = new double[batchSize][inputSize];
+            for (int row = 0; row < batchSize; row++)
+                for (int p = 0; p < inputSize; p++)
+                    inputs[row][p] = Math.sin((row + 1) * (p + 3) * 0.013);
+
+            double[][] batchOutput = null;
+            double[][] cpuOutput = null;
+            double batchMs = 0.0;
+            double cpuMs = 0.0;
+            final int repeats = 3;
+            for (int repeat = 0; repeat < repeats; repeat++) {
+                double[][] states = new double[batchSize][hiddenSize];
+                long start = System.nanoTime();
+                batchOutput = batchModel.forwardBatch(inputs, states);
+                batchMs += (System.nanoTime() - start) / 1_000_000.0;
+            }
+            for (int repeat = 0; repeat < repeats; repeat++) {
+                cpuOutput = new double[batchSize][outputSize];
+                long start = System.nanoTime();
+                for (int row = 0; row < batchSize; row++) {
+                    cpuModel.resetState();
+                    cpuOutput[row] = cpuModel.forward(inputs[row]);
+                }
+                cpuMs += (System.nanoTime() - start) / 1_000_000.0;
+            }
+
+            double maxDelta = 0.0;
+            for (int row = 0; row < batchSize; row++)
+                for (int o = 0; o < outputSize; o++)
+                    maxDelta = Math.max(maxDelta, Math.abs(batchOutput[row][o] - cpuOutput[row][o]));
+            long pssAfter = pssBytes();
+            long rssAfter = rssBytes();
+            String report = "批量前向对照测试\n"
+                    + "NPU 初始化：" + (npuReady ? "成功" : "失败，已回退 CPU") + "\n"
+                    + "NPU 状态：" + npuStatus + "\n"
+                    + "模型形状：batch=" + batchSize + ", input=" + inputSize
+                    + ", hidden=" + hiddenSize + ", output=" + outputSize + "\n"
+                    + "实际批量后端：" + batchModel.getLastBatchBackend() + "\n"
+                    + "批量平均耗时：" + fmt(batchMs / repeats) + " ms\n"
+                    + "CPU 逐条平均耗时：" + fmt(cpuMs / repeats) + " ms\n"
+                    + "最大概率差：" + fmt(maxDelta) + "\n"
+                    + "PSS： " + fmtMiB(pssBefore) + " -> " + fmtMiB(pssAfter) + " MiB\n"
+                    + "RSS： " + fmtMiB(rssAfter) + " MiB\n"
+                    + "注意：这是 16 路独立状态的合成前向基准，不代表语言训练加速；只有实际后端、误差和耗时数据同时合格，才考虑扩大接入范围。";
+            publish(report);
+        } catch (Throwable error) {
+            publish("批量前向测试失败：" + error.getClass().getSimpleName() + ": " + error.getMessage());
+        } finally {
+            runOnUiThread(() -> {
+                running = false;
+                runButton.setEnabled(true);
+                batchButton.setEnabled(true);
             });
         }
     }
