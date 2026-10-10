@@ -77,6 +77,41 @@ public class SelfOrganizingNeuronGraphTest {
         assertTrue(graph.getLastActiveNeuronCount() <= 2);
     }
 
+
+    @Test
+    public void checkpointRestoresActiveBudgetAndReadoutOrder() throws Exception {
+        SelfOrganizingNeuronGraph graph = new SelfOrganizingNeuronGraph(8, 16, 0.9, 12L);
+        int input = graph.addNeuron();
+        int firstCreated = graph.addNeuron();
+        int secondCreated = graph.addNeuron();
+        assertTrue(graph.markInputPort(input));
+        assertTrue(graph.markOutputPort(secondCreated));
+        assertTrue(graph.markOutputPort(firstCreated));
+        assertTrue(graph.addConnection(input, secondCreated, 1.0));
+        assertTrue(graph.addConnection(input, firstCreated, -1.0));
+        graph.setActiveNeuronBudget(2);
+
+        SelfOrganizingNeuronGraph restored =
+                SelfOrganizingNeuronGraph.fromJson(graph.toJson(), 99L);
+        assertEquals(2, restored.getActiveNeuronBudget());
+        double[] output = restored.step(new double[]{1.0}, 1);
+        assertEquals(Math.tanh(1.0), output[0], 1e-9);
+        assertEquals(Math.tanh(-1.0), output[1], 1e-9);
+    }
+
+    @Test
+    public void mazeTrainerProducesBoundedMetrics() {
+        SelfOrganizingNeuronGraph graph =
+                SelfOrganizingNeuronGraph.createRandomGraph(8, 4, 32, 80, 13L);
+        graph.setActiveNeuronBudget(12);
+        SelfOrganizingMazeTrainer.Result result =
+                SelfOrganizingMazeTrainer.run(graph, 2, 14L, true);
+        assertEquals(2, result.episodes);
+        assertTrue(result.successes >= 0 && result.successes <= 2);
+        assertTrue(result.successRate >= 0 && result.successRate <= 1);
+        assertTrue(result.totalTicks > 0);
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void rejectsWrongInputShape() {
         SelfOrganizingNeuronGraph graph = new SelfOrganizingNeuronGraph(4, 4, 0.9, 10L);
