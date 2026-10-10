@@ -389,6 +389,7 @@ public final class GridWorldLabActivity extends Activity {
         stoppedByMastery = false;
         fastWinStreak = 0;
         lastTrainingAlgorithm = "neuroevolution_16d_mutation_bank";
+        evo16SampledPeakPssBytes = 0L;
         if (evo16 == null) evo16 = new EvoNet16(20261016L, net.hiddenSize);
         useEvo16 = true;
         training = true;
@@ -415,7 +416,7 @@ public final class GridWorldLabActivity extends Activity {
 
                 EvoNet16 generationBest = null;
                 EvolutionScore generationBestScore = null;
-                long parentScore = scoreEvo16(elite, java.util.Arrays.asList(generationMaps)).score;
+                long parentScore = Long.MIN_VALUE;
                 long generationSteps = 0L;
                 for (int c = 0; c < candidateCount && evaluations < evaluationBudget && !cancelTraining; c++) {
                     EvoNet16 parent = elite;
@@ -428,6 +429,7 @@ public final class GridWorldLabActivity extends Activity {
                     EvolutionScore score = scoreEvo16(candidate, java.util.Arrays.asList(generationMaps));
                     evaluations += mapsCount;
                     generationSteps += score.steps;
+                    if (c == 0) parentScore = score.score;
                     if (generationBest == null || score.score > generationBestScore.score) {
                         generationBest = candidate;
                         generationBestScore = score;
