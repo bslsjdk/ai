@@ -1,0 +1,127 @@
+name: Recurrent versus fixed-context neuron language model
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/mobile-neuron-unit-runtime
+    paths:
+      - "scripts/train_fixed_context_neuron_lm.py"
+      - ".github/workflows/recurrent-vs-fixed-context-neuron-lm.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: recurrent-vs-fixed-context-neuron-lm-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  compare-architectures:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install numerical runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+      - name: Fetch the same public-domain text
+        run: |
+          set -euo pipefail
+          mkdir -p experiments/recurrent-vs-fixed-context/latest
+          python - <<'PY'
+          from urllib.request import Request, urlopen
+          from pathlib import Path
+          url = "https://www.gutenberg.org/cache/epub/11/pg11.txt"
+          req = Request(url, headers={"User-Agent": "AIMENG-Neuron-LM-Research/1.0"})
+          with urlopen(req, timeout=60) as r: text = r.read().decode("utf-8", errors="replace")
+          start = text.find("*** START OF THE PROJECT GUTENBERG EBOOK")
+          if start >= 0: text = text[text.find("\n", start)+1:]
+          end = text.find("*** END OF THE PROJECT GUTENBERG EBOOK")
+          if end >= 0: text = text[:end]
+          Path("experiments/recurrent-vs-fixed-context/latest/alice.txt").write_text(text, encoding="utf-8")
+          print("CORPUS_CHARACTERS", len(text))
+          PY
+      - name: Train parameter-budgeted fixed-context networks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile scripts/train_fixed_context_neuron_lm.py scripts/train_recurrent_neuron_lm.py
+          for seed in 20261010 20261011 20261012; do
+            for width in 2 3; do
+              out="experiments/recurrent-vs-fixed-context/latest/seed-$seed-width-$width"
+              mkdir -p "$out"
+              python scripts/train_fixed_context_neuron_lm.py \
+                --text-file experiments/recurrent-vs-fixed-context/latest/alice.txt \
+                --output-dir "$out" --hidden "$width" --context 64 \
+                --epochs 8 --steps-per-epoch 720 --batch-size 512 \
+                --learning-rate 0.003 --seed "$seed" \
+                2>&1 | tee "$out/terminal.log"
+            done
+          done
+      - name: Aggregate parameter-budget results
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, statistics, hashlib
+          from pathlib import Path
+          root=Path("experiments/recurrent-vs-fixed-context/latest")
+          rows=[]
+          for seed in (20261010,20261011,20261012):
+            for width in (2,3):
+              d=json.loads((root/f"seed-{seed}-width-{width}"/"summary.json").read_text())
+              rows.append({"seed":seed,"hidden":width,"parameters":d["parameter_count"],
+                           "loss":d["final_heldout_loss"],"bits_per_char":d["final_heldout_bits_per_char"],
+                           "accuracy":d["final_heldout_char_accuracy"],"seconds":d["wall_seconds"],
+                           "baseline_loss":d["unigram_baseline_heldout_loss"],
+                           "dataset_sha256":d["dataset_sha256"]})
+          if len({r["dataset_sha256"] for r in rows}) != 1: raise SystemExit("dataset hashes differ")
+          groups={}
+          for width in (2,3):
+            rs=[r for r in rows if r["hidden"]==width]
+            groups[f"fixed_context_width_{width}"]={
+              "runs":len(rs),"mean_parameters":statistics.mean(r["parameters"] for r in rs),
+              "mean_heldout_loss":statistics.mean(r["loss"] for r in rs),
+              "mean_bits_per_char":statistics.mean(r["bits_per_char"] for r in rs),
+              "mean_char_accuracy":statistics.mean(r["accuracy"] for r in rs),
+              "mean_wall_seconds":statistics.mean(r["seconds"] for r in rs)}
+          report={"format":"aimeng-recurrent-vs-fixed-context-neuron-lm/v1",
+                  "dataset":"same public-domain Project Gutenberg Alice text; last 10% held out",
+                  "dataset_sha256":rows[0]["dataset_sha256"],
+                  "budget_note":"Fixed-context models are trained on the same number of next-character targets per seed as the initial 8-epoch recurrent smoke test. They use a different update batching strategy; runtime is reported separately.",
+                  "fixed_context_settings":{"epochs":8,"steps_per_epoch":720,"batch_size":512,"context":64,"seeds":[20261010,20261011,20261012]},
+                  "aggregate":groups,"runs":rows,
+                  "limitations":["One book, character-level prediction only.",
+                                 "This does not compare chat or reasoning capability against a 9B model.",
+                                 "Width 2 and width 3 bracket the recurrent model's parameter budget; the dense position-specific weights differ structurally from recurrent weights."]}
+          (root/"summary.json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n")
+          print("ARCHITECTURE_COMPARISON "+json.dumps(report,ensure_ascii=False,sort_keys=True))
+          PY
+      - name: Commit comparison artifacts
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add experiments/recurrent-vs-fixed-context/latest
+          if git diff --cached --quiet; then echo "No artifacts"; exit 0; fi
+          git commit -m "Record recurrent versus fixed-context neuron LM comparison [skip ci]"
+          pushed=0
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "${GITHUB_REF_NAME}"
+            if git rebase "origin/${GITHUB_REF_NAME}"; then
+              if git push origin "HEAD:${GITHUB_REF_NAME}"; then pushed=1; break; fi
+            else
+              git rebase --abort || true
+            fi
+            sleep 2
+          done
+          test "$pushed" = "1"
