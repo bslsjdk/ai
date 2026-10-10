@@ -5,228 +5,225 @@
   "hidden_neurons": 64,
   "context_characters": 64,
   "vocabulary_size": 76,
-  "unigram_baseline_heldout_loss": 3.1716349290706325,
-  "final_heldout_loss": 1.7081729867723252,
-  "final_heldout_bits_per_char": 2.4643726969969224,
-  "final_heldout_char_accuracy": 0.5163888888888889,
-  "wall_seconds": 44.718,
-  "best_validation_epoch": 25,
-  "best_validation_loss": 1.6369050911494665,
-  "evaluation_protocol": "85% chronological train / 5% validation for checkpoint selection / 10% final test",
-  "generation_sample": "Alice lang at the toor the rawas with your sight that tell the the the little, “I did it not, then the Dodo the bought the right, and but a last the little good,\n“thak what nothing all she took only with as he the fan a sorrins the happen,”\n\n“Gute what then a bree, batures, bit!” shonged in the hirsfulty ",
-  "unit_ablation_loss_delta_mean": 0.14403314154181224,
-  "unit_ablation_loss_delta_max": 0.2503567441304526,
+  "unigram_baseline_heldout_loss": 3.170140011296197,
+  "final_heldout_loss": 1.6754954528808594,
+  "final_heldout_bits_per_char": 2.4172289809032237,
+  "final_heldout_char_accuracy": 0.5229166666666667,
+  "wall_seconds": 42.254,
+  "generation_sample": "Alice gall at the speepillor was very were to herseded I shoulded down liter were calk,” said the Pigen lasting as a little jumpraging which as as silens. “I see the Foun a little the Queen.’?” the Gryphon.\n\n“Hor_ it, I whise of she contout\nglarss!” Alice was as the Conversaped whitong in a she heard my h",
+  "unit_ablation_loss_delta_mean": 0.14554157597323253,
+  "unit_ablation_loss_delta_max": 0.26378303739759645,
   "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
   "history": [
     {
       "epoch": 1,
-      "mean_train_batch_loss": 2.6272798324314257,
-      "validation_loss": 2.168779134750366,
-      "validation_bits_per_char": 3.1288869024878103,
-      "validation_char_accuracy": 0.4029017857142857
+      "mean_train_batch_loss": 2.6316439733219643,
+      "heldout_loss": 2.1875193023681643,
+      "heldout_bits_per_char": 3.1559232493754354,
+      "heldout_char_accuracy": 0.4014583333333333
     },
     {
       "epoch": 2,
-      "mean_train_batch_loss": 2.0679280152001107,
-      "validation_loss": 1.960101876940046,
-      "validation_bits_per_char": 2.8278292574985535,
-      "validation_char_accuracy": 0.4633091517857143
+      "mean_train_batch_loss": 2.0634974437921,
+      "heldout_loss": 2.0051325776841904,
+      "heldout_bits_per_char": 2.8927948261498857,
+      "heldout_char_accuracy": 0.4396527777777778
     },
     {
       "epoch": 3,
-      "mean_train_batch_loss": 1.9139773768140003,
-      "validation_loss": 1.8742715631212508,
-      "validation_bits_per_char": 2.7040022893942344,
-      "validation_char_accuracy": 0.4838169642857143
+      "mean_train_batch_loss": 1.9145328090176919,
+      "heldout_loss": 1.92060366736518,
+      "heldout_bits_per_char": 2.7708453864209015,
+      "heldout_char_accuracy": 0.4636111111111111
     },
     {
       "epoch": 4,
-      "mean_train_batch_loss": 1.8409070870528619,
-      "validation_loss": 1.8170146260942732,
-      "validation_bits_per_char": 2.621397990288922,
-      "validation_char_accuracy": 0.49386160714285715
+      "mean_train_batch_loss": 1.8389340337986748,
+      "heldout_loss": 1.8684859381781684,
+      "heldout_bits_per_char": 2.695655396980406,
+      "heldout_char_accuracy": 0.47333333333333333
     },
     {
       "epoch": 5,
-      "mean_train_batch_loss": 1.7772208671900445,
-      "validation_loss": 1.782985040119716,
-      "validation_bits_per_char": 2.5723036753599238,
-      "validation_char_accuracy": 0.49930245535714285
+      "mean_train_batch_loss": 1.778352849779185,
+      "heldout_loss": 1.8361179203457303,
+      "heldout_bits_per_char": 2.648958218170142,
+      "heldout_char_accuracy": 0.4829861111111111
     },
     {
       "epoch": 6,
-      "mean_train_batch_loss": 1.739404637971893,
-      "validation_loss": 1.758920737675258,
-      "validation_bits_per_char": 2.5375862255608523,
-      "validation_char_accuracy": 0.5108816964285714
+      "mean_train_batch_loss": 1.7428911436077519,
+      "heldout_loss": 1.8013586611217922,
+      "heldout_bits_per_char": 2.5988112072627927,
+      "heldout_char_accuracy": 0.4911111111111111
     },
     {
       "epoch": 7,
-      "mean_train_batch_loss": 1.7128436359615686,
-      "validation_loss": 1.7401312759944372,
-      "validation_bits_per_char": 2.5104787623729585,
-      "validation_char_accuracy": 0.5149274553571429
+      "mean_train_batch_loss": 1.7140517864453917,
+      "heldout_loss": 1.772891756693522,
+      "heldout_bits_per_char": 2.557742145414667,
+      "heldout_char_accuracy": 0.4990277777777778
     },
     {
       "epoch": 8,
-      "mean_train_batch_loss": 1.6873794519691727,
-      "validation_loss": 1.7214667115892683,
-      "validation_bits_per_char": 2.483551487865269,
-      "validation_char_accuracy": 0.5200892857142857
+      "mean_train_batch_loss": 1.685747660304575,
+      "heldout_loss": 1.7602327993181017,
+      "heldout_bits_per_char": 2.5394791303863236,
+      "heldout_char_accuracy": 0.4997916666666667
     },
     {
       "epoch": 9,
-      "mean_train_batch_loss": 1.6653563588391989,
-      "validation_loss": 1.7085072994232178,
-      "validation_bits_per_char": 2.464855008200472,
-      "validation_char_accuracy": 0.5147879464285714
+      "mean_train_batch_loss": 1.671329391018177,
+      "heldout_loss": 1.7456981001959906,
+      "heldout_bits_per_char": 2.5185099920420404,
+      "heldout_char_accuracy": 0.501875
     },
     {
       "epoch": 10,
-      "mean_train_batch_loss": 1.644311379971138,
-      "validation_loss": 1.6992228542055403,
-      "validation_bits_per_char": 2.451460385127523,
-      "validation_char_accuracy": 0.5221819196428571
+      "mean_train_batch_loss": 1.6517336438021932,
+      "heldout_loss": 1.7414400863647461,
+      "heldout_bits_per_char": 2.5123669766036674,
+      "heldout_char_accuracy": 0.5055555555555555
     },
     {
       "epoch": 11,
-      "mean_train_batch_loss": 1.6291029027391535,
-      "validation_loss": 1.682169999395098,
-      "validation_bits_per_char": 2.4268583160594988,
-      "validation_char_accuracy": 0.5245535714285714
+      "mean_train_batch_loss": 1.6343750617078816,
+      "heldout_loss": 1.7274351374308268,
+      "heldout_bits_per_char": 2.4921621062287986,
+      "heldout_char_accuracy": 0.5120833333333333
     },
     {
       "epoch": 12,
-      "mean_train_batch_loss": 1.620601013970251,
-      "validation_loss": 1.6861353601728166,
-      "validation_bits_per_char": 2.432579122388849,
-      "validation_char_accuracy": 0.5258091517857143
+      "mean_train_batch_loss": 1.620962867385242,
+      "heldout_loss": 1.724417437447442,
+      "heldout_bits_per_char": 2.4878084854278786,
+      "heldout_char_accuracy": 0.5102083333333334
     },
     {
       "epoch": 13,
-      "mean_train_batch_loss": 1.6055837047751993,
-      "validation_loss": 1.682952114513942,
-      "validation_bits_per_char": 2.427986669662859,
-      "validation_char_accuracy": 0.5230189732142857
+      "mean_train_batch_loss": 1.6111106640736883,
+      "heldout_loss": 1.7215713437398275,
+      "heldout_bits_per_char": 2.4837024401499983,
+      "heldout_char_accuracy": 0.50875
     },
     {
       "epoch": 14,
-      "mean_train_batch_loss": 1.5970269863726572,
-      "validation_loss": 1.6685809578214372,
-      "validation_bits_per_char": 2.4072534731707442,
-      "validation_char_accuracy": 0.5283203125
+      "mean_train_batch_loss": 1.6034602290989521,
+      "heldout_loss": 1.7111404434839885,
+      "heldout_bits_per_char": 2.4686538320788918,
+      "heldout_char_accuracy": 0.5131944444444444
     },
     {
       "epoch": 15,
-      "mean_train_batch_loss": 1.5845942640851718,
-      "validation_loss": 1.668828351157052,
-      "validation_bits_per_char": 2.4076103863091847,
-      "validation_char_accuracy": 0.5252511160714286
+      "mean_train_batch_loss": 1.5867874843689302,
+      "heldout_loss": 1.7106264856126574,
+      "heldout_bits_per_char": 2.4679123476066964,
+      "heldout_char_accuracy": 0.5171527777777778
     },
     {
       "epoch": 16,
-      "mean_train_batch_loss": 1.576261635745565,
-      "validation_loss": 1.6642019237790788,
-      "validation_bits_per_char": 2.4009358624739496,
-      "validation_char_accuracy": 0.5284598214285714
+      "mean_train_batch_loss": 1.5882216779747977,
+      "heldout_loss": 1.7008785894181992,
+      "heldout_bits_per_char": 2.4538491061078513,
+      "heldout_char_accuracy": 0.5211111111111111
     },
     {
       "epoch": 17,
-      "mean_train_batch_loss": 1.575817090839458,
-      "validation_loss": 1.656541109085083,
-      "validation_bits_per_char": 2.389883643105753,
-      "validation_char_accuracy": 0.53125
+      "mean_train_batch_loss": 1.5775709863596907,
+      "heldout_loss": 1.6956915537516275,
+      "heldout_bits_per_char": 2.446365795474774,
+      "heldout_char_accuracy": 0.5184722222222222
     },
     {
       "epoch": 18,
-      "mean_train_batch_loss": 1.5677286778499062,
-      "validation_loss": 1.6687216758728027,
-      "validation_bits_per_char": 2.407456486405613,
-      "validation_char_accuracy": 0.5320870535714286
+      "mean_train_batch_loss": 1.5689071433541055,
+      "heldout_loss": 1.6955225308736166,
+      "heldout_bits_per_char": 2.446121947006871,
+      "heldout_char_accuracy": 0.5211805555555555
     },
     {
       "epoch": 19,
-      "mean_train_batch_loss": 1.55938499608698,
-      "validation_loss": 1.6592750549316406,
-      "validation_bits_per_char": 2.3938278932206405,
-      "validation_char_accuracy": 0.5308314732142857
+      "mean_train_batch_loss": 1.5647084598313086,
+      "heldout_loss": 1.688201864030626,
+      "heldout_bits_per_char": 2.4355604572564884,
+      "heldout_char_accuracy": 0.5214583333333334
     },
     {
       "epoch": 20,
-      "mean_train_batch_loss": 1.5494838726784412,
-      "validation_loss": 1.6491078308650426,
-      "validation_bits_per_char": 2.3791596894801526,
-      "validation_char_accuracy": 0.5345982142857143
+      "mean_train_batch_loss": 1.5582453168113717,
+      "heldout_loss": 1.6863984722561307,
+      "heldout_bits_per_char": 2.432958712886644,
+      "heldout_char_accuracy": 0.5214583333333334
     },
     {
       "epoch": 21,
-      "mean_train_batch_loss": 1.5494507642501654,
-      "validation_loss": 1.6481009551456995,
-      "validation_bits_per_char": 2.3777070748730647,
-      "validation_char_accuracy": 0.5369698660714286
+      "mean_train_batch_loss": 1.5520493959814,
+      "heldout_loss": 1.6894809060626559,
+      "heldout_bits_per_char": 2.4374057248531864,
+      "heldout_char_accuracy": 0.5245833333333333
     },
     {
       "epoch": 22,
-      "mean_train_batch_loss": 1.5437614400832294,
-      "validation_loss": 1.650209835597447,
-      "validation_bits_per_char": 2.3807495462426287,
-      "validation_char_accuracy": 0.5364118303571429
+      "mean_train_batch_loss": 1.5456202994023138,
+      "heldout_loss": 1.68183467441135,
+      "heldout_bits_per_char": 2.426374544368359,
+      "heldout_char_accuracy": 0.5238194444444444
     },
     {
       "epoch": 23,
-      "mean_train_batch_loss": 1.530466174695175,
-      "validation_loss": 1.6509013516562325,
-      "validation_bits_per_char": 2.3817471930313334,
-      "validation_char_accuracy": 0.5334821428571429
+      "mean_train_batch_loss": 1.5491659664898179,
+      "heldout_loss": 1.6867242421044244,
+      "heldout_bits_per_char": 2.4334286994312486,
+      "heldout_char_accuracy": 0.5221527777777778
     },
     {
       "epoch": 24,
-      "mean_train_batch_loss": 1.5342718170722947,
-      "validation_loss": 1.643277338572911,
-      "validation_bits_per_char": 2.3707480671643526,
-      "validation_char_accuracy": 0.5343191964285714
+      "mean_train_batch_loss": 1.541806934591538,
+      "heldout_loss": 1.6812459341684978,
+      "heldout_bits_per_char": 2.4255251717396242,
+      "heldout_char_accuracy": 0.5245833333333333
     },
     {
       "epoch": 25,
-      "mean_train_batch_loss": 1.5238976632904573,
-      "validation_loss": 1.6369050911494665,
-      "validation_bits_per_char": 2.361554857407232,
-      "validation_char_accuracy": 0.5339006696428571
+      "mean_train_batch_loss": 1.536167077824939,
+      "heldout_loss": 1.6800595993465848,
+      "heldout_bits_per_char": 2.4238136523752165,
+      "heldout_char_accuracy": 0.5255555555555556
     },
     {
       "epoch": 26,
-      "mean_train_batch_loss": 1.5219020333102284,
-      "validation_loss": 1.6502936226981026,
-      "validation_bits_per_char": 2.380870425477235,
-      "validation_char_accuracy": 0.5350167410714286
+      "mean_train_batch_loss": 1.52783415033482,
+      "heldout_loss": 1.6864121336407132,
+      "heldout_bits_per_char": 2.432978422098433,
+      "heldout_char_accuracy": 0.5220833333333333
     },
     {
       "epoch": 27,
-      "mean_train_batch_loss": 1.515373863244895,
-      "validation_loss": 1.6415088517325265,
-      "validation_bits_per_char": 2.3681966799698526,
-      "validation_char_accuracy": 0.5387834821428571
+      "mean_train_batch_loss": 1.5250955914729274,
+      "heldout_loss": 1.682341578801473,
+      "heldout_bits_per_char": 2.4271058528181944,
+      "heldout_char_accuracy": 0.5271527777777778
     },
     {
       "epoch": 28,
-      "mean_train_batch_loss": 1.513669665871809,
-      "validation_loss": 1.63776775768825,
-      "validation_bits_per_char": 2.3627994221446755,
-      "validation_char_accuracy": 0.5354352678571429
+      "mean_train_batch_loss": 1.5237972843887595,
+      "heldout_loss": 1.6827104706234401,
+      "heldout_bits_per_char": 2.427638051220371,
+      "heldout_char_accuracy": 0.5249305555555556
     },
     {
       "epoch": 29,
-      "mean_train_batch_loss": 1.507057093048934,
-      "validation_loss": 1.6419062273842948,
-      "validation_bits_per_char": 2.368769971852029,
-      "validation_char_accuracy": 0.5373883928571429
+      "mean_train_batch_loss": 1.5166101240630572,
+      "heldout_loss": 1.6847043980492487,
+      "heldout_bits_per_char": 2.4305146804294773,
+      "heldout_char_accuracy": 0.5227083333333333
     },
     {
       "epoch": 30,
-      "mean_train_batch_loss": 1.5127763998655912,
-      "validation_loss": 1.6491017171314784,
-      "validation_bits_per_char": 2.379150869227058,
-      "validation_char_accuracy": 0.537109375
+      "mean_train_batch_loss": 1.5197894040533961,
+      "heldout_loss": 1.6754954528808594,
+      "heldout_bits_per_char": 2.4172289809032237,
+      "heldout_char_accuracy": 0.5229166666666667
     }
   ],
   "model_file": "model.json",
