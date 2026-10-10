@@ -36,7 +36,7 @@ public final class AimengHomeActivity extends Activity {
         root.addView(card("AIMENG 神经元"));
         root.addView(card("手机本地推理 · CPU + 可选 OpenCL GPU · 不调用 MCNPU/NPU"));
         root.addView(card("统一手机模型包：AIMENG .aimg（二进制头、压缩权重载荷、SHA-256 校验）。旧版 mobile_diffusion.json 仍可导入；.pth 不作为手机运行格式。"));
-        button(root, "打开本地聊天", ChatActivity.class);
+        button(root, "打开本地聊天", AimengChatActivity.class);
         button(root, "打开神经元运行台 / 导入模型", SparseDiffusionActivity.class);
         button(root, "查看扩散步骤与神经元活动", DiffusionProbeActivity.class);
         button(root, "打开监控说明", DiffusionMonitorActivity.class);
