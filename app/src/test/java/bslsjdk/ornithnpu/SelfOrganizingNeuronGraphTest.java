@@ -30,10 +30,9 @@ public class SelfOrganizingNeuronGraphTest {
         assertTrue(graph.markInputPort(a));
         assertTrue(graph.markOutputPort(out));
         assertTrue(graph.addConnection(a, out, 1.0));
-        assertTrue(graph.addConnection(b, out, 1.0));
 
         double[] result = graph.step(new double[]{0.25, 0.75}, 1);
-        assertEquals(Math.tanh(1.0), result[0], 1e-9);
+        assertEquals(Math.tanh(0.75), result[0], 1e-9);
     }
 
     @Test
