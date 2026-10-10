@@ -313,3 +313,18 @@ Ornith-1.5-9B-MLX-4bit：
 2. 对比优化前后分配次数/GC 与同一数据集的 epoch/s、样本/s、最终 MSE；没有真机数据时明确标注未测。
 3. 继续分析 epoch 热路径：训练/验证 MSE 的重复前向、CPU/GPU 校准开销、可复用的 GPU 输出 staging；仅在误差与速度对照通过时扩大 GPU 覆盖范围。
 4. 如需加速 GridWorld QNet，必须单独实现并验证该模型的真实执行路径；独立路由基准或 NPU MatMul probe 不构成训练加速证据。
+
+## 2026-10-10 VN-Mobile 5.0 integration checkpoint
+
+- User provided the VN-Mobile 5.0 design and asked to use it to improve the existing neuron workbench.
+- Work remains isolated to bslsjdk/ai, branch feat/mobile-neuron-unit-runtime; do not modify bslsjdk/mcnpu or the separate bslsjdk/aimeng training repository.
+- Added app/src/main/java/bslsjdk/mcnpu/VnWaveField.java: a separate, bounded experimental engine with directed primitive-array edges, persistent energy/phase/activation state, cosine phase modulation, bounded phase updates, a top-k active-source budget, finite input checks, edge/tick/node caps, and a conservative primitive-payload estimate.
+- Added app/src/test/java/bslsjdk/mcnpu/VnWaveFieldTest.java: directed propagation, bounded long-run state, active-source cap, deterministic snapshots, copy isolation, invalid input, quiescent zero-energy background, and 2,048-node storage estimate.
+- Added a dedicated VN 波场 page in NeuronLabActivity. It uses the existing trained hidden activations as the disturbance seed, builds up to four outgoing similarity-selected edges per hidden unit, keeps wave state between button presses, and reports energy/phase/activation snapshots. It does not mutate the trained network weights.
+- Wave execution is deliberately user-triggered and capped at 128 ticks per action. Do not implement an always-on background loop until phone power/thermal cost and idle behavior have been measured.
+- Similarity-derived edges are only a heuristic, not a learned semantic router. Energy is not confidence, and a stable high-energy state is not proof of a correct answer.
+- Added docs/VN_MOBILE_5_IMPLEMENTATION.md and linked it from the branch README.
+- Updated .github/workflows/build.yml to trigger pushes on feat/mobile-neuron-unit-runtime and added gradle :app:testReleaseUnitTest before native/APK packaging.
+- Commits made for this integration include: 7ae5b8f (engine), 5102853 (tests), 99fdc34 (UI), b85362e / 27f6717 (memory estimate correction), b31c250 / 1ae6237 (CI trigger and unit-test step). Later commits may supersede these exact heads.
+- Verification status at this checkpoint: GitHub API showed no commit status checks for the branch commit yet. Do not claim the new tests, Java compile, APK build, signed APK publication, or real-phone behavior have passed until current-run evidence is available.
+- Next actions: inspect current CI run/failure, fix compile/test failures; then benchmark a deterministic associative-retrieval task against a non-wave baseline with the same active-source budget, and measure RSS/PSS/HWM on-device. Keep the whole Android process below 4 GiB; the proposed 2 GiB VN budget is a future stricter target, not current proof.
