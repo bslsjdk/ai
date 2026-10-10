@@ -156,6 +156,9 @@ public final class SparseDiffusionMobileModel {
                 ids[j - from] = id == null ? 0 : id;
             }
             float[] logits = forward(ids);
+            // Vocabulary ID 0 is <unk>, a training fallback rather than printable output.
+            // Suppress it at decode time so the chat UI never leaks literal "<unk>" markers.
+            if (logits.length > 0) logits[0] = -Float.MAX_VALUE;
             int next = sample(logits, 0.8f, rng);
             if (next >= 0 && next < itos.length) {
                 lastTrace.add(new LearningTrace(lastPooled.clone(), probabilities(logits, 0.8f), next));
