@@ -845,7 +845,9 @@ public final class GridWorldLabActivity extends Activity {
 
     private static void observeInto(double[] s, int pos, int target, Set<Integer> mapWalls,
                                     List<Integer> history, double[] wallFeatures) {
-        java.util.Arrays.fill(s, 0.0);
+        // Local features and map cells are overwritten below. Clear only the history
+        // tail, whose unused slots must not retain the previous observation.
+        java.util.Arrays.fill(s, BASE_FEATURES + MAP_FEATURES, INPUT_SIZE, 0.0);
         int x = pos % SIZE, y = pos / SIZE, gx = target % SIZE, gy = target / SIZE;
         s[0] = x / (double)(SIZE - 1); s[1] = y / (double)(SIZE - 1);
         s[2] = gx / (double)(SIZE - 1); s[3] = gy / (double)(SIZE - 1);
