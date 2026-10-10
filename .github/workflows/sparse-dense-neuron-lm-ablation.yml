@@ -43,7 +43,7 @@ jobs:
             --output-dir experiments/sparse-dense-neuron-lm/latest \
             --seeds 20261010 20261011 20261012 \
             --epochs 20 --batch-size 128 --learning-rate 0.025 \
-            --input-edges 16 --output-edges 12 \
+            --input-edges 18 --output-edges 13 \
             2>&1 | tee experiments/sparse-dense-neuron-lm/latest/terminal.log
           python - <<'PY'
           import json
