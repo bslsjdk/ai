@@ -689,6 +689,11 @@ public final class NeuronLabActivity extends Activity {
                 new Intent(NeuronLabActivity.this, NeuronIndividualManagerActivity.class)));
         quick.addView(individuals, params(-1, 50, 0, 8, 0, 0));
 
+        Button recurrentLanguage = primaryButton("超级神经元循环语言实验 · 10,000 步");
+        recurrentLanguage.setOnClickListener(v -> startActivity(
+                new Intent(NeuronLabActivity.this, bslsjdk.ornithnpu.SuperNeuronLabActivity.class)));
+        quick.addView(recurrentLanguage, params(-1, 50, 0, 8, 0, 0));
+
         Button gridWorld = primaryButton("打开迷宫实验 · 观看神经网络学习");
         gridWorld.setOnClickListener(v -> startActivity(
                 new Intent(NeuronLabActivity.this, GridWorldLabActivity.class)));
