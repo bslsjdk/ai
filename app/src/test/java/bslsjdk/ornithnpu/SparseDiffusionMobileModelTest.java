@@ -33,7 +33,7 @@ public class SparseDiffusionMobileModelTest {
     }
 
     private File makeBundle() throws Exception {
-        final int neurons = 8, width = 4, vocab = 3, fanout = 2;
+        final int neurons = 8, width = 4, vocab = 4, fanout = 2;
         JSONObject root = new JSONObject();
         root.put("format", "aimeng-mobile-diffusion-json-v1");
         JSONObject config = new JSONObject();
@@ -48,9 +48,10 @@ public class SparseDiffusionMobileModelTest {
         JSONObject stoi = new JSONObject();
         stoi.put("a", 1);
         stoi.put("b", 2);
+        stoi.put("🙂", 3);
         root.put("stoi", stoi);
         JSONArray itos = new JSONArray();
-        itos.put("<unk>"); itos.put("a"); itos.put("b");
+        itos.put("<unk>"); itos.put("a"); itos.put("b"); itos.put("🙂");
         root.put("itos", itos);
 
         JSONObject ts = new JSONObject();
@@ -86,6 +87,9 @@ public class SparseDiffusionMobileModelTest {
         SparseDiffusionMobileModel model = new SparseDiffusionMobileModel();
         model.load(bundle);
         assertTrue(model.isLoaded());
+        float[] unicodeLogits = model.debugLogits("a🙂");
+        assertEquals(4, unicodeLogits.length);
+        for (float value : unicodeLogits) assertTrue("logits must be finite", Float.isFinite(value));
 
         int examples = model.learnFromText("abab", state);
         assertEquals(3, examples);
