@@ -15,8 +15,6 @@ on:
       - "scripts/test_neural_gridworld.py"
       - "scripts/run_gridworld_benchmark_suite.py"
       - ".github/workflows/gridworld-terminal-benchmark.yml"
-    paths-ignore:
-      - "experiments/gridworld/**"
 
 permissions:
   contents: write
