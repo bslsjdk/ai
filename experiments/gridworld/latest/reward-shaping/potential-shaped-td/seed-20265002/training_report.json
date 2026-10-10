@@ -1,12 +1,11 @@
 {
-  "algorithm": "online TD(0)",
   "episodesTrained": 5000,
   "finalEvaluation": {
     "episodes": 500,
-    "mean_optimality_ratio": 0.9988636767160257,
-    "mean_steps_success": 4.243847874720358,
-    "success_rate": 0.894,
-    "successes": 447
+    "mean_optimality_ratio": 1.0,
+    "mean_steps_success": 4.01530612244898,
+    "success_rate": 0.784,
+    "successes": 392
   },
   "initialEvaluation": {
     "episodes": 500,
@@ -16,7 +15,8 @@
     "successes": 70
   },
   "parameterCount": 212,
-  "seed": 20264002,
-  "successDelta": 0.754,
-  "trainingSeconds": 5.843
+  "rewardShaping": "potential-based Manhattan shaping",
+  "seed": 20265002,
+  "successDelta": 0.644,
+  "trainingSeconds": 5.808
 }

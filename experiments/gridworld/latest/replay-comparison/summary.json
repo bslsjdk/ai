@@ -22,7 +22,7 @@
         "finalSuccessRateMin": 0.794,
         "finalSuccessRateStdev": 0.04385835787572939,
         "initialSuccessRateMean": 0.15933333333333333,
-        "meanTrainingSeconds": 4.479666666666667,
+        "meanTrainingSeconds": 5.690333333333333,
         "seedCount": 3,
         "seedsImproved": 3
       },
@@ -49,7 +49,7 @@
           "parameterCount": 212,
           "seed": 20264001,
           "successDelta": 0.554,
-          "trainingSeconds": 4.629
+          "trainingSeconds": 5.647
         },
         {
           "algorithm": "online TD(0)",
@@ -71,7 +71,7 @@
           "parameterCount": 212,
           "seed": 20264002,
           "successDelta": 0.754,
-          "trainingSeconds": 4.658
+          "trainingSeconds": 5.843
         },
         {
           "algorithm": "online TD(0)",
@@ -93,7 +93,7 @@
           "parameterCount": 212,
           "seed": 20264003,
           "successDelta": 0.7120000000000001,
-          "trainingSeconds": 4.152
+          "trainingSeconds": 5.581
         }
       ]
     },
@@ -104,7 +104,7 @@
         "finalSuccessRateMin": 0.736,
         "finalSuccessRateStdev": 0.0786044952064872,
         "initialSuccessRateMean": 0.15933333333333333,
-        "meanTrainingSeconds": 4.9543333333333335,
+        "meanTrainingSeconds": 6.466333333333333,
         "seedCount": 3,
         "seedsImproved": 3
       },
@@ -134,7 +134,7 @@
           "seed": 20264001,
           "successDelta": 0.5640000000000001,
           "targetSyncEnvironmentSteps": 200,
-          "trainingSeconds": 4.848,
+          "trainingSeconds": 6.369,
           "updateEveryEnvironmentSteps": 8,
           "warmupTransitions": 64
         },
@@ -161,7 +161,7 @@
           "seed": 20264002,
           "successDelta": 0.596,
           "targetSyncEnvironmentSteps": 200,
-          "trainingSeconds": 5.169,
+          "trainingSeconds": 6.619,
           "updateEveryEnvironmentSteps": 8,
           "warmupTransitions": 64
         },
@@ -188,7 +188,7 @@
           "seed": 20264003,
           "successDelta": 0.8280000000000001,
           "targetSyncEnvironmentSteps": 200,
-          "trainingSeconds": 4.846,
+          "trainingSeconds": 6.411,
           "updateEveryEnvironmentSteps": 8,
           "warmupTransitions": 64
         }

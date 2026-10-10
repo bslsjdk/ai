@@ -1,0 +1,22 @@
+{
+  "episodesTrained": 5000,
+  "finalEvaluation": {
+    "episodes": 500,
+    "mean_optimality_ratio": 1.0,
+    "mean_steps_success": 4.138755980861244,
+    "success_rate": 0.836,
+    "successes": 418
+  },
+  "initialEvaluation": {
+    "episodes": 500,
+    "mean_optimality_ratio": 1.0,
+    "mean_steps_success": 1.1071428571428572,
+    "success_rate": 0.056,
+    "successes": 28
+  },
+  "parameterCount": 212,
+  "rewardShaping": "potential-based Manhattan shaping",
+  "seed": 20265003,
+  "successDelta": 0.7799999999999999,
+  "trainingSeconds": 5.529
+}

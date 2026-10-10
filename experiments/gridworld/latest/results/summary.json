@@ -16,7 +16,7 @@
     "success_rate": 1.0,
     "successes": 18
   },
-  "elapsedSeconds": 22.079,
+  "elapsedSeconds": 29.499,
   "episodesPerSeed": 5000,
   "format": "aimeng-gridworld-suite-report/v1",
   "limitations": [

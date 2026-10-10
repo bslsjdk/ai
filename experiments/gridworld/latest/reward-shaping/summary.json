@@ -1,0 +1,195 @@
+{
+  "bfsOracle": {
+    "episodes": 500,
+    "mean_steps_success": 4.504,
+    "note": "BFS oracle upper bound; not a learned model",
+    "success_rate": 1.0,
+    "successes": 500
+  },
+  "episodesPerSeed": 5000,
+  "evaluation": "100 fixed-seed held-out maps, 5 starts per map, exploration disabled",
+  "format": "aimeng-potential-shaping-report/v1",
+  "limitations": [
+    "Only a small navigation control task, not a language-model benchmark.",
+    "Manhattan potential is observable but imperfect around obstacles; evaluate on held-out maps.",
+    "Three seeds are exploratory evidence, not statistical proof."
+  ],
+  "methods": {
+    "plain-td": {
+      "aggregate": {
+        "finalSuccessRateMax": 0.828,
+        "finalSuccessRateMean": 0.816,
+        "finalSuccessRateMin": 0.792,
+        "finalSuccessRateStdev": 0.016970562748477105,
+        "initialSuccessRateMean": 0.068,
+        "meanTrainingSeconds": 5.766,
+        "seedCount": 3,
+        "seedsImproved": 3
+      },
+      "description": "212-parameter MLP, original reward",
+      "parameterCount": 212,
+      "perSeed": [
+        {
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9988776655443322,
+            "mean_steps_success": 4.0,
+            "success_rate": 0.792,
+            "successes": 396
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 1.0,
+            "success_rate": 0.008,
+            "successes": 4
+          },
+          "parameterCount": 212,
+          "rewardShaping": "none",
+          "seed": 20265001,
+          "successDelta": 0.784,
+          "trainingSeconds": 5.805
+        },
+        {
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9956483398512385,
+            "mean_steps_success": 4.118357487922705,
+            "success_rate": 0.828,
+            "successes": 414
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 2.2,
+            "success_rate": 0.14,
+            "successes": 70
+          },
+          "parameterCount": 212,
+          "rewardShaping": "none",
+          "seed": 20265002,
+          "successDelta": 0.688,
+          "trainingSeconds": 5.815
+        },
+        {
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 0.9974311785905989,
+            "mean_steps_success": 4.0144927536231885,
+            "success_rate": 0.828,
+            "successes": 414
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 1.1071428571428572,
+            "success_rate": 0.056,
+            "successes": 28
+          },
+          "parameterCount": 212,
+          "rewardShaping": "none",
+          "seed": 20265003,
+          "successDelta": 0.7719999999999999,
+          "trainingSeconds": 5.678
+        }
+      ]
+    },
+    "potential-shaped-td": {
+      "aggregate": {
+        "finalSuccessRateMax": 0.93,
+        "finalSuccessRateMean": 0.85,
+        "finalSuccessRateMin": 0.784,
+        "finalSuccessRateStdev": 0.06042074698865174,
+        "initialSuccessRateMean": 0.068,
+        "meanTrainingSeconds": 5.526666666666666,
+        "seedCount": 3,
+        "seedsImproved": 3
+      },
+      "description": "same MLP and TD(0), with potential-based Manhattan reward shaping",
+      "parameterCount": 212,
+      "perSeed": [
+        {
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 4.275268817204301,
+            "success_rate": 0.93,
+            "successes": 465
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 1.0,
+            "success_rate": 0.008,
+            "successes": 4
+          },
+          "parameterCount": 212,
+          "rewardShaping": "potential-based Manhattan shaping",
+          "seed": 20265001,
+          "successDelta": 0.922,
+          "trainingSeconds": 5.243
+        },
+        {
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 4.01530612244898,
+            "success_rate": 0.784,
+            "successes": 392
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 2.2,
+            "success_rate": 0.14,
+            "successes": 70
+          },
+          "parameterCount": 212,
+          "rewardShaping": "potential-based Manhattan shaping",
+          "seed": 20265002,
+          "successDelta": 0.644,
+          "trainingSeconds": 5.808
+        },
+        {
+          "episodesTrained": 5000,
+          "finalEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 4.138755980861244,
+            "success_rate": 0.836,
+            "successes": 418
+          },
+          "initialEvaluation": {
+            "episodes": 500,
+            "mean_optimality_ratio": 1.0,
+            "mean_steps_success": 1.1071428571428572,
+            "success_rate": 0.056,
+            "successes": 28
+          },
+          "parameterCount": 212,
+          "rewardShaping": "potential-based Manhattan shaping",
+          "seed": 20265003,
+          "successDelta": 0.7799999999999999,
+          "trainingSeconds": 5.529
+        }
+      ]
+    }
+  },
+  "randomBaseline": {
+    "episodes": 500,
+    "mean_steps_success": 17.02906976744186,
+    "success_rate": 0.344,
+    "successes": 172
+  },
+  "seeds": [
+    20265001,
+    20265002,
+    20265003
+  ],
+  "trainingSchedule": "identical pre-generated map/start sequence per seed for both methods"
+}

@@ -1,0 +1,22 @@
+{
+  "episodesTrained": 5000,
+  "finalEvaluation": {
+    "episodes": 500,
+    "mean_optimality_ratio": 0.9988776655443322,
+    "mean_steps_success": 4.0,
+    "success_rate": 0.792,
+    "successes": 396
+  },
+  "initialEvaluation": {
+    "episodes": 500,
+    "mean_optimality_ratio": 1.0,
+    "mean_steps_success": 1.0,
+    "success_rate": 0.008,
+    "successes": 4
+  },
+  "parameterCount": 212,
+  "rewardShaping": "none",
+  "seed": 20265001,
+  "successDelta": 0.784,
+  "trainingSeconds": 5.805
+}

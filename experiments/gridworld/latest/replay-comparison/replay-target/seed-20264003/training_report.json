@@ -21,7 +21,7 @@
   "seed": 20264003,
   "successDelta": 0.8280000000000001,
   "targetSyncEnvironmentSteps": 200,
-  "trainingSeconds": 4.846,
+  "trainingSeconds": 6.411,
   "updateEveryEnvironmentSteps": 8,
   "warmupTransitions": 64
 }
