@@ -31,31 +31,29 @@ def build_cases():
             expr, ans = f"{x} / {y}", x // y
         add("arithmetic", f"Calculate exactly: {expr}. Return only the integer answer.", ans, i + 1)
 
-    # Distinct logical cases: varied predicates, directions and entailment status.
-    subjects = ["dax", "nims", "peks", "glips", "toves", "rins", "morks", "lums"]
-    groups = ["wugs", "zors", "vims", "jeks", "sarns", "drels", "kets", "fens"]
-    props = ["green", "tall", "round", "warm", "silent", "heavy", "bright", "smooth"]
+    # Distinct logical cases: vary vocabulary and wording, with no duplicated examples.
+    subjects = ["dax", "nims", "peks", "glips", "toves", "rins", "morks", "lums",
+                "fips", "jarns", "kelds", "vorks", "splets", "yurks", "baffs", "zints"]
+    groups = ["wugs", "zors", "vims", "jeks", "sarns", "drels", "kets", "fens",
+              "nolls", "prims", "garns", "threls", "mivets", "dorns", "plins", "quops"]
+    props = ["green", "tall", "round", "warm", "silent", "heavy", "bright", "smooth",
+             "cold", "soft", "rapid", "calm", "rough", "clear", "deep", "light"]
     for i in range(16):
-        a, b, prop = subjects[i % 8], groups[i % 8], props[i % 8]
+        a, b, prop = subjects[i], groups[i], props[i]
         if i % 4 == 0:
             premise = f"Every {a} is a {b}. Every {b} is {prop}."
             question, answer = f"Must every {a} be {prop}?", "yes"
         elif i % 4 == 1:
             premise = f"No {b} is {prop}. Every {a} is a {b}."
-            question, answer = f"Can a {a} be {prop} under these rules?", "no"
+            question, answer = f"Is it possible for an {a} to be {prop} under these rules?", "no"
         elif i % 4 == 2:
-            premise = f"Every {a} is {b}. Some {b} are {prop}."
-            question, answer = f"Does it necessarily follow that some {a} are {prop}?", "no"
+            premise = f"Every {a} is a {b}. Some {b} are {prop}."
+            question, answer = f"Do the premises guarantee that at least one {a} is {prop}?", "no"
         else:
             premise = f"Some {a} are {b}. Every {b} is {prop}."
-            question, answer = f"Must at least one {a} be {prop}?", "yes"
-        # Vary wording and premise order to avoid a single memorized surface template.
-        if i % 2:
-            question = question.replace("Must", "Does it follow that").replace("Can a", "Is it possible for a")
-            instruction = "Answer with exactly yes or no."
-        else:
-            instruction = "Reply only yes or no."
-        add("deduction", f"Formal logic. Treat the statements as the only facts. {premise} {question} {instruction}", answer, i + 1)
+            question, answer = f"Does at least one {a} have to be {prop}?", "yes"
+        instruction = "Treat the statements as the only facts. Answer with exactly yes or no."
+        add("deduction", f"Formal logic. {premise} {question} {instruction}", answer, i + 1)
 
     # Arithmetic-sequence extrapolation, with a range of starting points and steps.
     for i in range(12):
