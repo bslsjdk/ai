@@ -192,3 +192,14 @@ C. 共享核心、少量专属参数、稀疏激活的紧凑版本。
 - 手机实测总进程内存始终低于 4 GiB。
 
 **结论：** 二代超级神经元是面向语言学习的模块化计算单元。它应能整合多种语言相关信号、维护有限上下文、生成多路有类型的输出，并与大量其他单元协作形成更复杂的语言系统。它要挑战的是“简单单元缺乏丰富交互能力”这一工程限制，但是否比标准语言模型更有效，必须通过可复现的训练与基准对照证明。
+
+## Character-level local-learning and evolutionary baseline (2026-10-10)
+
+- `CharacterTokenizer` maps Unicode code points in a supplied story to stable character IDs. The model output dimension equals the fitted character vocabulary size; every predicted ID is checked against that bound.
+- `SuperNeuronV2` keeps a bounded per-hidden-unit eligibility trace:
+  `trace[h] = clamp(0.9 * trace[h] + activation[h], -10, 10)`.
+  Delayed scalar reward updates only parameters owned by that individual. The trainer uses supervised cross-entropy gradients inside each `SuperNeuronV2`; token vectors are fixed input coding, so no gradient is propagated through the population or across a retained sequence tape.
+- `SuperNeuronEvolutionPool` divides a step budget among independent individuals, ranks them on a held-out suffix, keeps elites, then uses parameter crossover and bounded mutation to create the next population. The pool itself performs no global backpropagation.
+- The Android lab has a 10,000-update character-story benchmark with population size 4. It writes a JSON memory report every 1,000 updates and periodically saves the current trainer/tokenizer checkpoint.
+- PSS uses `Debug.getPss()`; RSS is read from `/proc/self/status` (`VmRSS`) because Android's public `Debug` API does not provide a portable `Debug.getRss()` method. If PSS exceeds 2.5 GiB, the lab attempts to persist the checkpoint/report and stops the run.
+- The 2.5 GiB threshold is a guardrail, not proof of safety. Real device measurements remain required; this experiment does not claim language generalization from one short story.
