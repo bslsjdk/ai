@@ -60,7 +60,7 @@ jobs:
             --text-file experiments/real-text-baselines/latest/alice.txt \
             --output-dir experiments/real-text-baselines/latest \
             --context 16 --hidden 64 --epochs 30 --steps-per-epoch 400 \
-            --batch-size 256 --learning-rate 0.001 --ngram-alpha 0.1 \
+            --batch-size 256 --learning-rate 0.001 \
             --seeds 20261010 20261011 20261012 \
             2>&1 | tee experiments/real-text-baselines/latest/terminal.log
       - name: Commit benchmark results
