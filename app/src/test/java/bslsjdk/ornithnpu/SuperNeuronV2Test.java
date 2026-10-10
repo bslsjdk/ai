@@ -22,6 +22,30 @@ public class SuperNeuronV2Test {
     }
 
     @Test
+    public void batchInferenceMatchesIndependentScalarLanesOnCpuFallback() {
+        long seed = 54321L;
+        SuperNeuronV2 batched = new SuperNeuronV2(3, 8, 5, seed);
+        SuperNeuronV2 scalar = new SuperNeuronV2(3, 8, 5, seed);
+        double[][] inputs = {
+                {0.2, -0.4, 0.8},
+                {-0.1, 0.7, 0.3},
+                {0.9, 0.1, -0.5}
+        };
+        double[][] laneStates = new double[inputs.length][8];
+        double[][] actual = batched.forwardBatch(inputs, laneStates);
+        assertEquals("CPU_BATCH_SMALL_OR_NPU_OFFLINE", batched.getLastBatchBackend());
+        assertEquals(inputs.length, actual.length);
+        assertEquals(inputs.length, batched.getForwardSteps());
+
+        for (int row = 0; row < inputs.length; row++) {
+            scalar.resetState();
+            double[] expected = scalar.forward(inputs[row]);
+            assertArrayEquals(expected, actual[row], 1e-12);
+            for (double value : actual[row]) assertTrue(Double.isFinite(value));
+        }
+    }
+
+    @Test
     public void supervisedTrainingReducesLossOnTinyNextTokenTask() {
         SuperNeuronV2 neuron = new SuperNeuronV2(1, 12, 2, 777L);
         double firstLoss = 0.0;
