@@ -20,7 +20,7 @@ import java.util.concurrent.Executors;
 
 /**
  * AIMENG's standalone phone-local neuron runtime.
- * This screen deliberately accepts only AIMENG mobile_diffusion.json bundles,
+ * This screen accepts the canonical AIMENG .aimg bundle and legacy mobile_diffusion.json bundles,
  * never Ornith safetensors, MLX packages, or GGUF models.
  */
 public final class SparseDiffusionActivity extends Activity {
@@ -94,7 +94,7 @@ public final class SparseDiffusionActivity extends Activity {
 
         addSectionTitle(root, "1 · 模型");
         pickButton = new Button(this);
-        pickButton.setText("导入 AIMENG 模型包（mobile_diffusion.json）");
+        pickButton.setText("导入 AIMENG 模型包（.aimg / 旧版 .json）");
         pickButton.setOnClickListener(v -> chooseModel());
         root.addView(pickButton, spaced());
 
@@ -251,7 +251,7 @@ public final class SparseDiffusionActivity extends Activity {
         File file = modelFile();
         if (!file.isFile()) file = new File(getFilesDir(), "aimeng-mobile-diffusion.json");
         if (!file.isFile()) {
-            status.setText("尚未导入模型。先取得 AIMENG 导出的 mobile_diffusion.json；不需要 9B 模型。");
+            status.setText("尚未导入模型。优先选择 AIMENG 导出的 .aimg；旧版 mobile_diffusion.json 也兼容。");
             return;
         }
         setBusy(true, "正在恢复本机 AIMENG 模型和学习记录…");
