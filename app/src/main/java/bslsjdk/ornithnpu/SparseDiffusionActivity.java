@@ -298,7 +298,10 @@ public final class SparseDiffusionActivity extends Activity {
                         out.write(b, 0, n);
                     }
                 }
-                // Validate before replacing any previously working model.
+                // Validate in an isolated candidate first. A malformed import must
+                // never unload or partially overwrite the currently working model.
+                SparseDiffusionMobileModel candidate = new SparseDiffusionMobileModel();
+                candidate.load(temp);
                 model.load(temp);
                 model.loadLearningState(learningFile());
                 model.loadRuntimeState(runtimeStateFile());
