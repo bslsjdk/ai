@@ -160,7 +160,8 @@ public final class SuperNeuronNetworkV2 {
     public long estimatedStorageBytes() {
         long ints = (long) head.length + to.length + channel.length + next.length
                 + pendingStamp.length + currentStamp.length + pendingTouched.length
-                + currentTouched.length + top.length + lastActive.length;
+                + currentTouched.length + top.length + lastActive.length
+                + channelOutputStamp.length;
         long doubles = (long) bias.length + state.length + activation.length
                 + sharedWeight.length + sharedBias.length + edgeWeight.length
                 + pending.length + current.length + score.length
