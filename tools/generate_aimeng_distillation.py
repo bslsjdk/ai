@@ -116,46 +116,51 @@ def main():
         raise SystemExit("Too few eligible examples; provide a longer text file.")
 
     records = []
+    skipped = 0
+    batch_size = 8
     with torch.inference_mode():
-        for n, (index, end, context) in enumerate(examples):
-            # Re-tokenize the exact context, so logits are conditioned on the same text
-            # that will be shown to the character-level student.
-            ctx_ids = tokenizer(context, add_special_tokens=False, return_tensors="pt")["input_ids"].to(device)
-            if ctx_ids.shape[1] == 0:
-                skipped += 1
-                continue
-            logits = model(input_ids=ctx_ids).logits[0, -1].float()
-            probs = torch.softmax(logits, dim=-1)
-            by_char = {}
-            mapped_mass = 0.0
-            for token_id, char in token_to_char.items():
-                p = float(probs[token_id].item())
-                if p > 0:
-                    by_char[char] = by_char.get(char, 0.0) + p
-                    mapped_mass += p
-            if mapped_mass <= 1.0e-12:
-                skipped += 1
-                continue
-            ranked = sorted(by_char.items(), key=lambda item: item[1], reverse=True)[:args.top_k]
-            top_mass = sum(p for _, p in ranked)
-            if top_mass <= 1.0e-12:
-                skipped += 1
-                continue
-            target_probs = {char: p / top_mass for char, p in ranked}
-            actual_next = text[end] if end < len(text) else ""
-            split = "eval" if end >= eval_start else "train"
-            records.append({
-                "type": "example",
-                "split": split,
-                "context": context,
-                "target_probs": target_probs,
-                "actual_next_char": actual_next,
-                "mapped_mass": mapped_mass,
-                "top_k_mass": top_mass,
-                "teacher": args.model,
-            })
-            if (n + 1) % 100 == 0:
-                print(f"Prepared {n + 1}/{len(examples)} examples")
+        for batch_start in range(0, len(examples), batch_size):
+            batch = examples[batch_start:batch_start + batch_size]
+            contexts = [item[2] for item in batch]
+            batch_tokens = tokenizer(
+                contexts, add_special_tokens=False, padding=True, return_tensors="pt"
+            )
+            input_ids = batch_tokens["input_ids"].to(device)
+            attention_mask = batch_tokens["attention_mask"].to(device)
+            logits = model(input_ids=input_ids, attention_mask=attention_mask).logits.float()
+            lengths = attention_mask.sum(dim=1).tolist()
+            for row_index, (index, end_offset, context) in enumerate(batch):
+                last_logits = logits[row_index, int(lengths[row_index]) - 1]
+                probs = torch.softmax(last_logits, dim=-1)
+                by_char = {}
+                mapped_mass = 0.0
+                for token_id, char in token_to_char.items():
+                    p = float(probs[token_id].item())
+                    if p > 0:
+                        by_char[char] = by_char.get(char, 0.0) + p
+                        mapped_mass += p
+                if mapped_mass <= 1.0e-12:
+                    skipped += 1
+                    continue
+                ranked = sorted(by_char.items(), key=lambda item: item[1], reverse=True)[:args.top_k]
+                top_mass = sum(p for _, p in ranked)
+                if top_mass <= 1.0e-12:
+                    skipped += 1
+                    continue
+                target_probs = {char: p / top_mass for char, p in ranked}
+                actual_next = text[end_offset] if end_offset < len(text) else ""
+                split = "eval" if end_offset >= eval_start else "train"
+                records.append({
+                    "type": "example",
+                    "split": split,
+                    "context": context,
+                    "target_probs": target_probs,
+                    "actual_next_char": actual_next,
+                    "mapped_mass": mapped_mass,
+                    "top_k_mass": top_mass,
+                    "teacher": args.model,
+                })
+            print(f"Prepared {min(batch_start + len(batch), len(examples))}/{len(examples)} examples")
     if not records:
         raise SystemExit("No usable examples generated.")
     output = Path(args.output)
