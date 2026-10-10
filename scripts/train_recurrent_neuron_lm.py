@@ -111,13 +111,15 @@ class RecurrentNeuronLM:
             h = np.tanh(x @ self.wx + h @ self.wh + self.bh) * self.unit_enabled
         current = vocab.get(prefix[-1], vocab.get(" ", 0)) if prefix else 0
         for _ in range(max_chars):
-            x = np.eye(self.vocab_size, dtype=np.float32)[[current]]
-            h = np.tanh(x @ self.wx + h @ self.wh + self.bh) * self.unit_enabled
+            # The current hidden state already consumed the complete prefix.
+            # Predict the next character first; only then consume it into state.
             logits = (h @ self.wy + self.by)[0] / max(temperature, 0.05)
             logits -= logits.max()
             p = np.exp(logits); p /= p.sum()
             current = int(rng.choice(self.vocab_size, p=p))
             text += reverse_vocab[current]
+            x = np.eye(self.vocab_size, dtype=np.float32)[[current]]
+            h = np.tanh(x @ self.wx + h @ self.wh + self.bh) * self.unit_enabled
         return text
 
     def save(self, path, reverse_vocab, metadata, ablation):
