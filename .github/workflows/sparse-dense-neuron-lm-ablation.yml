@@ -1,0 +1,71 @@
+name: Sparse-vs-dense neuron language model ablation
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/mobile-neuron-unit-runtime
+    paths:
+      - "scripts/compare_sparse_dense_neuron_lm.py"
+      - "scripts/train_composed_neuron_lm.py"
+      - ".github/workflows/sparse-dense-neuron-lm-ablation.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sparse-dense-neuron-lm-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install numeric runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+      - name: Validate and run parameter-matched comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile scripts/train_composed_neuron_lm.py scripts/compare_sparse_dense_neuron_lm.py
+          mkdir -p experiments/sparse-dense-neuron-lm/latest
+          python scripts/compare_sparse_dense_neuron_lm.py \
+            --output-dir experiments/sparse-dense-neuron-lm/latest \
+            --seeds 20261010 20261011 20261012 \
+            --epochs 20 --batch-size 128 --learning-rate 0.025 \
+            --input-edges 16 --output-edges 12 \
+            2>&1 | tee experiments/sparse-dense-neuron-lm/latest/terminal.log
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("experiments/sparse-dense-neuron-lm/latest/summary.json")
+          d = json.loads(p.read_text())
+          assert len(d["runs"]) == 6, f"expected 6 runs, got {len(d['runs'])}"
+          assert d["aggregate"]["sparse"]["runs"] == 3
+          assert d["aggregate"]["dense_parameter_matched"]["runs"] == 3
+          print("COMPARISON_REPORT_VALID")
+          PY
+      - name: Commit experiment reports
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add experiments/sparse-dense-neuron-lm/latest
+          if git diff --cached --quiet; then
+            echo "No experiment outputs to commit."
+          else
+            git commit -m "Record sparse-vs-dense neuron LM ablation [skip ci]"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
