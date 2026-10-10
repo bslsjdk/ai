@@ -15,6 +15,9 @@ import android.widget.Toast;
 
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
@@ -28,6 +31,7 @@ import java.util.Locale;
 public final class SuperNeuronLabActivity extends Activity {
     private static final int TOTAL_STEPS = 10000;
     private static final int REQUEST_EXPORT_CHECKPOINT = 5101;
+    private static final int REQUEST_IMPORT_DISTILLATION = 5102;
     private static final int CHUNK_STEPS = 1000;
     private static final long STOP_PSS_BYTES = 2560L * 1024L * 1024L;
     private static final String STORY =
@@ -41,6 +45,7 @@ public final class SuperNeuronLabActivity extends Activity {
     private TextView output;
     private Button runButton;
     private Button batchButton;
+    private Button distillButton;
     private volatile boolean running;
 
     @Override protected void onCreate(Bundle state) {
@@ -82,6 +87,11 @@ public final class SuperNeuronLabActivity extends Activity {
         root.addView(batchButton);
         batchButton.setOnClickListener(v -> startBatchBenchmark());
 
+        distillButton = new Button(this);
+        distillButton.setText("知识蒸馏：导入老师数据并训练学生");
+        root.addView(distillButton);
+        distillButton.setOnClickListener(v -> chooseDistillationFile());
+
         Button exportButton = new Button(this);
         exportButton.setText("导出训练检查点到手机文件夹");
         root.addView(exportButton);
@@ -104,6 +114,7 @@ public final class SuperNeuronLabActivity extends Activity {
         running = true;
         runButton.setEnabled(false);
         batchButton.setEnabled(false);
+        distillButton.setEnabled(false);
         output.setText("正在初始化 tokenizer 与模型……\n");
         Thread worker = new Thread(() -> runTraining(), "aimeng-character-trainer");
         worker.start();
@@ -185,6 +196,7 @@ public final class SuperNeuronLabActivity extends Activity {
                 running = false;
                 runButton.setEnabled(true);
                 batchButton.setEnabled(true);
+                distillButton.setEnabled(true);
                 runButton.setText("再次运行 10,000 步训练");
             });
         }
@@ -195,6 +207,7 @@ public final class SuperNeuronLabActivity extends Activity {
         running = true;
         runButton.setEnabled(false);
         batchButton.setEnabled(false);
+        distillButton.setEnabled(false);
         output.setText("正在检查 NPU 并运行批量前向对照测试……\n");
         new Thread(this::runBatchBenchmark, "aimeng-batch-forward-benchmark").start();
     }
@@ -267,8 +280,195 @@ public final class SuperNeuronLabActivity extends Activity {
                 running = false;
                 runButton.setEnabled(true);
                 batchButton.setEnabled(true);
+                distillButton.setEnabled(true);
             });
         }
+    }
+
+    private static final class DistillExample {
+        final int[] context;
+        final double[] probabilities;
+        DistillExample(int[] context, double[] probabilities) {
+            this.context = context;
+            this.probabilities = probabilities;
+        }
+    }
+
+    private void chooseDistillationFile() {
+        if (running) return;
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        try {
+            startActivityForResult(intent, REQUEST_IMPORT_DISTILLATION);
+        } catch (Throwable error) {
+            Toast.makeText(this, "无法打开文件选择器：" + error.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void runDistillation(Uri uri) {
+        running = true;
+        runOnUiThread(() -> {
+            runButton.setEnabled(false);
+            batchButton.setEnabled(false);
+            distillButton.setEnabled(false);
+            output.setText("正在读取老师知识数据……\n");
+        });
+        new Thread(() -> {
+            try {
+                CharacterTokenizer tokenizer = new CharacterTokenizer(STORY);
+                List<DistillExample> train = new ArrayList<>();
+                List<DistillExample> eval = new ArrayList<>();
+                try (java.io.InputStream stream = getContentResolver().openInputStream(uri);
+                     BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+                    if (reader == null) throw new java.io.IOException("无法读取所选文件");
+                    String first = reader.readLine();
+                    if (first == null) throw new java.io.IOException("文件为空");
+                    JSONObject meta = new JSONObject(first);
+                    if (!"aimeng-character-distillation/v1".equals(meta.optString("format")))
+                        throw new java.io.IOException("文件格式不正确。请使用 tools/generate_aimeng_distillation.py 生成的 JSONL。");
+                    String line;
+                    int lineNo = 1;
+                    while ((line = reader.readLine()) != null) {
+                        lineNo++;
+                        if (line.trim().isEmpty()) continue;
+                        JSONObject row = new JSONObject(line);
+                        if (!"example".equals(row.optString("type"))) continue;
+                        String contextText = row.optString("context", "");
+                        int[] context = tokenizer.encode(contextText);
+                        if (context.length == 0) continue;
+                        double[] probs = new double[CharacterTokenizer.VOCABULARY_SIZE];
+                        JSONObject source = row.optJSONObject("target_probs");
+                        if (source == null) throw new java.io.IOException("第 " + lineNo + " 行缺少 target_probs");
+                        java.util.Iterator<String> keys = source.keys();
+                        while (keys.hasNext()) {
+                            String character = keys.next();
+                            int[] token = tokenizer.encode(character);
+                            if (token.length != 1 || token[0] == 0) continue;
+                            double p = source.optDouble(character, 0.0);
+                            if (Double.isFinite(p) && p > 0.0) probs[token[0]] += p;
+                        }
+                        double sum = 0.0;
+                        for (double p : probs) sum += p;
+                        if (sum <= 1.0e-9) continue;
+                        for (int i = 0; i < probs.length; i++) probs[i] /= sum;
+                        DistillExample example = new DistillExample(context, probs);
+                        if ("eval".equals(row.optString("split"))) eval.add(example);
+                        else train.add(example);
+                        if (train.size() + eval.size() > 50000)
+                            throw new java.io.IOException("样本超过 50,000 条安全上限");
+                    }
+                }
+                if (train.size() < 10 || eval.isEmpty())
+                    throw new java.io.IOException("有效训练样本或验证样本不足。请生成同时包含 train 和 eval 的数据集。");
+                SuperNeuronLanguageTrainer trainer = new SuperNeuronLanguageTrainer(
+                        CharacterTokenizer.VOCABULARY_SIZE, 12, 24, 20261011L);
+                double initialKl = evaluateDistillation(trainer, eval);
+                StringBuilder report = new StringBuilder();
+                report.append("知识蒸馏实验\n")
+                        .append("老师：").append("离线生成的数据集").append("\n")
+                        .append("训练样本：").append(train.size()).append("；独立验证样本：").append(eval.size()).append("\n")
+                        .append("学生参数量：").append(trainer.getParameterCount()).append("；估算存储：")
+                        .append(trainer.estimatedStorageBytes() / 1024).append(" KiB\n")
+                        .append("初始验证 KL：").append(fmt(initialKl)).append("\n")
+                        .append("更新数,平均训练 KL,验证 KL,老师 Top-3 覆盖率\n");
+                publish(report.toString());
+                double runningLoss = 0.0;
+                int chunkCount = 0;
+                int completed = 0;
+                for (DistillExample example : train) {
+                    double ce = trainer.trainSoftTarget(example.context, example.probabilities, 0.008);
+                    double entropy = entropy(example.probabilities);
+                    runningLoss += Math.max(0.0, ce - entropy);
+                    chunkCount++;
+                    completed++;
+                    if (completed % 250 == 0 || completed == train.size()) {
+                        double trainKl = runningLoss / Math.max(1, chunkCount);
+                        double validationKl = evaluateDistillation(trainer, eval);
+                        double top3 = evaluateTop3Coverage(trainer, eval);
+                        report.append(completed).append(',')
+                                .append(fmt(trainKl)).append(',')
+                                .append(fmt(validationKl)).append(',')
+                                .append(fmt(top3 * 100.0)).append("%\n");
+                        saveCheckpoint(trainer);
+                        publish(report.toString());
+                        runningLoss = 0.0;
+                        chunkCount = 0;
+                        if (pssBytes() >= STOP_PSS_BYTES) {
+                            report.append("安全停止：PSS 达到 2.5 GiB，已保存检查点。\n");
+                            break;
+                        }
+                    }
+                }
+                report.append("\n解释：KL 越低越接近老师在本数据集上的字符分布；Top-3 覆盖率表示老师的前三候选中，有多少被学生自己的前三候选覆盖。")
+                        .append("\n注意：本实验只蒸馏老师 tokenizer 中能精确映射到单个已知字符的 token，不能代表完整老师模型能力。")
+                        .append("\n检查点已保存到应用内部空间。要拿到文件，请点“导出训练检查点到手机文件夹”。");
+                publish(report.toString());
+            } catch (Throwable error) {
+                publish("知识蒸馏失败：" + error.getClass().getSimpleName() + ": " + error.getMessage());
+            } finally {
+                runOnUiThread(() -> {
+                    running = false;
+                    runButton.setEnabled(true);
+                    batchButton.setEnabled(true);
+                    distillButton.setEnabled(true);
+                });
+            }
+        }, "aimeng-distillation-trainer").start();
+    }
+
+    private double evaluateDistillation(SuperNeuronLanguageTrainer trainer, List<DistillExample> examples) {
+        double total = 0.0;
+        int count = 0;
+        for (DistillExample example : examples) {
+            double[] predicted = trainer.predictDistribution(example.context);
+            double kl = 0.0;
+            for (int i = 0; i < predicted.length; i++) {
+                double target = example.probabilities[i];
+                if (target > 0.0) kl += target * Math.log(target / Math.max(1.0e-12, predicted[i]));
+            }
+            total += Math.max(0.0, kl);
+            count++;
+        }
+        return total / Math.max(1, count);
+    }
+
+    private double evaluateTop3Coverage(SuperNeuronLanguageTrainer trainer, List<DistillExample> examples) {
+        double matched = 0.0;
+        double total = 0.0;
+        for (DistillExample example : examples) {
+            double[] predicted = trainer.predictDistribution(example.context);
+            int[] studentTop = topIndices(predicted, 3);
+            int[] teacherTop = topIndices(example.probabilities, 3);
+            for (int teacherId : teacherTop) {
+                for (int studentId : studentTop) {
+                    if (teacherId == studentId) { matched++; break; }
+                }
+                total++;
+            }
+        }
+        return matched / Math.max(1.0, total);
+    }
+
+    private static int[] topIndices(double[] values, int k) {
+        int count = Math.min(k, values.length);
+        int[] result = new int[count];
+        boolean[] used = new boolean[values.length];
+        for (int rank = 0; rank < count; rank++) {
+            int best = -1;
+            for (int i = 0; i < values.length; i++) {
+                if (!used[i] && (best < 0 || values[i] > values[best])) best = i;
+            }
+            result[rank] = best;
+            used[best] = true;
+        }
+        return result;
+    }
+
+    private static double entropy(double[] probabilities) {
+        double result = 0.0;
+        for (double p : probabilities) if (p > 0.0) result -= p * Math.log(p);
+        return result;
     }
 
     private void exportCheckpoint() {
@@ -290,8 +490,12 @@ public final class SuperNeuronLabActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != REQUEST_EXPORT_CHECKPOINT || resultCode != RESULT_OK
-                || data == null || data.getData() == null) return;
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        if (requestCode == REQUEST_IMPORT_DISTILLATION) {
+            runDistillation(data.getData());
+            return;
+        }
+        if (requestCode != REQUEST_EXPORT_CHECKPOINT) return;
         Uri destination = data.getData();
         File checkpoint = new File(getFilesDir(), "super-neuron-character-checkpoint.json");
         try (FileInputStream input = new FileInputStream(checkpoint);
