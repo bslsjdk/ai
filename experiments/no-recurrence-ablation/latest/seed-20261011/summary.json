@@ -1,0 +1,236 @@
+{
+  "format": "aimeng-no-recurrence-ablation-report/v1",
+  "architecture": "individually addressable no-recurrence neuron units",
+  "parameter_count": 13964,
+  "hidden_neurons": 64,
+  "context_characters": 64,
+  "vocabulary_size": 76,
+  "unigram_baseline_heldout_loss": 3.1716349290706325,
+  "final_heldout_loss": 2.416808754603068,
+  "final_heldout_bits_per_char": 3.4867180050428783,
+  "final_heldout_char_accuracy": 0.3022916666666667,
+  "wall_seconds": 23.26,
+  "recurrence_enabled": false,
+  "trainable_parameter_count": 9868,
+  "best_validation_epoch": 20,
+  "best_validation_loss": 2.382926736559187,
+  "evaluation_protocol": "85% chronological train / 5% validation for checkpoint selection / 10% final test",
+  "generation_sample": "Alice icele wiot toungencefido ndoulidorethed nshe Alll\n\nshengat d the oro s wis be a do inotheashite m l thinead,”\n serd cong tr at hay t il thathere inged ar, I’se ats,\n\n\nTheroust n as, Howand towatour br d bo pajus Aloooorar telin vemedice Southin aithathaicoithe  ththepe, threntt the f d he ne wandsld",
+  "unit_ablation_loss_delta_mean": 0.007399398750728953,
+  "unit_ablation_loss_delta_max": 0.017293330298529863,
+  "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
+  "history": [
+    {
+      "epoch": 1,
+      "mean_train_batch_loss": 2.7612766079527016,
+      "validation_loss": 2.4190585613250732,
+      "validation_bits_per_char": 3.4899637900436735,
+      "validation_char_accuracy": 0.3159877232142857
+    },
+    {
+      "epoch": 2,
+      "mean_train_batch_loss": 2.447902873973362,
+      "validation_loss": 2.3966072968074252,
+      "validation_bits_per_char": 3.4575734620623764,
+      "validation_char_accuracy": 0.3168247767857143
+    },
+    {
+      "epoch": 3,
+      "mean_train_batch_loss": 2.4280885317362846,
+      "validation_loss": 2.393157754625593,
+      "validation_bits_per_char": 3.45259682466331,
+      "validation_char_accuracy": 0.31473214285714285
+    },
+    {
+      "epoch": 4,
+      "mean_train_batch_loss": 2.428703037595066,
+      "validation_loss": 2.3909365449632918,
+      "validation_bits_per_char": 3.449392296498733,
+      "validation_char_accuracy": 0.3158482142857143
+    },
+    {
+      "epoch": 5,
+      "mean_train_batch_loss": 2.42468408610827,
+      "validation_loss": 2.3901307923453197,
+      "validation_bits_per_char": 3.448229841192602,
+      "validation_char_accuracy": 0.31417410714285715
+    },
+    {
+      "epoch": 6,
+      "mean_train_batch_loss": 2.4230934785756593,
+      "validation_loss": 2.390977382659912,
+      "validation_bits_per_char": 3.4494512128411285,
+      "validation_char_accuracy": 0.3158482142857143
+    },
+    {
+      "epoch": 7,
+      "mean_train_batch_loss": 2.423604219655196,
+      "validation_loss": 2.393590586526053,
+      "validation_bits_per_char": 3.453221269099642,
+      "validation_char_accuracy": 0.31361607142857145
+    },
+    {
+      "epoch": 8,
+      "mean_train_batch_loss": 2.42323353633595,
+      "validation_loss": 2.387446539742606,
+      "validation_bits_per_char": 3.444357283274173,
+      "validation_char_accuracy": 0.3168247767857143
+    },
+    {
+      "epoch": 9,
+      "mean_train_batch_loss": 2.422251810017042,
+      "validation_loss": 2.3888702392578125,
+      "validation_bits_per_char": 3.4464112475044777,
+      "validation_char_accuracy": 0.31570870535714285
+    },
+    {
+      "epoch": 10,
+      "mean_train_batch_loss": 2.417566969276716,
+      "validation_loss": 2.3888469082968578,
+      "validation_bits_per_char": 3.446377588042809,
+      "validation_char_accuracy": 0.31417410714285715
+    },
+    {
+      "epoch": 11,
+      "mean_train_batch_loss": 2.4206278371702257,
+      "validation_loss": 2.387625592095511,
+      "validation_bits_per_char": 3.444615601215769,
+      "validation_char_accuracy": 0.3159877232142857
+    },
+    {
+      "epoch": 12,
+      "mean_train_batch_loss": 2.420855775452219,
+      "validation_loss": 2.3873982429504395,
+      "validation_bits_per_char": 3.4442876057316236,
+      "validation_char_accuracy": 0.31570870535714285
+    },
+    {
+      "epoch": 13,
+      "mean_train_batch_loss": 2.4188617957988754,
+      "validation_loss": 2.3888437066759383,
+      "validation_bits_per_char": 3.4463729690801856,
+      "validation_char_accuracy": 0.31668526785714285
+    },
+    {
+      "epoch": 14,
+      "mean_train_batch_loss": 2.4210422952271378,
+      "validation_loss": 2.38797858783177,
+      "validation_bits_per_char": 3.4451248664139245,
+      "validation_char_accuracy": 0.3168247767857143
+    },
+    {
+      "epoch": 15,
+      "mean_train_batch_loss": 2.420041431610783,
+      "validation_loss": 2.3871947016034807,
+      "validation_bits_per_char": 3.4439939576397505,
+      "validation_char_accuracy": 0.3158482142857143
+    },
+    {
+      "epoch": 16,
+      "mean_train_batch_loss": 2.4166261619888245,
+      "validation_loss": 2.38480315889631,
+      "validation_bits_per_char": 3.440543690836041,
+      "validation_char_accuracy": 0.3158482142857143
+    },
+    {
+      "epoch": 17,
+      "mean_train_batch_loss": 2.42295850260028,
+      "validation_loss": 2.385984012058803,
+      "validation_bits_per_char": 3.442247301837588,
+      "validation_char_accuracy": 0.3148716517857143
+    },
+    {
+      "epoch": 18,
+      "mean_train_batch_loss": 2.4219912455261996,
+      "validation_loss": 2.3878015109470914,
+      "validation_bits_per_char": 3.4448693984705425,
+      "validation_char_accuracy": 0.31459263392857145
+    },
+    {
+      "epoch": 19,
+      "mean_train_batch_loss": 2.418988559170005,
+      "validation_loss": 2.3865765503474643,
+      "validation_bits_per_char": 3.4431021538881765,
+      "validation_char_accuracy": 0.31626674107142855
+    },
+    {
+      "epoch": 20,
+      "mean_train_batch_loss": 2.4149106421507893,
+      "validation_loss": 2.382926736559187,
+      "validation_bits_per_char": 3.4378365856356603,
+      "validation_char_accuracy": 0.3140345982142857
+    },
+    {
+      "epoch": 21,
+      "mean_train_batch_loss": 2.4195037489601723,
+      "validation_loss": 2.3876584597996304,
+      "validation_bits_per_char": 3.444663019289507,
+      "validation_char_accuracy": 0.3148716517857143
+    },
+    {
+      "epoch": 22,
+      "mean_train_batch_loss": 2.4229727030421295,
+      "validation_loss": 2.388641119003296,
+      "validation_bits_per_char": 3.4460806968495192,
+      "validation_char_accuracy": 0.3154296875
+    },
+    {
+      "epoch": 23,
+      "mean_train_batch_loss": 2.4183963421344137,
+      "validation_loss": 2.387429509844099,
+      "validation_bits_per_char": 3.4443327143240503,
+      "validation_char_accuracy": 0.31626674107142855
+    },
+    {
+      "epoch": 24,
+      "mean_train_batch_loss": 2.4194169031688944,
+      "validation_loss": 2.3885506902422224,
+      "validation_bits_per_char": 3.445950235724365,
+      "validation_char_accuracy": 0.31515066964285715
+    },
+    {
+      "epoch": 25,
+      "mean_train_batch_loss": 2.4162306412821635,
+      "validation_loss": 2.3854787349700928,
+      "validation_bits_per_char": 3.4415183410874306,
+      "validation_char_accuracy": 0.3159877232142857
+    },
+    {
+      "epoch": 26,
+      "mean_train_batch_loss": 2.420548674596163,
+      "validation_loss": 2.387767587389265,
+      "validation_bits_per_char": 3.444820457121897,
+      "validation_char_accuracy": 0.31529017857142855
+    },
+    {
+      "epoch": 27,
+      "mean_train_batch_loss": 2.416260956887466,
+      "validation_loss": 2.385632276535034,
+      "validation_bits_per_char": 3.441739854741742,
+      "validation_char_accuracy": 0.31612723214285715
+    },
+    {
+      "epoch": 28,
+      "mean_train_batch_loss": 2.416112221653263,
+      "validation_loss": 2.390249116080148,
+      "validation_bits_per_char": 3.448400546258058,
+      "validation_char_accuracy": 0.31515066964285715
+    },
+    {
+      "epoch": 29,
+      "mean_train_batch_loss": 2.416250965984849,
+      "validation_loss": 2.3895290238516673,
+      "validation_bits_per_char": 3.4473616727710463,
+      "validation_char_accuracy": 0.31473214285714285
+    },
+    {
+      "epoch": 30,
+      "mean_train_batch_loss": 2.420520017459057,
+      "validation_loss": 2.3870421137128557,
+      "validation_bits_per_char": 3.443773819846646,
+      "validation_char_accuracy": 0.31710379464285715
+    }
+  ],
+  "model_file": "model.json",
+  "limitations": "Single public-domain book and character-level prediction. This ablation disables recurrence by fixing Wh to zero; it is not a chat model or general reasoning benchmark."
+}
