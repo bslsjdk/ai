@@ -232,6 +232,18 @@ public final class NeuronWorkspace {
     private long idCounter = 1;
     private final Random random = new Random(20261009L);
 
+    // Training scratch is retained across epochs. The old implementation allocated
+    // gradient matrices every epoch and output/delta arrays for every sample, creating
+    // avoidable GC pressure on mid-range phones.
+    private double[][] gradientInputScratch;
+    private double[] gradientHiddenBiasScratch;
+    private double[][] gradientOutputScratch;
+    private double[] gradientOutputBiasScratch;
+    private double[] trainingOutputScratch;
+    private double[] trainingOutputDeltaScratch;
+    private float[] trainingGpuInputScratch;
+    private float[] trainingGpuWeightScratch;
+
     public NeuronWorkspace(int inputs, int hidden, int outputs) {
         validateArchitecture(inputs, hidden, outputs);
         inputCount = inputs;
@@ -856,12 +868,49 @@ public final class NeuronWorkspace {
                 finalTraining, elapsed, cancelled, earlyStopped, report);
     }
 
+    private void ensureGradientScratch(int hCount) {
+        boolean resize = gradientInputScratch == null || gradientInputScratch.length != hCount
+                || gradientHiddenBiasScratch == null || gradientHiddenBiasScratch.length != hCount
+                || gradientOutputScratch == null || gradientOutputScratch.length != hCount
+                || gradientOutputBiasScratch == null || gradientOutputBiasScratch.length != outputCount
+                || trainingOutputScratch == null || trainingOutputScratch.length != outputCount
+                || trainingOutputDeltaScratch == null || trainingOutputDeltaScratch.length != outputCount;
+        if (resize) {
+            gradientInputScratch = new double[hCount][inputCount];
+            gradientHiddenBiasScratch = new double[hCount];
+            gradientOutputScratch = new double[hCount][outputCount];
+            gradientOutputBiasScratch = new double[outputCount];
+            trainingOutputScratch = new double[outputCount];
+            trainingOutputDeltaScratch = new double[outputCount];
+        } else {
+            for (int h = 0; h < hCount; h++) {
+                if (gradientInputScratch[h].length != inputCount) {
+                    gradientInputScratch = new double[hCount][inputCount];
+                    break;
+                }
+                if (gradientOutputScratch[h].length != outputCount) {
+                    gradientOutputScratch = new double[hCount][outputCount];
+                    break;
+                }
+            }
+        }
+        for (double[] row : gradientInputScratch) Arrays.fill(row, 0.0);
+        Arrays.fill(gradientHiddenBiasScratch, 0.0);
+        for (double[] row : gradientOutputScratch) Arrays.fill(row, 0.0);
+        Arrays.fill(gradientOutputBiasScratch, 0.0);
+        Arrays.fill(trainingOutputScratch, 0.0);
+        Arrays.fill(trainingOutputDeltaScratch, 0.0);
+    }
+
     private void applyAdamEpoch(List<Sample> training, AdamState state, int step) {
         int hCount = neurons.size();
-        double[][] gIn = new double[hCount][inputCount];
-        double[] gHiddenBias = new double[hCount];
-        double[][] gOut = new double[hCount][outputCount];
-        double[] gOutputBias = new double[outputCount];
+        ensureGradientScratch(hCount);
+        double[][] gIn = gradientInputScratch;
+        double[] gHiddenBias = gradientHiddenBiasScratch;
+        double[][] gOut = gradientOutputScratch;
+        double[] gOutputBias = gradientOutputBiasScratch;
+        double[] output = trainingOutputScratch;
+        double[] dOut = trainingOutputDeltaScratch;
 
         // Compute the hidden layer once per epoch. For sufficiently large workloads,
         // CPU and GLES GPU calculate disjoint neuron ranges concurrently. Parameters
@@ -870,20 +919,26 @@ public final class NeuronWorkspace {
         double[][] hiddenBatch = buildEpochHiddenActivations(training);
         for (int sampleIndex = 0; sampleIndex < training.size(); sampleIndex++) {
             Sample sample = training.get(sampleIndex);
-            ForwardResult f = forwardForTraining(sample.input, hiddenBatch[sampleIndex]);
-            double[] dOut = new double[outputCount];
+            double[] hidden = hiddenBatch[sampleIndex];
+            System.arraycopy(outputBias, 0, output, 0, outputCount);
+            for (int h = 0; h < hCount; h++) {
+                double activation = hidden[h];
+                if (activation == 0.0 || !neurons.get(h).enabled) continue;
+                double[] weights = neurons.get(h).outputWeights;
+                for (int o = 0; o < outputCount; o++) output[o] += activation * weights[o];
+            }
             for (int o = 0; o < outputCount; o++) {
-                dOut[o] = 2.0 * (f.output[o] - sample.output[o]) / outputCount;
+                dOut[o] = 2.0 * (output[o] - sample.output[o]) / outputCount;
                 gOutputBias[o] += dOut[o];
                 for (int h = 0; h < hCount; h++)
-                    if (neurons.get(h).enabled) gOut[h][o] += dOut[o] * f.hidden[h];
+                    if (neurons.get(h).enabled) gOut[h][o] += dOut[o] * hidden[h];
             }
             for (int h = 0; h < hCount; h++) {
                 Neuron n = neurons.get(h);
                 if (!n.enabled) continue;
                 double upstream = 0;
                 for (int o = 0; o < outputCount; o++) upstream += dOut[o] * n.outputWeights[o];
-                double delta = upstream * (1.0 - f.hidden[h] * f.hidden[h]);
+                double delta = upstream * (1.0 - hidden[h] * hidden[h]);
                 gHiddenBias[h] += delta;
                 for (int i = 0; i < inputCount; i++) gIn[h][i] += delta * sample.input[i];
             }
@@ -978,12 +1033,18 @@ public final class NeuronWorkspace {
 
         int cpuEnd = Math.max(1, hiddenCount / 2);
         int gpuCount = hiddenCount - cpuEnd;
-        float[] flatInputs = new float[rows * dims];
+        int inputElements = Math.multiplyExact(rows, dims);
+        int weightElements = Math.multiplyExact(dims, gpuCount);
+        if (trainingGpuInputScratch == null || trainingGpuInputScratch.length != inputElements)
+            trainingGpuInputScratch = new float[inputElements];
+        if (trainingGpuWeightScratch == null || trainingGpuWeightScratch.length != weightElements)
+            trainingGpuWeightScratch = new float[weightElements];
+        float[] flatInputs = trainingGpuInputScratch;
         for (int r = 0; r < rows; r++) {
             double[] in = data.get(r).input;
             for (int j = 0; j < dims; j++) flatInputs[r * dims + j] = (float) in[j];
         }
-        float[] transposed = new float[dims * gpuCount];
+        float[] transposed = trainingGpuWeightScratch;
         for (int j = 0; j < dims; j++) {
             for (int h = cpuEnd; h < hiddenCount; h++) {
                 Neuron neuron = neurons.get(h);
