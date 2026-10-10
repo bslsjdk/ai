@@ -1,0 +1,106 @@
+name: Composed-neuron language model training
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/mobile-neuron-unit-runtime
+    paths:
+      - "scripts/train_composed_neuron_lm.py"
+      - ".github/workflows/composed-neuron-language-model.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: composed-neuron-lm-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  train-and-evaluate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install numeric runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+      - name: Validate and train explicit neuron-unit language model
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p experiments/composed-neuron-lm/latest
+          python -m py_compile scripts/train_composed_neuron_lm.py || exit 1
+          python - <<'PY'
+          import importlib.util
+          spec = importlib.util.spec_from_file_location("composed", "scripts/train_composed_neuron_lm.py")
+          m = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(m)
+          a, b = m.build_corpus()
+          assert len(a) > 10000 and len(b) > 1000
+          assert set(a + b) >= set("add sum calculate answer")
+          print("DATASET_VALID", len(a), len(b))
+          PY
+          STATUS=0
+          for SEED in 20261010 20261011 20261012; do
+            echo "===== COMPOSED NEURON LM seed=$SEED =====" | tee -a experiments/composed-neuron-lm/latest/terminal.log
+            if ! python scripts/train_composed_neuron_lm.py \
+              --output-dir "experiments/composed-neuron-lm/latest/seed-$SEED" \
+              --hidden 48 --context 8 --epochs 20 --batch-size 128 --learning-rate 0.025 --seed "$SEED" \
+              2>&1 | tee -a experiments/composed-neuron-lm/latest/terminal.log; then
+              STATUS=1
+            fi
+          done
+          python - <<'PY' || STATUS=1
+          import json, statistics
+          from pathlib import Path
+          root = Path("experiments/composed-neuron-lm/latest")
+          rows = []
+          for p in sorted(root.glob("seed-*/summary.json")):
+              d = json.loads(p.read_text())
+              rows.append({"seed": d["seed"], "hidden_neurons": d["hidden_neurons"],
+                "parameter_count": d["parameter_count"], "baseline_loss": d["baseline_unigram_heldout_loss"],
+                "heldout_loss": d["final_heldout_loss"], "heldout_accuracy": d["final_heldout_next_char_accuracy"],
+                "improvement": d["loss_improvement_over_unigram"], "wall_seconds": d["wall_seconds"]})
+          if not rows:
+              raise SystemExit("No run summaries produced")
+          report = {"format":"aimeng-composed-neuron-lm-aggregate/v1", "runs": rows,
+            "mean_heldout_loss":statistics.mean(x["heldout_loss"] for x in rows),
+            "mean_heldout_accuracy":statistics.mean(x["heldout_accuracy"] for x in rows),
+            "mean_loss_improvement":statistics.mean(x["improvement"] for x in rows),
+            "mean_wall_seconds":statistics.mean(x["wall_seconds"] for x in rows),
+            "success_check":"mean held-out loss must be lower than mean unigram baseline",
+            "limitations":"Synthetic character-level arithmetic-format corpus; not a direct benchmark against pretrained chat LLMs."}
+          (root/"summary.json").write_text(json.dumps(report,indent=2)+"\n")
+          print("COMPOSED_NEURON_LM_AGGREGATE", json.dumps(report,sort_keys=True))
+          if report["mean_loss_improvement"] <= 0:
+              raise SystemExit("Composed model did not beat unigram loss baseline")
+          PY
+          echo "$STATUS" > experiments/composed-neuron-lm/latest/exit_code.txt
+          exit 0
+      - name: Commit model checkpoints and experiment reports
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add experiments/composed-neuron-lm/latest
+          if git diff --cached --quiet; then
+            echo "No experiment outputs to commit."
+          else
+            git commit -m "Record composed-neuron language model results [skip ci]"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+      - name: Enforce training result status
+        if: always()
+        run: |
+          code="$(cat experiments/composed-neuron-lm/latest/exit_code.txt 2>/dev/null || echo 99)"
+          test "$code" = "0"
