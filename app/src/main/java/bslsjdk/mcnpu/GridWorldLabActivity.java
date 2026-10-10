@@ -232,7 +232,7 @@ public final class GridWorldLabActivity extends Activity {
                 int[] mapDistances = distanceMap(map);
                 history.clear();
                 history.add(pos);
-                Arrays.fill(wallFeatures, 0.0);
+                java.util.Arrays.fill(wallFeatures, 0.0);
                 int mapWallCount = 0;
                 for (int cell = 0; cell < CELLS; cell++) {
                     if (map.walls.contains(cell)) {
