@@ -107,6 +107,11 @@ public final class NeuronLabActivity extends Activity {
     private EditText hiddenField;
     private EditText outputsField;
     private EditText inputVectorField;
+    private EditText vnWaveInputField;
+    private EditText vnWaveTicksField;
+    private TextView vnWaveReport;
+    private VnWaveField vnWaveField;
+    private String vnWaveTopologyFingerprint = "";
     private EditText neuronFilterField;
     private String currentNeuronFilter = "";
     private String pendingImportType = "dataset";
@@ -184,7 +189,7 @@ public final class NeuronLabActivity extends Activity {
         String[][] pages = {
                 {"home", "总览"}, {"autotest", "全自动测试"}, {"neurons", "神经元"},
                 {"runtime", "群体运行时"}, {"network", "网络图"}, {"train", "训练任务"},
-                {"run", "运行"}, {"data", "数据/保存"}
+                {"run", "运行"}, {"vnwave", "VN 波场"}, {"data", "数据/保存"}
         };
         for (String[] entry : pages) {
             Button b = new Button(this);
@@ -234,6 +239,7 @@ public final class NeuronLabActivity extends Activity {
             case "network": buildNetworkPage(content); break;
             case "train": buildTrainingPage(content); break;
             case "run": buildRunPage(content); break;
+            case "vnwave": buildVnWavePage(content); break;
             case "data": buildDataPage(content); break;
             default: buildHomePage(content); break;
         }
@@ -247,7 +253,8 @@ public final class NeuronLabActivity extends Activity {
             case 4: return "network";
             case 5: return "train";
             case 6: return "run";
-            case 7: return "data";
+            case 7: return "vnwave";
+            case 8: return "data";
             default: return "home";
         }
     }
@@ -929,6 +936,158 @@ public final class NeuronLabActivity extends Activity {
         LinearLayout task = card(content, "给网络下达什么任务");
         addText(task, "当前任务形式是监督数值映射：每条样本包含 input 向量与 output 向量。训练时网络学习让预测输出接近标签。比如多输入、多输出的传感器数据、归一化指标或合成规则。", 12, false);
         addText(task, "自然语言问答、语义理解、图片输入和工具操作尚未接入这个小网络。不能仅靠把任意文本放进 CSV 就获得这些能力。", 12, true);
+    }
+
+
+    /**
+     * Experimental VN-Mobile bridge: reuse the trained hidden activations as a disturbance,
+     * then evolve a separate bounded directed wave field. This never changes trained weights.
+     */
+    private void buildVnWavePage(LinearLayout content) {
+        LinearLayout intro = card(content, "VN-Mobile · 持续状态 / 能量 / 相位 / 定向传播");
+        addText(intro, "这是独立的概念验证层：先由当前训练网络产生隐藏层激活，再把它们作为波场扰动。波场会在多次点击之间保留能量与相位；它不会改动原网络权重，也不会冒充语言模型。", 12, false);
+        addText(intro, "为避免手机后台耗电，本页只在你点击时推进指定步数，不创建永不停止的后台循环。活动源数量有上限，节点最多 128 个，运行仍受应用 4 GiB 内存守卫约束。", 12, false);
+        vnWaveInputField = editText(lastInputText, "输入数值向量，沿用运行页的输入顺序", InputType.TYPE_CLASS_TEXT);
+        intro.addView(vnWaveInputField, params(-1, 50, 0, 6, 0, 0));
+        vnWaveTicksField = editText("8", "传播步数 1–128", InputType.TYPE_CLASS_NUMBER);
+        intro.addView(vnWaveTicksField, params(-1, 48, 0, 6, 0, 0));
+        Button runWave = primaryButton("注入扰动并推进波场");
+        runWave.setOnClickListener(v -> runVnWaveField());
+        intro.addView(runWave, params(-1, 48, 0, 8, 0, 0));
+        Button resetWave = secondaryButton("重置波场状态");
+        resetWave.setOnClickListener(v -> {
+            vnWaveField = null;
+            vnWaveTopologyFingerprint = "";
+            if (vnWaveReport != null) vnWaveReport.setText("波场已重置。下一次运行将从零状态开始。");
+            toast("VN 波场状态已重置。");
+        });
+        intro.addView(resetWave, params(-1, 44, 0, 6, 0, 0));
+
+        LinearLayout report = card(content, "真实波场快照");
+        vnWaveReport = label("尚未运行。点击上方按钮后显示每一步结束时的能量、相位、激活值和活跃源预算。", 12, false);
+        vnWaveReport.setTypeface(Typeface.MONOSPACE);
+        vnWaveReport.setTextIsSelectable(true);
+        report.addView(vnWaveReport, params(-1, -2, 0, 0, 0, 0));
+
+        LinearLayout limits = card(content, "实验边界");
+        addText(limits, "当前验证的是有限规模的动力学和有向边传播，不是已证明优于普通神经网络。高能量不代表答案正确；后续需要用固定的关联检索任务比较传播步数、目标命中率和计算预算。", 12, false);
+    }
+
+    private void runVnWaveField() {
+        if (training) { toast("训练正在运行，请等训练结束后再推进 VN 波场。"); return; }
+        try {
+            String text = vnWaveInputField == null ? lastInputText
+                    : vnWaveInputField.getText().toString().trim();
+            String[] fields = text.split("[,，\\s]+");
+            if (fields.length != workspace.inputCount)
+                throw new IllegalArgumentException("此网络需要 " + workspace.inputCount
+                        + " 个输入值，当前输入了 " + fields.length + " 个");
+            double[] input = new double[fields.length];
+            for (int i = 0; i < fields.length; i++) {
+                input[i] = Double.parseDouble(fields[i]);
+                if (!Double.isFinite(input[i])) throw new IllegalArgumentException("输入必须是有限数值");
+            }
+            int steps = Integer.parseInt(vnWaveTicksField == null ? "8"
+                    : vnWaveTicksField.getText().toString().trim());
+            if (steps < 1 || steps > VnWaveField.MAX_TICKS_PER_CALL)
+                throw new IllegalArgumentException("传播步数必须是 1–" + VnWaveField.MAX_TICKS_PER_CALL);
+
+            List<NeuronWorkspace.Neuron> units = workspace.neuronsSnapshot();
+            String fingerprint = vnWaveFingerprint(units);
+            if (vnWaveField == null || !fingerprint.equals(vnWaveTopologyFingerprint)) {
+                vnWaveField = createVnWaveField(units);
+                vnWaveTopologyFingerprint = fingerprint;
+            }
+            double[] seed = workspace.predict(input).hidden;
+            VnWaveField.Snapshot snapshot = vnWaveField.step(seed, steps);
+            Integer[] order = new Integer[units.size()];
+            for (int i = 0; i < order.length; i++) order[i] = i;
+            java.util.Arrays.sort(order, (a, b) -> Double.compare(snapshot.energy[b], snapshot.energy[a]));
+            StringBuilder out = new StringBuilder();
+            out.append("模式：独立 VN 波场实验\\n")
+                    .append("节点：").append(units.size())
+                    .append(" · 有向边：").append(vnWaveField.getEdgeCount())
+                    .append(" · 累计步数：").append(snapshot.ticks).append('\\n')
+                    .append("本轮活动源：").append(snapshot.activeSources).append('/')
+                    .append(vnWaveField.getActiveBudget())
+                    .append(" · 平均能量：").append(format(snapshot.meanEnergy)).append('\\n')
+                    .append("估算载荷：").append(vnWaveField.estimatedPayloadBytes() / 1024.0)
+                    .append(" KiB（不含 Java 对象头）\\n\\n")
+                    .append("能量最高的神经元：\\n");
+            int shown = Math.min(12, order.length);
+            for (int row = 0; row < shown; row++) {
+                int i = order[row];
+                out.append(units.get(i).id)
+                        .append("  E=").append(format(snapshot.energy[i]))
+                        .append("  φ=").append(format(snapshot.phase[i]))
+                        .append("  a=").append(format(snapshot.activation[i]))
+                        .append(units.get(i).enabled ? "" : "  [原网络已禁用]")
+                        .append('\\n');
+            }
+            out.append("\\n注意：能量是传播状态，不是答案置信度。此波场不参与当前网络的训练更新。");
+            lastInputText = text;
+            if (vnWaveReport != null) vnWaveReport.setText(out.toString());
+            persistWorkspace();
+        } catch (Throwable error) {
+            dialog("VN 波场运行失败", shortError(error));
+        }
+    }
+
+    private VnWaveField createVnWaveField(List<NeuronWorkspace.Neuron> units) {
+        int count = units.size();
+        int edgeLimit = Math.min(VnWaveField.MAX_EDGES, count * Math.min(4, Math.max(0, count - 1)));
+        VnWaveField field = new VnWaveField(count, Math.min(16, count), edgeLimit,
+                0.12, 0.35, 0.15);
+        int fanout = Math.min(4, Math.max(0, count - 1));
+        for (int from = 0; from < count; from++) {
+            double[] similarity = new double[count];
+            java.util.Arrays.fill(similarity, Double.NaN);
+            for (int to = 0; to < count; to++) {
+                if (from == to) continue;
+                similarity[to] = neuronSimilarity(units.get(from), units.get(to));
+            }
+            boolean[] selected = new boolean[count];
+            for (int slot = 0; slot < fanout; slot++) {
+                int best = -1;
+                double bestAbs = 0.05;
+                for (int to = 0; to < count; to++) {
+                    if (selected[to] || !Double.isFinite(similarity[to])) continue;
+                    double abs = Math.abs(similarity[to]);
+                    if (abs > bestAbs) { bestAbs = abs; best = to; }
+                }
+                if (best < 0) break;
+                selected[best] = true;
+                field.addDirectedEdge(from, best, Math.max(-1.0, Math.min(1.0, similarity[best])));
+            }
+        }
+        return field;
+    }
+
+    private static double neuronSimilarity(NeuronWorkspace.Neuron a, NeuronWorkspace.Neuron b) {
+        double dot = 0, normA = 0, normB = 0;
+        for (int i = 0; i < a.inputWeights.length; i++) {
+            dot += a.inputWeights[i] * b.inputWeights[i];
+            normA += a.inputWeights[i] * a.inputWeights[i];
+            normB += b.inputWeights[i] * b.inputWeights[i];
+        }
+        for (int i = 0; i < a.outputWeights.length; i++) {
+            dot += a.outputWeights[i] * b.outputWeights[i];
+            normA += a.outputWeights[i] * a.outputWeights[i];
+            normB += b.outputWeights[i] * b.outputWeights[i];
+        }
+        if (normA <= 1e-18 || normB <= 1e-18) return 0.0;
+        return Math.max(-1.0, Math.min(1.0, dot / Math.sqrt(normA * normB)));
+    }
+
+    private static String vnWaveFingerprint(List<NeuronWorkspace.Neuron> units) {
+        int hash = 1;
+        for (NeuronWorkspace.Neuron n : units) {
+            hash = 31 * hash + n.id.hashCode();
+            hash = 31 * hash + java.util.Arrays.hashCode(n.inputWeights);
+            hash = 31 * hash + java.util.Arrays.hashCode(n.outputWeights);
+            hash = 31 * hash + Boolean.hashCode(n.enabled);
+        }
+        return units.size() + ":" + hash;
     }
 
     private void buildDataPage(LinearLayout content) {
