@@ -40,30 +40,37 @@ jobs:
           test -d qnn_probe/app/src/main/cpp/qnn_inc
       - name: Prepare stable AIMENG test signing key
         env:
-          AIMENG_KEYSTORE_BASE64: ${{ secrets.AIMENG_KEYSTORE_BASE64 }}
-          AIMENG_KEYSTORE_PASSWORD: ${{ secrets.AIMENG_KEYSTORE_PASSWORD }}
-          AIMENG_KEY_ALIAS: ${{ secrets.AIMENG_KEY_ALIAS }}
-          AIMENG_KEY_PASSWORD: ${{ secrets.AIMENG_KEY_PASSWORD }}
+          AIMENG_SIGNING_BUNDLE: ${{ secrets.AIMENG_SIGNING_BUNDLE }}
         shell: bash
         run: |
           set -euo pipefail
-          if [ -n "${AIMENG_KEYSTORE_BASE64:-}" ] && [ -n "${AIMENG_KEYSTORE_PASSWORD:-}" ] && [ -n "${AIMENG_KEY_ALIAS:-}" ] && [ -n "${AIMENG_KEY_PASSWORD:-}" ]; then
-            mkdir -p "$RUNNER_TEMP/aimeng-signing"
-            printf '%s' "$AIMENG_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/aimeng-signing/aimeng-test.jks"
-            test -s "$RUNNER_TEMP/aimeng-signing/aimeng-test.jks"
-            echo "AIMENG_KEYSTORE_PATH=$RUNNER_TEMP/aimeng-signing/aimeng-test.jks" >> "$GITHUB_ENV"
-            echo "AIMENG_STABLE_SIGNING=true" >> "$GITHUB_ENV"
-            echo "Stable AIMENG test signing key loaded."
-          else
-            echo "::error::Stable AIMENG signing is required. Configure repository Actions secrets AIMENG_KEYSTORE_BASE64, AIMENG_KEYSTORE_PASSWORD, AIMENG_KEY_ALIAS, and AIMENG_KEY_PASSWORD before building an updateable APK."
+          if [ -z "${AIMENG_SIGNING_BUNDLE:-}" ]; then
+            echo "::error::Missing repository Actions secret AIMENG_SIGNING_BUNDLE."
             exit 1
           fi
+          mkdir -p "$RUNNER_TEMP/aimeng-signing"
+          python3 - <<'PY'
+          import base64, json, os
+          bundle = json.loads(os.environ["AIMENG_SIGNING_BUNDLE"])
+          required = ("keystore_base64", "keystore_password", "key_alias", "key_password")
+          if any(not isinstance(bundle.get(k), str) or not bundle[k] for k in required):
+              raise SystemExit("AIMENG_SIGNING_BUNDLE is missing a required field.")
+          path = os.path.join(os.environ["RUNNER_TEMP"], "aimeng-signing", "aimeng-test.jks")
+          with open(path, "wb") as f:
+              f.write(base64.b64decode(bundle["keystore_base64"], validate=True))
+          if os.path.getsize(path) < 512:
+              raise SystemExit("Decoded test keystore is unexpectedly small.")
+          with open(os.environ["GITHUB_ENV"], "a") as f:
+              f.write("AIMENG_KEYSTORE_PATH=" + path + "\\n")
+              f.write("AIMENG_KEYSTORE_PASSWORD=" + bundle["keystore_password"] + "\\n")
+              f.write("AIMENG_KEY_ALIAS=" + bundle["key_alias"] + "\\n")
+              f.write("AIMENG_KEY_PASSWORD=" + bundle["key_password"] + "\\n")
+              f.write("AIMENG_STABLE_SIGNING=true\\n")
+          PY
+          echo "Stable AIMENG test signing key loaded."
       - name: Build installable debug APK
         env:
           QNN_INC: ${{ github.workspace }}/qnn_probe/app/src/main/cpp/qnn_inc
-          AIMENG_KEYSTORE_PASSWORD: ${{ secrets.AIMENG_KEYSTORE_PASSWORD }}
-          AIMENG_KEY_ALIAS: ${{ secrets.AIMENG_KEY_ALIAS }}
-          AIMENG_KEY_PASSWORD: ${{ secrets.AIMENG_KEY_PASSWORD }}
         run: |
           set -o pipefail
           gradle :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee build-aimeng-debug.log
@@ -74,7 +81,7 @@ jobs:
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -E "versionCode='[0-9]+' versionName='[^']+'"
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose "$APK"
           sha256sum "$APK" | tee app/build/outputs/apk/debug/app-debug.apk.sha256
-          printf 'stable_signing=%s\nversion_code=%s\n' "$AIMENG_STABLE_SIGNING" "${GITHUB_RUN_NUMBER}" > app/build/outputs/apk/debug/build-info.txt
+          printf 'stable_signing=%s\\nversion_code=%s\\n' "$AIMENG_STABLE_SIGNING" "${GITHUB_RUN_NUMBER}" > app/build/outputs/apk/debug/build-info.txt
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
