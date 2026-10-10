@@ -192,3 +192,288 @@ LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": 
 LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-011", "index": 89, "latencySeconds": 0.4824, "output": "43"}
 LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-012", "index": 90, "latencySeconds": 0.5222, "output": "44"}
 LLM_PK_SUMMARY {"caseCount": 90, "categories": {"arithmetic": {"accuracy": 0.9583333333333334, "cases": 24, "correct": 23, "errors": 0, "meanLatencySeconds": 0.35992083333333336}, "context_recall": {"accuracy": 1.0, "cases": 16, "correct": 16, "errors": 0, "meanLatencySeconds": 0.93909375}, "deduction": {"accuracy": 0.5, "cases": 16, "correct": 8, "errors": 0, "meanLatencySeconds": 0.5110250000000001}, "instruction": {"accuracy": 0.6, "cases": 10, "correct": 6, "errors": 0, "meanLatencySeconds": 0.40709}, "sequence": {"accuracy": 0.9166666666666666, "cases": 12, "correct": 11, "errors": 0, "meanLatencySeconds": 0.496975}, "state_update": {"accuracy": 0.0, "cases": 12, "correct": 0, "errors": 0, "meanLatencySeconds": 0.51325}}, "datasetSha256": "aca47730ccf0bed950813527cc84a9a9c8c2a8f54cfeb292641ff9c3e3a64951", "model": "qwen25-15b-q4km", "output": "experiments/llm-pk/latest/qwen25-15b-q4km.json", "overall": {"accuracy": 0.7111111111111111, "correct": 64, "errors": 0, "meanLatencySeconds": 0.5337066666666667}}
+===== MODEL qwen25-05b-q4km =====
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100  1124  100  1124    0     0  20780      0 --:--:-- --:--:-- --:--:-- 20814
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 58  379M   58  221M    0     0   179M      0  0:00:02  0:00:01  0:00:01  204M100  379M  100  379M    0     0   229M      0  0:00:01  0:00:01 --:--:--  252M
+6eb923e7d26e9cea28811e1a8e852009b21242fb157b26149d3b188f3a8c8653  /tmp/qwen25-05b-q4km.gguf
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-001", "index": 1, "latencySeconds": 0.4329, "output": "35"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-002", "index": 2, "latencySeconds": 0.1942, "output": "26"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-003", "index": 3, "latencySeconds": 0.1725, "output": "20"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-004", "index": 4, "latencySeconds": 0.1711, "output": "4"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-005", "index": 5, "latencySeconds": 0.2101, "output": "33"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-006", "index": 6, "latencySeconds": 0.2143, "output": "-39"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-007", "index": 7, "latencySeconds": 0.1727, "output": "72"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-008", "index": 8, "latencySeconds": 0.1718, "output": "9"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-009", "index": 9, "latencySeconds": 0.2127, "output": "240"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-010", "index": 10, "latencySeconds": 0.2262, "output": "142"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-011", "index": 11, "latencySeconds": 0.1916, "output": "48"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-012", "index": 12, "latencySeconds": 0.1902, "output": "11"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-013", "index": 13, "latencySeconds": 0.1903, "output": "94"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-014", "index": 14, "latencySeconds": 0.2069, "output": "14"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-015", "index": 15, "latencySeconds": 0.1723, "output": "32"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-016", "index": 16, "latencySeconds": 0.1528, "output": "2"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-017", "index": 17, "latencySeconds": 0.1946, "output": "48"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-018", "index": 18, "latencySeconds": 0.2037, "output": "48"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-019", "index": 19, "latencySeconds": 0.173, "output": "24"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-020", "index": 20, "latencySeconds": 0.1717, "output": "7"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-021", "index": 21, "latencySeconds": 0.2206, "output": "100"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-022", "index": 22, "latencySeconds": 0.1918, "output": "51"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-023", "index": 23, "latencySeconds": 0.1895, "output": "84"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-024", "index": 24, "latencySeconds": 0.189, "output": "10"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-001", "index": 25, "latencySeconds": 0.3737, "output": "Yes."}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-002", "index": 26, "latencySeconds": 0.3875, "output": "Yes."}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-003", "index": 27, "latencySeconds": 0.3816, "output": "Yes."}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-004", "index": 28, "latencySeconds": 0.3697, "output": "Yes."}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-005", "index": 29, "latencySeconds": 0.3894, "output": "Yes."}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-006", "index": 30, "latencySeconds": 0.3847, "output": "Yes."}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-007", "index": 31, "latencySeconds": 0.3771, "output": "Yes."}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-008", "index": 32, "latencySeconds": 0.3616, "output": "Yes."}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-009", "index": 33, "latencySeconds": 0.3187, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-010", "index": 34, "latencySeconds": 0.4098, "output": "Yes."}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-011", "index": 35, "latencySeconds": 0.3893, "output": "Yes."}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-012", "index": 36, "latencySeconds": 0.3604, "output": "Yes."}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-013", "index": 37, "latencySeconds": 0.3514, "output": "Yes."}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-014", "index": 38, "latencySeconds": 0.3893, "output": "Yes."}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-015", "index": 39, "latencySeconds": 0.3783, "output": "Yes."}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-016", "index": 40, "latencySeconds": 0.3631, "output": "Yes."}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-001", "index": 41, "latencySeconds": 0.3118, "output": "12"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-002", "index": 42, "latencySeconds": 0.252, "output": "18"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-003", "index": 43, "latencySeconds": 0.2608, "output": "24"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-004", "index": 44, "latencySeconds": 0.2653, "output": "30"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-005", "index": 45, "latencySeconds": 0.2642, "output": "36"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-006", "index": 46, "latencySeconds": 0.2559, "output": "17"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-007", "index": 47, "latencySeconds": 0.2645, "output": "23"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-008", "index": 48, "latencySeconds": 0.2648, "output": "29"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-009", "index": 49, "latencySeconds": 0.2678, "output": "35"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-010", "index": 50, "latencySeconds": 0.2648, "output": "41"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-011", "index": 51, "latencySeconds": 0.2658, "output": "22"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-012", "index": 52, "latencySeconds": 0.2647, "output": "28"}
+LLM_PK_CASE {"category": "instruction", "correct": false, "error": null, "id": "instruction-001", "index": 53, "latencySeconds": 0.3399, "output": "copper, plum, jade"}
+LLM_PK_CASE {"category": "instruction", "correct": false, "error": null, "id": "instruction-002", "index": 54, "latencySeconds": 0.2057, "output": "south, east, north"}
+LLM_PK_CASE {"category": "instruction", "correct": true, "error": null, "id": "instruction-003", "index": 55, "latencySeconds": 0.1424, "output": "amber, violet"}
+LLM_PK_CASE {"category": "instruction", "correct": false, "error": null, "id": "instruction-004", "index": 56, "latencySeconds": 0.2963, "output": "ash, elm, fir, oak, pine"}
+LLM_PK_CASE {"category": "instruction", "correct": true, "error": null, "id": "instruction-005", "index": 57, "latencySeconds": 0.1948, "output": "gold, cyan, red"}
+LLM_PK_CASE {"category": "instruction", "correct": false, "error": null, "id": "instruction-006", "index": 58, "latencySeconds": 0.2456, "output": "owl, fox, yak, cat"}
+LLM_PK_CASE {"category": "instruction", "correct": true, "error": null, "id": "instruction-007", "index": 59, "latencySeconds": 0.2456, "output": "six, nine, four, one"}
+LLM_PK_CASE {"category": "instruction", "correct": false, "error": null, "id": "instruction-008", "index": 60, "latencySeconds": 0.1931, "output": "delta, beta, alpha"}
+LLM_PK_CASE {"category": "instruction", "correct": true, "error": null, "id": "instruction-009", "index": 61, "latencySeconds": 0.245, "output": "leaf, stone, cloud, river"}
+LLM_PK_CASE {"category": "instruction", "correct": true, "error": null, "id": "instruction-010", "index": 62, "latencySeconds": 0.1425, "output": "rice, tea"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-001", "index": 63, "latencySeconds": 0.5736, "output": "basket"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-002", "index": 64, "latencySeconds": 0.5208, "output": "locker"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-003", "index": 65, "latencySeconds": 0.5324, "output": "case"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-004", "index": 66, "latencySeconds": 0.5349, "output": "drawer"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-005", "index": 67, "latencySeconds": 0.5422, "output": "pouch"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-006", "index": 68, "latencySeconds": 0.5332, "output": "stand"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-007", "index": 69, "latencySeconds": 0.5332, "output": "shelf"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-008", "index": 70, "latencySeconds": 0.5436, "output": "box"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-009", "index": 71, "latencySeconds": 0.5962, "output": "satchel"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-010", "index": 72, "latencySeconds": 0.554, "output": "cabinet"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-011", "index": 73, "latencySeconds": 0.5462, "output": "crate"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-012", "index": 74, "latencySeconds": 0.5544, "output": "cupboard"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-013", "index": 75, "latencySeconds": 0.5347, "output": "bin"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-014", "index": 76, "latencySeconds": 0.5357, "output": "desk"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-015", "index": 77, "latencySeconds": 0.559, "output": "trunk"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-016", "index": 78, "latencySeconds": 0.5471, "output": "rack"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-001", "index": 79, "latencySeconds": 0.3263, "output": "13"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-002", "index": 80, "latencySeconds": 0.2973, "output": "19"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-003", "index": 81, "latencySeconds": 0.2794, "output": "19"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-004", "index": 82, "latencySeconds": 0.2802, "output": "23"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-005", "index": 83, "latencySeconds": 0.2793, "output": "22"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-006", "index": 84, "latencySeconds": 0.299, "output": "28"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-007", "index": 85, "latencySeconds": 0.3076, "output": "33"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-008", "index": 86, "latencySeconds": 0.3095, "output": "38"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-009", "index": 87, "latencySeconds": 0.3036, "output": "53"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-010", "index": 88, "latencySeconds": 0.2776, "output": "41"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-011", "index": 89, "latencySeconds": 0.2783, "output": "44"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-012", "index": 90, "latencySeconds": 0.2965, "output": "44"}
+LLM_PK_SUMMARY {"caseCount": 90, "categories": {"arithmetic": {"accuracy": 0.5833333333333334, "cases": 24, "correct": 14, "errors": 0, "meanLatencySeconds": 0.2006875}, "context_recall": {"accuracy": 1.0, "cases": 16, "correct": 16, "errors": 0, "meanLatencySeconds": 0.546325}, "deduction": {"accuracy": 0.4375, "cases": 16, "correct": 7, "errors": 0, "meanLatencySeconds": 0.3741}, "instruction": {"accuracy": 0.5, "cases": 10, "correct": 5, "errors": 0, "meanLatencySeconds": 0.22509}, "sequence": {"accuracy": 1.0, "cases": 12, "correct": 12, "errors": 0, "meanLatencySeconds": 0.26686666666666664}, "state_update": {"accuracy": 0.0, "cases": 12, "correct": 0, "errors": 0, "meanLatencySeconds": 0.29455}}, "datasetSha256": "9082a5b09eda9c71b253d4426eda068a925f9161e37204eb18537b77f00628db", "model": "qwen25-05b-q4km", "output": "experiments/llm-pk/latest/qwen25-05b-q4km.json", "overall": {"accuracy": 0.6, "correct": 54, "errors": 0, "meanLatencySeconds": 0.3170133333333333}}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-001", "index": 1, "latencySeconds": 0.8169, "output": "35"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-002", "index": 2, "latencySeconds": 0.7989, "output": "26"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-003", "index": 3, "latencySeconds": 0.7926, "output": "40"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-004", "index": 4, "latencySeconds": 0.7379, "output": "4"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-005", "index": 5, "latencySeconds": 0.8041, "output": "33"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-006", "index": 6, "latencySeconds": 0.834, "output": "-39"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-007", "index": 7, "latencySeconds": 0.7677, "output": "72"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-008", "index": 8, "latencySeconds": 0.8751, "output": "18 / 2 = 9"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-009", "index": 9, "latencySeconds": 0.8578, "output": "240"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-010", "index": 10, "latencySeconds": 0.8601, "output": "142"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-011", "index": 11, "latencySeconds": 0.7816, "output": "48"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-012", "index": 12, "latencySeconds": 0.7779, "output": "11"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-013", "index": 13, "latencySeconds": 0.7945, "output": "94"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-014", "index": 14, "latencySeconds": 0.8196, "output": "14"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-015", "index": 15, "latencySeconds": 0.893, "output": "4 * 8 = 32"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-016", "index": 16, "latencySeconds": 0.723, "output": "2"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-017", "index": 17, "latencySeconds": 0.7965, "output": "48"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-018", "index": 18, "latencySeconds": 0.8113, "output": "48"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-019", "index": 19, "latencySeconds": 0.8016, "output": "24"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-020", "index": 20, "latencySeconds": 0.8796, "output": "42 / 7 = 6"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-021", "index": 21, "latencySeconds": 0.854, "output": "101"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-022", "index": 22, "latencySeconds": 0.7944, "output": "51"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-023", "index": 23, "latencySeconds": 0.7803, "output": "84"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-024", "index": 24, "latencySeconds": 0.7794, "output": "10"}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-001", "index": 25, "latencySeconds": 0.8301, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-002", "index": 26, "latencySeconds": 0.6018, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-003", "index": 27, "latencySeconds": 0.9207, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-004", "index": 28, "latencySeconds": 0.8762, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-005", "index": 29, "latencySeconds": 0.8366, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-006", "index": 30, "latencySeconds": 0.8857, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-007", "index": 31, "latencySeconds": 0.9184, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-008", "index": 32, "latencySeconds": 0.8749, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-009", "index": 33, "latencySeconds": 0.8211, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-010", "index": 34, "latencySeconds": 0.6134, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-011", "index": 35, "latencySeconds": 0.9392, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-012", "index": 36, "latencySeconds": 0.8745, "output": "Yes"}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-013", "index": 37, "latencySeconds": 0.8545, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-014", "index": 38, "latencySeconds": 0.9414, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-015", "index": 39, "latencySeconds": 0.9194, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-016", "index": 40, "latencySeconds": 0.8741, "output": "No"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-001", "index": 41, "latencySeconds": 0.6947, "output": "12"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-002", "index": 42, "latencySeconds": 0.6377, "output": "18"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-003", "index": 43, "latencySeconds": 0.6512, "output": "24"}
+LLM_PK_CASE {"category": "sequence", "correct": false, "error": null, "id": "sequence-004", "index": 44, "latencySeconds": 0.6617, "output": "20"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-005", "index": 45, "latencySeconds": 0.6628, "output": "36"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-006", "index": 46, "latencySeconds": 0.6515, "output": "17"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-007", "index": 47, "latencySeconds": 0.663, "output": "23"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-008", "index": 48, "latencySeconds": 0.6692, "output": "29"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-009", "index": 49, "latencySeconds": 0.6851, "output": "35"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-010", "index": 50, "latencySeconds": 0.6626, "output": "41"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-011", "index": 51, "latencySeconds": 0.6635, "output": "22"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-012", "index": 52, "latencySeconds": 0.6654, "output": "28"}
+LLM_PK_CASE {"category": "instruction", "correct": false, "error": null, "id": "instruction-001", "index": 53, "latencySeconds": 0.6977, "output": "copper, plum"}
+LLM_PK_CASE {"category": "instruction", "correct": false, "error": null, "id": "instruction-002", "index": 54, "latencySeconds": 0.5904, "output": "south, east, north"}
+LLM_PK_CASE {"category": "instruction", "correct": true, "error": null, "id": "instruction-003", "index": 55, "latencySeconds": 0.4414, "output": "amber, violet"}
+LLM_PK_CASE {"category": "instruction", "correct": false, "error": null, "id": "instruction-004", "index": 56, "latencySeconds": 0.7986, "output": "ash, elm, fir, oak, pine"}
+LLM_PK_CASE {"category": "instruction", "correct": true, "error": null, "id": "instruction-005", "index": 57, "latencySeconds": 0.5601, "output": "gold, cyan, red"}
+LLM_PK_CASE {"category": "instruction", "correct": false, "error": null, "id": "instruction-006", "index": 58, "latencySeconds": 0.6743, "output": "owl, fox, yak, cat"}
+LLM_PK_CASE {"category": "instruction", "correct": true, "error": null, "id": "instruction-007", "index": 59, "latencySeconds": 0.6754, "output": "six, nine, four, one"}
+LLM_PK_CASE {"category": "instruction", "correct": false, "error": null, "id": "instruction-008", "index": 60, "latencySeconds": 0.5586, "output": "alpha, delta, beta"}
+LLM_PK_CASE {"category": "instruction", "correct": true, "error": null, "id": "instruction-009", "index": 61, "latencySeconds": 0.6756, "output": "leaf, stone, cloud, river"}
+LLM_PK_CASE {"category": "instruction", "correct": false, "error": null, "id": "instruction-010", "index": 62, "latencySeconds": 0.4343, "output": "tea, rice"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-001", "index": 63, "latencySeconds": 0.7251, "output": "basket"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-002", "index": 64, "latencySeconds": 0.7141, "output": "locker"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-003", "index": 65, "latencySeconds": 0.7145, "output": "case"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-004", "index": 66, "latencySeconds": 0.7256, "output": "drawer"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-005", "index": 67, "latencySeconds": 0.7534, "output": "pouch"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-006", "index": 68, "latencySeconds": 0.7138, "output": "stand"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-007", "index": 69, "latencySeconds": 0.7129, "output": "shelf"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-008", "index": 70, "latencySeconds": 0.7264, "output": "box"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-009", "index": 71, "latencySeconds": 0.8432, "output": "satchel"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-010", "index": 72, "latencySeconds": 0.764, "output": "cabinet"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-011", "index": 73, "latencySeconds": 0.7377, "output": "crate"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-012", "index": 74, "latencySeconds": 0.7675, "output": "cupboard"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-013", "index": 75, "latencySeconds": 0.7254, "output": "bin"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-014", "index": 76, "latencySeconds": 0.7156, "output": "desk"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-015", "index": 77, "latencySeconds": 0.7685, "output": "trunk"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-016", "index": 78, "latencySeconds": 0.7273, "output": "rack"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-001", "index": 79, "latencySeconds": 0.5282, "output": "13"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-002", "index": 80, "latencySeconds": 0.7094, "output": "19"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-003", "index": 81, "latencySeconds": 0.7085, "output": "19"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-004", "index": 82, "latencySeconds": 0.7086, "output": "23"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-005", "index": 83, "latencySeconds": 0.7083, "output": "22"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-006", "index": 84, "latencySeconds": 0.7083, "output": "28"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-007", "index": 85, "latencySeconds": 0.7271, "output": "33"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-008", "index": 86, "latencySeconds": 0.7277, "output": "35"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-009", "index": 87, "latencySeconds": 0.5014, "output": "47"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-010", "index": 88, "latencySeconds": 0.7061, "output": "41"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-011", "index": 89, "latencySeconds": 0.7075, "output": "44"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-012", "index": 90, "latencySeconds": 0.4908, "output": "44"}
+LLM_PK_SUMMARY {"caseCount": 90, "categories": {"arithmetic": {"accuracy": 0.4583333333333333, "cases": 24, "correct": 11, "errors": 0, "meanLatencySeconds": 0.8096583333333334}, "context_recall": {"accuracy": 1.0, "cases": 16, "correct": 16, "errors": 0, "meanLatencySeconds": 0.7396874999999999}, "deduction": {"accuracy": 0.5625, "cases": 16, "correct": 9, "errors": 0, "meanLatencySeconds": 0.848875}, "instruction": {"accuracy": 0.4, "cases": 10, "correct": 4, "errors": 0, "meanLatencySeconds": 0.61064}, "sequence": {"accuracy": 0.9166666666666666, "cases": 12, "correct": 11, "errors": 0, "meanLatencySeconds": 0.6640333333333334}, "state_update": {"accuracy": 0.0, "cases": 12, "correct": 0, "errors": 0, "meanLatencySeconds": 0.6609916666666666}}, "datasetSha256": "9082a5b09eda9c71b253d4426eda068a925f9161e37204eb18537b77f00628db", "model": "qwen25-05b-q4km", "output": "experiments/llm-pk/latest/qwen25-05b-verify.json", "overall": {"accuracy": 0.5666666666666667, "correct": 51, "errors": 0, "meanLatencySeconds": 0.7428388888888889}}
+===== MODEL qwen25-15b-q4km =====
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100  1124  100  1124    0     0  16077      0 --:--:-- --:--:-- --:--:-- 16289
+  0  940M    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 33  940M   33  312M    0     0   206M      0  0:00:04  0:00:01  0:00:03  356M 74  940M   74  700M    0     0   278M      0  0:00:03  0:00:02  0:00:01  373M100  940M  100  940M    0     0   300M      0  0:00:03  0:00:03 --:--:--  377M
+1adf0b11065d8ad2e8123ea110d1ec956dab4ab038eab665614adba04b6c3370  /tmp/qwen25-15b-q4km.gguf
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-001", "index": 1, "latencySeconds": 0.9061, "output": "35"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-002", "index": 2, "latencySeconds": 0.4198, "output": "36"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-003", "index": 3, "latencySeconds": 0.3509, "output": "20"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-004", "index": 4, "latencySeconds": 0.3704, "output": "5"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-005", "index": 5, "latencySeconds": 0.4881, "output": "186"}
+LLM_PK_CASE {"category": "arithmetic", "correct": false, "error": null, "id": "arithmetic-006", "index": 6, "latencySeconds": 0.7098, "output": "49 - 10 = 39"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-007", "index": 7, "latencySeconds": 0.3544, "output": "72"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-008", "index": 8, "latencySeconds": 0.3664, "output": "9"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-009", "index": 9, "latencySeconds": 0.4536, "output": "140"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-010", "index": 10, "latencySeconds": 0.4488, "output": "42"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-011", "index": 11, "latencySeconds": 0.4001, "output": "48"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-012", "index": 12, "latencySeconds": 0.4022, "output": "13"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-013", "index": 13, "latencySeconds": 0.401, "output": "94"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-014", "index": 14, "latencySeconds": 0.4475, "output": "45"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-015", "index": 15, "latencySeconds": 0.353, "output": "32"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-016", "index": 16, "latencySeconds": 0.3183, "output": "2"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-017", "index": 17, "latencySeconds": 0.4191, "output": "48"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-018", "index": 18, "latencySeconds": 0.4365, "output": "48"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-019", "index": 19, "latencySeconds": 0.352, "output": "24"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-020", "index": 20, "latencySeconds": 0.3666, "output": "6"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-021", "index": 21, "latencySeconds": 0.4732, "output": "199"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-022", "index": 22, "latencySeconds": 0.4197, "output": "51"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-023", "index": 23, "latencySeconds": 0.4032, "output": "84"}
+LLM_PK_CASE {"category": "arithmetic", "correct": true, "error": null, "id": "arithmetic-024", "index": 24, "latencySeconds": 0.405, "output": "10"}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-001", "index": 25, "latencySeconds": 0.8098, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-002", "index": 26, "latencySeconds": 0.7931, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-003", "index": 27, "latencySeconds": 0.8289, "output": "Yes"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-004", "index": 28, "latencySeconds": 0.7867, "output": "Yes"}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-005", "index": 29, "latencySeconds": 0.7748, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-006", "index": 30, "latencySeconds": 0.823, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-007", "index": 31, "latencySeconds": 0.8616, "output": "No."}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-008", "index": 32, "latencySeconds": 0.774, "output": "Yes"}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-009", "index": 33, "latencySeconds": 0.7169, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-010", "index": 34, "latencySeconds": 0.8652, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-011", "index": 35, "latencySeconds": 0.7933, "output": "Yes"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-012", "index": 36, "latencySeconds": 0.7731, "output": "Yes"}
+LLM_PK_CASE {"category": "deduction", "correct": false, "error": null, "id": "deduction-013", "index": 37, "latencySeconds": 0.7528, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-014", "index": 38, "latencySeconds": 0.7888, "output": "no"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-015", "index": 39, "latencySeconds": 0.8207, "output": "No"}
+LLM_PK_CASE {"category": "deduction", "correct": true, "error": null, "id": "deduction-016", "index": 40, "latencySeconds": 0.7728, "output": "Yes"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-001", "index": 41, "latencySeconds": 0.6836, "output": "12"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-002", "index": 42, "latencySeconds": 0.5673, "output": "18"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-003", "index": 43, "latencySeconds": 0.5848, "output": "24"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-004", "index": 44, "latencySeconds": 0.6076, "output": "30"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-005", "index": 45, "latencySeconds": 0.6019, "output": "36"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-006", "index": 46, "latencySeconds": 0.6017, "output": "17"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-007", "index": 47, "latencySeconds": 0.6016, "output": "23"}
+LLM_PK_CASE {"category": "sequence", "correct": false, "error": null, "id": "sequence-008", "index": 48, "latencySeconds": 0.6021, "output": "31"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-009", "index": 49, "latencySeconds": 0.6183, "output": "35"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-010", "index": 50, "latencySeconds": 0.6041, "output": "41"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-011", "index": 51, "latencySeconds": 0.6, "output": "22"}
+LLM_PK_CASE {"category": "sequence", "correct": true, "error": null, "id": "sequence-012", "index": 52, "latencySeconds": 0.6004, "output": "28"}
+LLM_PK_CASE {"category": "instruction", "correct": true, "error": null, "id": "instruction-001", "index": 53, "latencySeconds": 0.74, "output": "plum,jade,copper"}
+LLM_PK_CASE {"category": "instruction", "correct": true, "error": null, "id": "instruction-002", "index": 54, "latencySeconds": 0.5524, "output": "east, south, west, north"}
+LLM_PK_CASE {"category": "instruction", "correct": true, "error": null, "id": "instruction-003", "index": 55, "latencySeconds": 0.3289, "output": "amber, violet"}
+LLM_PK_CASE {"category": "instruction", "correct": true, "error": null, "id": "instruction-004", "index": 56, "latencySeconds": 0.6508, "output": "fir, ash, pine, elm, oak"}
+LLM_PK_CASE {"category": "instruction", "correct": false, "error": null, "id": "instruction-005", "index": 57, "latencySeconds": 0.4338, "output": "cyan, gold, red"}
+LLM_PK_CASE {"category": "instruction", "correct": true, "error": null, "id": "instruction-006", "index": 58, "latencySeconds": 0.5235, "output": "owl, yak, fox, cat"}
+LLM_PK_CASE {"category": "instruction", "correct": false, "error": null, "id": "instruction-007", "index": 59, "latencySeconds": 0.5168, "output": "nine, six, four, one"}
+LLM_PK_CASE {"category": "instruction", "correct": false, "error": null, "id": "instruction-008", "index": 60, "latencySeconds": 0.4183, "output": "delta, beta, alpha"}
+LLM_PK_CASE {"category": "instruction", "correct": false, "error": null, "id": "instruction-009", "index": 61, "latencySeconds": 0.5182, "output": "stone, leaf, cloud, river"}
+LLM_PK_CASE {"category": "instruction", "correct": true, "error": null, "id": "instruction-010", "index": 62, "latencySeconds": 0.3139, "output": "rice, tea"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-001", "index": 63, "latencySeconds": 1.2434, "output": "basket"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-002", "index": 64, "latencySeconds": 1.1193, "output": "locker"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-003", "index": 65, "latencySeconds": 1.1453, "output": "case"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-004", "index": 66, "latencySeconds": 1.1575, "output": "drawer"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-005", "index": 67, "latencySeconds": 1.15, "output": "pouch"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-006", "index": 68, "latencySeconds": 1.1457, "output": "stand"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-007", "index": 69, "latencySeconds": 1.1441, "output": "shelf"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-008", "index": 70, "latencySeconds": 1.2118, "output": "box"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-009", "index": 71, "latencySeconds": 1.2879, "output": "satchel"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-010", "index": 72, "latencySeconds": 1.179, "output": "cabinet"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-011", "index": 73, "latencySeconds": 1.2101, "output": "crate"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-012", "index": 74, "latencySeconds": 1.1949, "output": "cupboard"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-013", "index": 75, "latencySeconds": 1.157, "output": "bin"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-014", "index": 76, "latencySeconds": 1.1428, "output": "desk"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-015", "index": 77, "latencySeconds": 1.199, "output": "trunk"}
+LLM_PK_CASE {"category": "context_recall", "correct": true, "error": null, "id": "context_recall-016", "index": 78, "latencySeconds": 1.1768, "output": "rack"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-001", "index": 79, "latencySeconds": 0.7401, "output": "12"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-002", "index": 80, "latencySeconds": 0.6382, "output": "13"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-003", "index": 81, "latencySeconds": 0.585, "output": "16"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-004", "index": 82, "latencySeconds": 0.5856, "output": "23"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-005", "index": 83, "latencySeconds": 0.5865, "output": "29"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-006", "index": 84, "latencySeconds": 0.6359, "output": "22"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-007", "index": 85, "latencySeconds": 0.6368, "output": "23"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-008", "index": 86, "latencySeconds": 0.6376, "output": "34"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-009", "index": 87, "latencySeconds": 0.6541, "output": "39"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-010", "index": 88, "latencySeconds": 0.589, "output": "39"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-011", "index": 89, "latencySeconds": 0.5854, "output": "43"}
+LLM_PK_CASE {"category": "state_update", "correct": false, "error": null, "id": "state_update-012", "index": 90, "latencySeconds": 0.6343, "output": "44"}
+LLM_PK_SUMMARY {"caseCount": 90, "categories": {"arithmetic": {"accuracy": 0.9583333333333334, "cases": 24, "correct": 23, "errors": 0, "meanLatencySeconds": 0.43607083333333335}, "context_recall": {"accuracy": 1.0, "cases": 16, "correct": 16, "errors": 0, "meanLatencySeconds": 1.1790375}, "deduction": {"accuracy": 0.625, "cases": 16, "correct": 10, "errors": 0, "meanLatencySeconds": 0.79596875}, "instruction": {"accuracy": 0.6, "cases": 10, "correct": 6, "errors": 0, "meanLatencySeconds": 0.49966}, "sequence": {"accuracy": 0.9166666666666666, "cases": 12, "correct": 11, "errors": 0, "meanLatencySeconds": 0.6061166666666666}, "state_update": {"accuracy": 0.0, "cases": 12, "correct": 0, "errors": 0, "meanLatencySeconds": 0.6257083333333333}}, "datasetSha256": "9082a5b09eda9c71b253d4426eda068a925f9161e37204eb18537b77f00628db", "model": "qwen25-15b-q4km", "output": "experiments/llm-pk/latest/qwen25-15b-q4km.json", "overall": {"accuracy": 0.7333333333333333, "correct": 66, "errors": 0, "meanLatencySeconds": 0.6871588888888889}}

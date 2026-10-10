@@ -1,0 +1,1597 @@
+{
+  "format": "aimeng-llm-pk-report/v2",
+  "model": "qwen25-05b-q4km",
+  "baseUrl": "http://127.0.0.1:8080",
+  "caseCount": 90,
+  "datasetSha256": "9082a5b09eda9c71b253d4426eda068a925f9161e37204eb18537b77f00628db",
+  "decoding": {
+    "temperature": 0,
+    "seed": 1234,
+    "maxTokens": 64
+  },
+  "mode": "verify",
+  "suiteVersion": 2,
+  "note": "Generated phase-two diagnostic benchmark; distinct logic templates and unique context-recall entities. Not a public leaderboard or proof of general intelligence.",
+  "overall": {
+    "correct": 51,
+    "accuracy": 0.5666666666666667,
+    "meanLatencySeconds": 0.7428388888888889,
+    "errors": 0
+  },
+  "categories": {
+    "arithmetic": {
+      "cases": 24,
+      "correct": 11,
+      "accuracy": 0.4583333333333333,
+      "meanLatencySeconds": 0.8096583333333334,
+      "errors": 0
+    },
+    "context_recall": {
+      "cases": 16,
+      "correct": 16,
+      "accuracy": 1.0,
+      "meanLatencySeconds": 0.7396874999999999,
+      "errors": 0
+    },
+    "deduction": {
+      "cases": 16,
+      "correct": 9,
+      "accuracy": 0.5625,
+      "meanLatencySeconds": 0.848875,
+      "errors": 0
+    },
+    "instruction": {
+      "cases": 10,
+      "correct": 4,
+      "accuracy": 0.4,
+      "meanLatencySeconds": 0.61064,
+      "errors": 0
+    },
+    "sequence": {
+      "cases": 12,
+      "correct": 11,
+      "accuracy": 0.9166666666666666,
+      "meanLatencySeconds": 0.6640333333333334,
+      "errors": 0
+    },
+    "state_update": {
+      "cases": 12,
+      "correct": 0,
+      "accuracy": 0.0,
+      "meanLatencySeconds": 0.6609916666666666,
+      "errors": 0
+    }
+  },
+  "results": [
+    {
+      "id": "arithmetic-001",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 22 + 13. Return only the integer answer.",
+      "expected": "35",
+      "draftOutput": "35",
+      "verificationOutput": "35",
+      "output": "35",
+      "latencySeconds": 0.8169,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 151,
+        "completion_tokens": 6,
+        "total_tokens": 157
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-002",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 95 - 59. Return only the integer answer.",
+      "expected": "36",
+      "draftOutput": "26",
+      "verificationOutput": "26",
+      "output": "26",
+      "latencySeconds": 0.7989,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 151,
+        "completion_tokens": 6,
+        "total_tokens": 157
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-003",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 4 * 5. Return only the integer answer.",
+      "expected": "20",
+      "draftOutput": "20",
+      "verificationOutput": "40",
+      "output": "40",
+      "latencySeconds": 0.7926,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 147,
+        "completion_tokens": 6,
+        "total_tokens": 153
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-004",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 25 / 5. Return only the integer answer.",
+      "expected": "5",
+      "draftOutput": "4",
+      "verificationOutput": "4",
+      "output": "4",
+      "latencySeconds": 0.7379,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 148,
+        "completion_tokens": 4,
+        "total_tokens": 152
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-005",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 170 + 16. Return only the integer answer.",
+      "expected": "186",
+      "draftOutput": "33",
+      "verificationOutput": "33",
+      "output": "33",
+      "latencySeconds": 0.8041,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 153,
+        "completion_tokens": 6,
+        "total_tokens": 159
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-006",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 49 - 10. Return only the integer answer.",
+      "expected": "39",
+      "draftOutput": "-39",
+      "verificationOutput": "-39",
+      "output": "-39",
+      "latencySeconds": 0.834,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 152,
+        "completion_tokens": 8,
+        "total_tokens": 160
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-007",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 8 * 9. Return only the integer answer.",
+      "expected": "72",
+      "draftOutput": "72",
+      "verificationOutput": "72",
+      "output": "72",
+      "latencySeconds": 0.7677,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 147,
+        "completion_tokens": 6,
+        "total_tokens": 153
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-008",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 18 / 2. Return only the integer answer.",
+      "expected": "9",
+      "draftOutput": "9",
+      "verificationOutput": "18 / 2 = 9",
+      "output": "18 / 2 = 9",
+      "latencySeconds": 0.8751,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 148,
+        "completion_tokens": 11,
+        "total_tokens": 159
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-009",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 121 + 19. Return only the integer answer.",
+      "expected": "140",
+      "draftOutput": "240",
+      "verificationOutput": "240",
+      "output": "240",
+      "latencySeconds": 0.8578,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 154,
+        "completion_tokens": 8,
+        "total_tokens": 162
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-010",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 200 - 158. Return only the integer answer.",
+      "expected": "42",
+      "draftOutput": "142",
+      "verificationOutput": "142",
+      "output": "142",
+      "latencySeconds": 0.8601,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 156,
+        "completion_tokens": 8,
+        "total_tokens": 164
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-011",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 12 * 4. Return only the integer answer.",
+      "expected": "48",
+      "draftOutput": "48",
+      "verificationOutput": "48",
+      "output": "48",
+      "latencySeconds": 0.7816,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 149,
+        "completion_tokens": 6,
+        "total_tokens": 155
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-012",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 78 / 6. Return only the integer answer.",
+      "expected": "13",
+      "draftOutput": "11",
+      "verificationOutput": "11",
+      "output": "11",
+      "latencySeconds": 0.7779,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 149,
+        "completion_tokens": 6,
+        "total_tokens": 155
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-013",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 72 + 22. Return only the integer answer.",
+      "expected": "94",
+      "draftOutput": "94",
+      "verificationOutput": "94",
+      "output": "94",
+      "latencySeconds": 0.7945,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 151,
+        "completion_tokens": 6,
+        "total_tokens": 157
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-014",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 154 - 109. Return only the integer answer.",
+      "expected": "45",
+      "draftOutput": "14",
+      "verificationOutput": "14",
+      "output": "14",
+      "latencySeconds": 0.8196,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 155,
+        "completion_tokens": 6,
+        "total_tokens": 161
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-015",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 4 * 8. Return only the integer answer.",
+      "expected": "32",
+      "draftOutput": "32",
+      "verificationOutput": "4 * 8 = 32",
+      "output": "4 * 8 = 32",
+      "latencySeconds": 0.893,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 147,
+        "completion_tokens": 12,
+        "total_tokens": 159
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-016",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 6 / 3. Return only the integer answer.",
+      "expected": "2",
+      "draftOutput": "2",
+      "verificationOutput": "2",
+      "output": "2",
+      "latencySeconds": 0.723,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 146,
+        "completion_tokens": 4,
+        "total_tokens": 150
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-017",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 23 + 25. Return only the integer answer.",
+      "expected": "48",
+      "draftOutput": "48",
+      "verificationOutput": "48",
+      "output": "48",
+      "latencySeconds": 0.7965,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 151,
+        "completion_tokens": 6,
+        "total_tokens": 157
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-018",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 108 - 60. Return only the integer answer.",
+      "expected": "48",
+      "draftOutput": "48",
+      "verificationOutput": "48",
+      "output": "48",
+      "latencySeconds": 0.8113,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 153,
+        "completion_tokens": 6,
+        "total_tokens": 159
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-019",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 8 * 3. Return only the integer answer.",
+      "expected": "24",
+      "draftOutput": "24",
+      "verificationOutput": "24",
+      "output": "24",
+      "latencySeconds": 0.8016,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 147,
+        "completion_tokens": 6,
+        "total_tokens": 153
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-020",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 42 / 7. Return only the integer answer.",
+      "expected": "6",
+      "draftOutput": "7",
+      "verificationOutput": "42 / 7 = 6",
+      "output": "42 / 7 = 6",
+      "latencySeconds": 0.8796,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 148,
+        "completion_tokens": 11,
+        "total_tokens": 159
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-021",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 171 + 28. Return only the integer answer.",
+      "expected": "199",
+      "draftOutput": "100",
+      "verificationOutput": "101",
+      "output": "101",
+      "latencySeconds": 0.854,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 154,
+        "completion_tokens": 8,
+        "total_tokens": 162
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-022",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 62 - 11. Return only the integer answer.",
+      "expected": "51",
+      "draftOutput": "51",
+      "verificationOutput": "51",
+      "output": "51",
+      "latencySeconds": 0.7944,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 151,
+        "completion_tokens": 6,
+        "total_tokens": 157
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-023",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 12 * 7. Return only the integer answer.",
+      "expected": "84",
+      "draftOutput": "84",
+      "verificationOutput": "84",
+      "output": "84",
+      "latencySeconds": 0.7803,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 149,
+        "completion_tokens": 6,
+        "total_tokens": 155
+      },
+      "error": null
+    },
+    {
+      "id": "arithmetic-024",
+      "category": "arithmetic",
+      "prompt": "Calculate exactly: 40 / 4. Return only the integer answer.",
+      "expected": "10",
+      "draftOutput": "10",
+      "verificationOutput": "10",
+      "output": "10",
+      "latencySeconds": 0.7794,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 149,
+        "completion_tokens": 6,
+        "total_tokens": 155
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-001",
+      "category": "deduction",
+      "prompt": "Formal logic. Every dax is a wugs. Every wugs is green. Must every dax be green? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "yes",
+      "draftOutput": "Yes.",
+      "verificationOutput": "No",
+      "output": "No",
+      "latencySeconds": 0.8301,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 196,
+        "completion_tokens": 5,
+        "total_tokens": 201
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-002",
+      "category": "deduction",
+      "prompt": "Formal logic. No zors is tall. Every nims is a zors. Is it possible for an nims to be tall under these rules? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "no",
+      "draftOutput": "Yes.",
+      "verificationOutput": "No",
+      "output": "No",
+      "latencySeconds": 0.6018,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 210,
+        "completion_tokens": 5,
+        "total_tokens": 215
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-003",
+      "category": "deduction",
+      "prompt": "Formal logic. Every peks is a vims. Some vims are round. Do the premises guarantee that at least one peks is round? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "no",
+      "draftOutput": "Yes.",
+      "verificationOutput": "No",
+      "output": "No",
+      "latencySeconds": 0.9207,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 208,
+        "completion_tokens": 5,
+        "total_tokens": 213
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-004",
+      "category": "deduction",
+      "prompt": "Formal logic. Some glips are jeks. Every jeks is warm. Does at least one glips have to be warm? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "yes",
+      "draftOutput": "Yes.",
+      "verificationOutput": "No",
+      "output": "No",
+      "latencySeconds": 0.8762,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 202,
+        "completion_tokens": 5,
+        "total_tokens": 207
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-005",
+      "category": "deduction",
+      "prompt": "Formal logic. Every toves is a sarns. Every sarns is silent. Must every toves be silent? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "yes",
+      "draftOutput": "Yes",
+      "verificationOutput": "No",
+      "output": "No",
+      "latencySeconds": 0.8366,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 200,
+        "completion_tokens": 4,
+        "total_tokens": 204
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-006",
+      "category": "deduction",
+      "prompt": "Formal logic. No drels is heavy. Every rins is a drels. Is it possible for an rins to be heavy under these rules? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "no",
+      "draftOutput": "Yes.",
+      "verificationOutput": "No",
+      "output": "No",
+      "latencySeconds": 0.8857,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 206,
+        "completion_tokens": 5,
+        "total_tokens": 211
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-007",
+      "category": "deduction",
+      "prompt": "Formal logic. Every morks is a kets. Some kets are bright. Do the premises guarantee that at least one morks is bright? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "no",
+      "draftOutput": "Yes.",
+      "verificationOutput": "No",
+      "output": "No",
+      "latencySeconds": 0.9184,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 208,
+        "completion_tokens": 5,
+        "total_tokens": 213
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-008",
+      "category": "deduction",
+      "prompt": "Formal logic. Some lums are fens. Every fens is smooth. Does at least one lums have to be smooth? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "yes",
+      "draftOutput": "Yes.",
+      "verificationOutput": "No",
+      "output": "No",
+      "latencySeconds": 0.8749,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 202,
+        "completion_tokens": 5,
+        "total_tokens": 207
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-009",
+      "category": "deduction",
+      "prompt": "Formal logic. Every fips is a nolls. Every nolls is cold. Must every fips be cold? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "yes",
+      "draftOutput": "No",
+      "verificationOutput": "No",
+      "output": "No",
+      "latencySeconds": 0.8211,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 196,
+        "completion_tokens": 4,
+        "total_tokens": 200
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-010",
+      "category": "deduction",
+      "prompt": "Formal logic. No prims is soft. Every jarns is a prims. Is it possible for an jarns to be soft under these rules? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "no",
+      "draftOutput": "Yes.",
+      "verificationOutput": "No",
+      "output": "No",
+      "latencySeconds": 0.6134,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 214,
+        "completion_tokens": 5,
+        "total_tokens": 219
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-011",
+      "category": "deduction",
+      "prompt": "Formal logic. Every kelds is a garns. Some garns are rapid. Do the premises guarantee that at least one kelds is rapid? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "no",
+      "draftOutput": "Yes.",
+      "verificationOutput": "No",
+      "output": "No",
+      "latencySeconds": 0.9392,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 212,
+        "completion_tokens": 5,
+        "total_tokens": 217
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-012",
+      "category": "deduction",
+      "prompt": "Formal logic. Some vorks are threls. Every threls is calm. Does at least one vorks have to be calm? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "yes",
+      "draftOutput": "Yes.",
+      "verificationOutput": "Yes",
+      "output": "Yes",
+      "latencySeconds": 0.8745,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 202,
+        "completion_tokens": 5,
+        "total_tokens": 207
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-013",
+      "category": "deduction",
+      "prompt": "Formal logic. Every splets is a mivets. Every mivets is rough. Must every splets be rough? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "yes",
+      "draftOutput": "Yes.",
+      "verificationOutput": "No",
+      "output": "No",
+      "latencySeconds": 0.8545,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 200,
+        "completion_tokens": 5,
+        "total_tokens": 205
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-014",
+      "category": "deduction",
+      "prompt": "Formal logic. No dorns is clear. Every yurks is a dorns. Is it possible for an yurks to be clear under these rules? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "no",
+      "draftOutput": "Yes.",
+      "verificationOutput": "No",
+      "output": "No",
+      "latencySeconds": 0.9414,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 214,
+        "completion_tokens": 5,
+        "total_tokens": 219
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-015",
+      "category": "deduction",
+      "prompt": "Formal logic. Every baffs is a plins. Some plins are deep. Do the premises guarantee that at least one baffs is deep? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "no",
+      "draftOutput": "Yes.",
+      "verificationOutput": "No",
+      "output": "No",
+      "latencySeconds": 0.9194,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 208,
+        "completion_tokens": 5,
+        "total_tokens": 213
+      },
+      "error": null
+    },
+    {
+      "id": "deduction-016",
+      "category": "deduction",
+      "prompt": "Formal logic. Some zints are quops. Every quops is light. Does at least one zints have to be light? Treat the statements as the only facts. Answer with exactly yes or no.",
+      "expected": "yes",
+      "draftOutput": "Yes.",
+      "verificationOutput": "No",
+      "output": "No",
+      "latencySeconds": 0.8741,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 202,
+        "completion_tokens": 5,
+        "total_tokens": 207
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-001",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 2, 4, 6, 8, 10, ?. Return only the integer.",
+      "expected": "12",
+      "draftOutput": "12",
+      "verificationOutput": "12",
+      "output": "12",
+      "latencySeconds": 0.6947,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 179,
+        "completion_tokens": 6,
+        "total_tokens": 185
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-002",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 3, 6, 9, 12, 15, ?. Return only the integer.",
+      "expected": "18",
+      "draftOutput": "18",
+      "verificationOutput": "18",
+      "output": "18",
+      "latencySeconds": 0.6377,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 181,
+        "completion_tokens": 6,
+        "total_tokens": 187
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-003",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 4, 8, 12, 16, 20, ?. Return only the integer.",
+      "expected": "24",
+      "draftOutput": "24",
+      "verificationOutput": "24",
+      "output": "24",
+      "latencySeconds": 0.6512,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 183,
+        "completion_tokens": 6,
+        "total_tokens": 189
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-004",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 5, 10, 15, 20, 25, ?. Return only the integer.",
+      "expected": "30",
+      "draftOutput": "30",
+      "verificationOutput": "20",
+      "output": "20",
+      "latencySeconds": 0.6617,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 185,
+        "completion_tokens": 6,
+        "total_tokens": 191
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-005",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 6, 12, 18, 24, 30, ?. Return only the integer.",
+      "expected": "36",
+      "draftOutput": "36",
+      "verificationOutput": "36",
+      "output": "36",
+      "latencySeconds": 0.6628,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 185,
+        "completion_tokens": 6,
+        "total_tokens": 191
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-006",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 7, 9, 11, 13, 15, ?. Return only the integer.",
+      "expected": "17",
+      "draftOutput": "17",
+      "verificationOutput": "17",
+      "output": "17",
+      "latencySeconds": 0.6515,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 183,
+        "completion_tokens": 6,
+        "total_tokens": 189
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-007",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 8, 11, 14, 17, 20, ?. Return only the integer.",
+      "expected": "23",
+      "draftOutput": "23",
+      "verificationOutput": "23",
+      "output": "23",
+      "latencySeconds": 0.663,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 185,
+        "completion_tokens": 6,
+        "total_tokens": 191
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-008",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 9, 13, 17, 21, 25, ?. Return only the integer.",
+      "expected": "29",
+      "draftOutput": "29",
+      "verificationOutput": "29",
+      "output": "29",
+      "latencySeconds": 0.6692,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 185,
+        "completion_tokens": 6,
+        "total_tokens": 191
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-009",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 10, 15, 20, 25, 30, ?. Return only the integer.",
+      "expected": "35",
+      "draftOutput": "35",
+      "verificationOutput": "35",
+      "output": "35",
+      "latencySeconds": 0.6851,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 187,
+        "completion_tokens": 6,
+        "total_tokens": 193
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-010",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 11, 17, 23, 29, 35, ?. Return only the integer.",
+      "expected": "41",
+      "draftOutput": "41",
+      "verificationOutput": "41",
+      "output": "41",
+      "latencySeconds": 0.6626,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 187,
+        "completion_tokens": 6,
+        "total_tokens": 193
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-011",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 12, 14, 16, 18, 20, ?. Return only the integer.",
+      "expected": "22",
+      "draftOutput": "22",
+      "verificationOutput": "22",
+      "output": "22",
+      "latencySeconds": 0.6635,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 187,
+        "completion_tokens": 6,
+        "total_tokens": 193
+      },
+      "error": null
+    },
+    {
+      "id": "sequence-012",
+      "category": "sequence",
+      "prompt": "Find the next number in this arithmetic sequence: 13, 16, 19, 22, 25, ?. Return only the integer.",
+      "expected": "28",
+      "draftOutput": "28",
+      "verificationOutput": "28",
+      "output": "28",
+      "latencySeconds": 0.6654,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 187,
+        "completion_tokens": 6,
+        "total_tokens": 193
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-001",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: copper, jade, plum",
+      "expected": "plum,jade,copper",
+      "draftOutput": "copper, plum, jade",
+      "verificationOutput": "copper, plum",
+      "output": "copper, plum",
+      "latencySeconds": 0.6977,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 170,
+        "completion_tokens": 12,
+        "total_tokens": 182
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-002",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: north, west, south, east",
+      "expected": "east,south,west,north",
+      "draftOutput": "south, east, north",
+      "verificationOutput": "south, east, north",
+      "output": "south, east, north",
+      "latencySeconds": 0.5904,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 173,
+        "completion_tokens": 12,
+        "total_tokens": 185
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-003",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: violet, amber",
+      "expected": "amber,violet",
+      "draftOutput": "amber, violet",
+      "verificationOutput": "amber, violet",
+      "output": "amber, violet",
+      "latencySeconds": 0.4414,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 163,
+        "completion_tokens": 8,
+        "total_tokens": 171
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-004",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: oak, elm, pine, ash, fir",
+      "expected": "fir,ash,pine,elm,oak",
+      "draftOutput": "ash, elm, fir, oak, pine",
+      "verificationOutput": "ash, elm, fir, oak, pine",
+      "output": "ash, elm, fir, oak, pine",
+      "latencySeconds": 0.7986,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 181,
+        "completion_tokens": 20,
+        "total_tokens": 201
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-005",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: red, cyan, gold",
+      "expected": "gold,cyan,red",
+      "draftOutput": "gold, cyan, red",
+      "verificationOutput": "gold, cyan, red",
+      "output": "gold, cyan, red",
+      "latencySeconds": 0.5601,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 169,
+        "completion_tokens": 12,
+        "total_tokens": 181
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-006",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: cat, fox, yak, owl",
+      "expected": "owl,yak,fox,cat",
+      "draftOutput": "owl, fox, yak, cat",
+      "verificationOutput": "owl, fox, yak, cat",
+      "output": "owl, fox, yak, cat",
+      "latencySeconds": 0.6743,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 175,
+        "completion_tokens": 16,
+        "total_tokens": 191
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-007",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: one, four, nine, six",
+      "expected": "six,nine,four,one",
+      "draftOutput": "six, nine, four, one",
+      "verificationOutput": "six, nine, four, one",
+      "output": "six, nine, four, one",
+      "latencySeconds": 0.6754,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 175,
+        "completion_tokens": 16,
+        "total_tokens": 191
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-008",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: alpha, delta, beta",
+      "expected": "beta,delta,alpha",
+      "draftOutput": "delta, beta, alpha",
+      "verificationOutput": "alpha, delta, beta",
+      "output": "alpha, delta, beta",
+      "latencySeconds": 0.5586,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 169,
+        "completion_tokens": 12,
+        "total_tokens": 181
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-009",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: river, cloud, stone, leaf",
+      "expected": "leaf,stone,cloud,river",
+      "draftOutput": "leaf, stone, cloud, river",
+      "verificationOutput": "leaf, stone, cloud, river",
+      "output": "leaf, stone, cloud, river",
+      "latencySeconds": 0.6756,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 175,
+        "completion_tokens": 16,
+        "total_tokens": 191
+      },
+      "error": null
+    },
+    {
+      "id": "instruction-010",
+      "category": "instruction",
+      "prompt": "Reverse the order of these items and output only the items separated by commas, with no explanation: tea, rice",
+      "expected": "rice,tea",
+      "draftOutput": "rice, tea",
+      "verificationOutput": "tea, rice",
+      "output": "tea, rice",
+      "latencySeconds": 0.4343,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 163,
+        "completion_tokens": 8,
+        "total_tokens": 171
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-001",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nMira owns the compass.\nThe compass is kept in the basket.\nMira's assigned color is ochre.\nTomas owns the lantern.\nNia owns the notebook.\nOren owns the key.\nPavel owns the marble.\nQuestion: Where is the compass owned by Mira kept? Return only the place name.",
+      "expected": "basket",
+      "draftOutput": "basket",
+      "verificationOutput": "basket",
+      "output": "basket",
+      "latencySeconds": 0.7251,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 256,
+        "completion_tokens": 4,
+        "total_tokens": 260
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-002",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nSuki owns the ribbon.\nPavel owns the marble.\nOren owns the key.\nNia owns the notebook.\nTomas's assigned color is silver.\nThe lantern is kept in the locker.\nTomas owns the lantern.\nQuestion: Where is the lantern owned by Tomas kept? Return only the place name.",
+      "expected": "locker",
+      "draftOutput": "locker",
+      "verificationOutput": "locker",
+      "output": "locker",
+      "latencySeconds": 0.7141,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 252,
+        "completion_tokens": 4,
+        "total_tokens": 256
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-003",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nNia owns the notebook.\nThe notebook is kept in the case.\nNia's assigned color is amber.\nOren owns the key.\nPavel owns the marble.\nSuki owns the ribbon.\nLena owns the coin.\nQuestion: Where is the notebook owned by Nia kept? Return only the place name.",
+      "expected": "case",
+      "draftOutput": "case",
+      "verificationOutput": "case",
+      "output": "case",
+      "latencySeconds": 0.7145,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 254,
+        "completion_tokens": 4,
+        "total_tokens": 258
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-004",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nIdris owns the shell.\nLena owns the coin.\nSuki owns the ribbon.\nPavel owns the marble.\nOren's assigned color is indigo.\nThe key is kept in the drawer.\nOren owns the key.\nQuestion: Where is the key owned by Oren kept? Return only the place name.",
+      "expected": "drawer",
+      "draftOutput": "drawer",
+      "verificationOutput": "drawer",
+      "output": "drawer",
+      "latencySeconds": 0.7256,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 256,
+        "completion_tokens": 4,
+        "total_tokens": 260
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-005",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nPavel owns the marble.\nThe marble is kept in the pouch.\nPavel's assigned color is mint.\nSuki owns the ribbon.\nLena owns the coin.\nIdris owns the shell.\nKira owns the badge.\nQuestion: Where is the marble owned by Pavel kept? Return only the place name.",
+      "expected": "pouch",
+      "draftOutput": "pouch",
+      "verificationOutput": "pouch",
+      "output": "pouch",
+      "latencySeconds": 0.7534,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 253,
+        "completion_tokens": 6,
+        "total_tokens": 259
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-006",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nBram owns the pencil.\nKira owns the badge.\nIdris owns the shell.\nLena owns the coin.\nSuki's assigned color is teal.\nThe ribbon is kept in the stand.\nSuki owns the ribbon.\nQuestion: Where is the ribbon owned by Suki kept? Return only the place name.",
+      "expected": "stand",
+      "draftOutput": "stand",
+      "verificationOutput": "stand",
+      "output": "stand",
+      "latencySeconds": 0.7138,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 254,
+        "completion_tokens": 4,
+        "total_tokens": 258
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-007",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nLena owns the coin.\nThe coin is kept in the shelf.\nLena's assigned color is coral.\nIdris owns the shell.\nKira owns the badge.\nBram owns the pencil.\nYuna owns the thermos.\nQuestion: Where is the coin owned by Lena kept? Return only the place name.",
+      "expected": "shelf",
+      "draftOutput": "shelf",
+      "verificationOutput": "shelf",
+      "output": "shelf",
+      "latencySeconds": 0.7129,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 254,
+        "completion_tokens": 4,
+        "total_tokens": 258
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-008",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nFelix owns the map.\nYuna owns the thermos.\nBram owns the pencil.\nKira owns the badge.\nIdris's assigned color is plum.\nThe shell is kept in the box.\nIdris owns the shell.\nQuestion: Where is the shell owned by Idris kept? Return only the place name.",
+      "expected": "box",
+      "draftOutput": "box",
+      "verificationOutput": "box",
+      "output": "box",
+      "latencySeconds": 0.7264,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 258,
+        "completion_tokens": 4,
+        "total_tokens": 262
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-009",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nKira owns the badge.\nThe badge is kept in the satchel.\nKira's assigned color is ochre.\nBram owns the pencil.\nYuna owns the thermos.\nFelix owns the map.\nZara owns the button.\nQuestion: Where is the badge owned by Kira kept? Return only the place name.",
+      "expected": "satchel",
+      "draftOutput": "satchel",
+      "verificationOutput": "satchel",
+      "output": "satchel",
+      "latencySeconds": 0.8432,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 264,
+        "completion_tokens": 8,
+        "total_tokens": 272
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-010",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nHugo owns the camera.\nZara owns the button.\nFelix owns the map.\nYuna owns the thermos.\nBram's assigned color is silver.\nThe pencil is kept in the cabinet.\nBram owns the pencil.\nQuestion: Where is the pencil owned by Bram kept? Return only the place name.",
+      "expected": "cabinet",
+      "draftOutput": "cabinet",
+      "verificationOutput": "cabinet",
+      "output": "cabinet",
+      "latencySeconds": 0.764,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 255,
+        "completion_tokens": 6,
+        "total_tokens": 261
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-011",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nYuna owns the thermos.\nThe thermos is kept in the crate.\nYuna's assigned color is amber.\nFelix owns the map.\nZara owns the button.\nHugo owns the camera.\nAsha owns the scarf.\nQuestion: Where is the thermos owned by Yuna kept? Return only the place name.",
+      "expected": "crate",
+      "draftOutput": "crate",
+      "verificationOutput": "crate",
+      "output": "crate",
+      "latencySeconds": 0.7377,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 260,
+        "completion_tokens": 4,
+        "total_tokens": 264
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-012",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nNoel owns the hourglass.\nAsha owns the scarf.\nHugo owns the camera.\nZara owns the button.\nFelix's assigned color is indigo.\nThe map is kept in the cupboard.\nFelix owns the map.\nQuestion: Where is the map owned by Felix kept? Return only the place name.",
+      "expected": "cupboard",
+      "draftOutput": "cupboard",
+      "verificationOutput": "cupboard",
+      "output": "cupboard",
+      "latencySeconds": 0.7675,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 257,
+        "completion_tokens": 6,
+        "total_tokens": 263
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-013",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nZara owns the button.\nThe button is kept in the bin.\nZara's assigned color is mint.\nHugo owns the camera.\nAsha owns the scarf.\nNoel owns the hourglass.\nMira owns the compass.\nQuestion: Where is the button owned by Zara kept? Return only the place name.",
+      "expected": "bin",
+      "draftOutput": "bin",
+      "verificationOutput": "bin",
+      "output": "bin",
+      "latencySeconds": 0.7254,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 256,
+        "completion_tokens": 4,
+        "total_tokens": 260
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-014",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nTomas owns the lantern.\nMira owns the compass.\nNoel owns the hourglass.\nAsha owns the scarf.\nHugo's assigned color is teal.\nThe camera is kept in the desk.\nHugo owns the camera.\nQuestion: Where is the camera owned by Hugo kept? Return only the place name.",
+      "expected": "desk",
+      "draftOutput": "desk",
+      "verificationOutput": "desk",
+      "output": "desk",
+      "latencySeconds": 0.7156,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 254,
+        "completion_tokens": 4,
+        "total_tokens": 258
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-015",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nAsha owns the scarf.\nThe scarf is kept in the trunk.\nAsha's assigned color is coral.\nNoel owns the hourglass.\nMira owns the compass.\nTomas owns the lantern.\nNia owns the notebook.\nQuestion: Where is the scarf owned by Asha kept? Return only the place name.",
+      "expected": "trunk",
+      "draftOutput": "trunk",
+      "verificationOutput": "trunk",
+      "output": "trunk",
+      "latencySeconds": 0.7685,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 257,
+        "completion_tokens": 6,
+        "total_tokens": 263
+      },
+      "error": null
+    },
+    {
+      "id": "context_recall-016",
+      "category": "context_recall",
+      "prompt": "Read the facts carefully:\nOren owns the key.\nNia owns the notebook.\nTomas owns the lantern.\nMira owns the compass.\nNoel's assigned color is plum.\nThe hourglass is kept in the rack.\nNoel owns the hourglass.\nQuestion: Where is the hourglass owned by Noel kept? Return only the place name.",
+      "expected": "rack",
+      "draftOutput": "rack",
+      "verificationOutput": "rack",
+      "output": "rack",
+      "latencySeconds": 0.7273,
+      "correct": true,
+      "usage": {
+        "prompt_tokens": 258,
+        "completion_tokens": 4,
+        "total_tokens": 262
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-001",
+      "category": "state_update",
+      "prompt": "A counter starts at 17. First increase it by 4. Then decrease it by 1. What is the final value? Return only the integer.",
+      "expected": "20",
+      "draftOutput": "13",
+      "verificationOutput": "13",
+      "output": "13",
+      "latencySeconds": 0.5282,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 183,
+        "completion_tokens": 6,
+        "total_tokens": 189
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-002",
+      "category": "state_update",
+      "prompt": "A counter starts at 20. First increase it by 5. Then decrease it by 2. What is the final value? Return only the integer.",
+      "expected": "23",
+      "draftOutput": "19",
+      "verificationOutput": "19",
+      "output": "19",
+      "latencySeconds": 0.7094,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 183,
+        "completion_tokens": 6,
+        "total_tokens": 189
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-003",
+      "category": "state_update",
+      "prompt": "A counter starts at 23. First increase it by 6. Then decrease it by 3. What is the final value? Return only the integer.",
+      "expected": "26",
+      "draftOutput": "19",
+      "verificationOutput": "19",
+      "output": "19",
+      "latencySeconds": 0.7085,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 183,
+        "completion_tokens": 6,
+        "total_tokens": 189
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-004",
+      "category": "state_update",
+      "prompt": "A counter starts at 26. First increase it by 7. Then decrease it by 4. What is the final value? Return only the integer.",
+      "expected": "29",
+      "draftOutput": "23",
+      "verificationOutput": "23",
+      "output": "23",
+      "latencySeconds": 0.7086,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 183,
+        "completion_tokens": 6,
+        "total_tokens": 189
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-005",
+      "category": "state_update",
+      "prompt": "A counter starts at 29. First increase it by 8. Then decrease it by 5. What is the final value? Return only the integer.",
+      "expected": "32",
+      "draftOutput": "22",
+      "verificationOutput": "22",
+      "output": "22",
+      "latencySeconds": 0.7083,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 183,
+        "completion_tokens": 6,
+        "total_tokens": 189
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-006",
+      "category": "state_update",
+      "prompt": "A counter starts at 32. First increase it by 9. Then decrease it by 1. What is the final value? Return only the integer.",
+      "expected": "40",
+      "draftOutput": "28",
+      "verificationOutput": "28",
+      "output": "28",
+      "latencySeconds": 0.7083,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 183,
+        "completion_tokens": 6,
+        "total_tokens": 189
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-007",
+      "category": "state_update",
+      "prompt": "A counter starts at 35. First increase it by 10. Then decrease it by 2. What is the final value? Return only the integer.",
+      "expected": "43",
+      "draftOutput": "33",
+      "verificationOutput": "33",
+      "output": "33",
+      "latencySeconds": 0.7271,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 185,
+        "completion_tokens": 6,
+        "total_tokens": 191
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-008",
+      "category": "state_update",
+      "prompt": "A counter starts at 38. First increase it by 11. Then decrease it by 3. What is the final value? Return only the integer.",
+      "expected": "46",
+      "draftOutput": "38",
+      "verificationOutput": "35",
+      "output": "35",
+      "latencySeconds": 0.7277,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 185,
+        "completion_tokens": 6,
+        "total_tokens": 191
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-009",
+      "category": "state_update",
+      "prompt": "A counter starts at 41. First increase it by 12. Then decrease it by 4. What is the final value? Return only the integer.",
+      "expected": "49",
+      "draftOutput": "41",
+      "verificationOutput": "47",
+      "output": "47",
+      "latencySeconds": 0.5014,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 185,
+        "completion_tokens": 6,
+        "total_tokens": 191
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-010",
+      "category": "state_update",
+      "prompt": "A counter starts at 44. First increase it by 4. Then decrease it by 5. What is the final value? Return only the integer.",
+      "expected": "43",
+      "draftOutput": "41",
+      "verificationOutput": "41",
+      "output": "41",
+      "latencySeconds": 0.7061,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 183,
+        "completion_tokens": 6,
+        "total_tokens": 189
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-011",
+      "category": "state_update",
+      "prompt": "A counter starts at 47. First increase it by 5. Then decrease it by 1. What is the final value? Return only the integer.",
+      "expected": "51",
+      "draftOutput": "44",
+      "verificationOutput": "44",
+      "output": "44",
+      "latencySeconds": 0.7075,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 183,
+        "completion_tokens": 6,
+        "total_tokens": 189
+      },
+      "error": null
+    },
+    {
+      "id": "state_update-012",
+      "category": "state_update",
+      "prompt": "A counter starts at 50. First increase it by 6. Then decrease it by 2. What is the final value? Return only the integer.",
+      "expected": "54",
+      "draftOutput": "44",
+      "verificationOutput": "44",
+      "output": "44",
+      "latencySeconds": 0.4908,
+      "correct": false,
+      "usage": {
+        "prompt_tokens": 183,
+        "completion_tokens": 6,
+        "total_tokens": 189
+      },
+      "error": null
+    }
+  ]
+}
