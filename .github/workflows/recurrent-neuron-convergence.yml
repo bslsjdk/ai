@@ -48,6 +48,7 @@ jobs:
           end = text.find("*** END OF THE PROJECT GUTENBERG EBOOK")
           if end >= 0:
               text = text[:end]
+          text = text.replace("\r\n", "\n").replace("\r", "\n")
           digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
           expected = "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
           if digest != expected:
