@@ -65,20 +65,33 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add experiments/dynamic-sparse-neuron-lm/latest
+          REPORT_DIR="experiments/dynamic-sparse-neuron-lm/latest"
+          git add "$REPORT_DIR"
           if git diff --cached --quiet; then
             echo "No experiment outputs to commit."
           else
-            git commit -m "Record dynamic sparse neuron LM experiment [skip ci]"
+            BACKUP_DIR="$(mktemp -d)"
+            cp -a "$REPORT_DIR/." "$BACKUP_DIR/"
+            COMMIT_MESSAGE="Record dynamic sparse neuron LM experiment [skip ci]"
+            git commit -m "$COMMIT_MESSAGE"
             pushed=0
             for attempt in 1 2 3 4 5; do
               git fetch origin "${GITHUB_REF_NAME}"
-              git rebase "origin/${GITHUB_REF_NAME}"
-              if git push origin "HEAD:${GITHUB_REF_NAME}"; then
-                pushed=1
-                break
+              if git rebase "origin/${GITHUB_REF_NAME}"; then
+                if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+                  pushed=1
+                  break
+                fi
+              else
+                git rebase --abort || true
+                git fetch origin "${GITHUB_REF_NAME}"
+                git reset --hard "origin/${GITHUB_REF_NAME}"
+                cp -a "$BACKUP_DIR/." "$REPORT_DIR/"
+                git add "$REPORT_DIR"
+                git commit -m "$COMMIT_MESSAGE"
               fi
               sleep 2
             done
+            rm -rf "$BACKUP_DIR"
             test "$pushed" = "1"
           fi
