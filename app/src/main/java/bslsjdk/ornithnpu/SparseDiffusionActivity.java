@@ -1,6 +1,7 @@
 package bslsjdk.ornithnpu;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -17,7 +18,7 @@ public final class SparseDiffusionActivity extends Activity {
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private EditText prompt, count;
     private TextView status, result;
-    private Button run, rewardButton, punishButton, learnTextButton;
+    private Button run, rewardButton, punishButton, learnTextButton, resetButton;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -68,6 +69,16 @@ public final class SparseDiffusionActivity extends Activity {
         learnTextButton.setEnabled(false);
         learnTextButton.setOnClickListener(v -> learnFromInputText());
         root.addView(learnTextButton);
+        resetButton = new Button(this);
+        resetButton.setText("撤销学习，恢复导入时的基础模型");
+        resetButton.setEnabled(false);
+        resetButton.setOnClickListener(v -> new AlertDialog.Builder(this)
+                .setTitle("恢复基础模型")
+                .setMessage("这会清除本机保存的学习参数，但不会删除导入的模型文件。")
+                .setNegativeButton("取消", (dialog, which) -> { })
+                .setPositiveButton("恢复", (dialog, which) -> resetLearning())
+                .show());
+        root.addView(resetButton);
         ScrollView scroll = new ScrollView(this);
         result = new TextView(this);
         result.setTextIsSelectable(true);
@@ -97,7 +108,7 @@ public final class SparseDiffusionActivity extends Activity {
                 }
                 model.load(file);
                 model.loadLearningState(new File(getFilesDir(), "aimeng-learning-state.json"));
-                runOnUiThread(() -> { status.setText("模型已加载 · 本地学习记录 " + model.getLearningUpdates() + " 次"); run.setEnabled(true); learnTextButton.setEnabled(true); });
+                runOnUiThread(() -> { status.setText("模型已加载 · 本地学习记录 " + model.getLearningUpdates() + " 次"); run.setEnabled(true); learnTextButton.setEnabled(true); resetButton.setEnabled(true); });
             } catch (Throwable e) {
                 runOnUiThread(() -> status.setText("加载失败：" + e.getClass().getSimpleName() + ": " + e.getMessage()));
             }
@@ -128,6 +139,29 @@ public final class SparseDiffusionActivity extends Activity {
                 });
             } catch (Throwable e) {
                 runOnUiThread(() -> { status.setText("推理失败：" + e.getClass().getSimpleName() + ": " + e.getMessage()); run.setEnabled(true); });
+            }
+        });
+    }
+
+    private void resetLearning() {
+        resetButton.setEnabled(false);
+        rewardButton.setEnabled(false);
+        punishButton.setEnabled(false);
+        learnTextButton.setEnabled(false);
+        worker.execute(() -> {
+            try {
+                model.resetLearningState(new File(getFilesDir(), "aimeng-learning-state.json"));
+                runOnUiThread(() -> {
+                    status.setText("已恢复导入时的基础模型 · 本地学习记录已清除");
+                    resetButton.setEnabled(true);
+                    learnTextButton.setEnabled(true);
+                });
+            } catch (Throwable e) {
+                runOnUiThread(() -> {
+                    status.setText("恢复失败：" + e.getClass().getSimpleName() + ": " + e.getMessage());
+                    resetButton.setEnabled(true);
+                    learnTextButton.setEnabled(true);
+                });
             }
         });
     }
