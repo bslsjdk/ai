@@ -365,8 +365,11 @@ public final class SuperNeuronLabActivity extends Activity {
             output.flush();
             output.getFD().sync();
         }
-        if (target.exists() && !target.delete()) throw new IOException("cannot replace " + name);
-        if (!temporary.renameTo(target)) throw new IOException("cannot atomically rename " + name);
+        try {
+            android.system.Os.rename(temporary.getAbsolutePath(), target.getAbsolutePath());
+        } catch (android.system.ErrnoException e) {
+            throw new IOException("cannot atomically replace " + name, e);
+        }
     }
 
     private void train() {
