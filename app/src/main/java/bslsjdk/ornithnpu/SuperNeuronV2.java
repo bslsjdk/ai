@@ -32,7 +32,12 @@ public final class SuperNeuronV2 {
     private final double[] gateBias;
     // Diagonal recurrent connection: O(hiddenSize), not O(hiddenSize^2).
     private final double[] recurrentScale;
-    private final int outputRank;\n    private final double[] hiddenToOutputRank; // [hiddenSize * outputRank]\n    private final double[] outputEmbedding; // [outputCount * outputRank]\n    private final double[] lastLatent;\n    private final double[] latentGradient;\n    private final double[] hiddenGradient;
+    private final int outputRank;
+    private final double[] hiddenToOutputRank; // [hiddenSize * outputRank]
+    private final double[] outputEmbedding; // [outputCount * outputRank]
+    private final double[] lastLatent;
+    private final double[] latentGradient;
+    private final double[] hiddenGradient;
     private final double[] outputBias;
     private final double[] state;
 
@@ -60,7 +65,12 @@ public final class SuperNeuronV2 {
         gateWeight = new double[inputCount];
         gateBias = new double[inputCount];
         recurrentScale = new double[hiddenSize];
-        outputRank = Math.min(32, hiddenSize);\n        hiddenToOutputRank = new double[hiddenSize * outputRank];\n        outputEmbedding = new double[outputCount * outputRank];\n        lastLatent = new double[outputRank];\n        latentGradient = new double[outputRank];\n        hiddenGradient = new double[hiddenSize];
+        outputRank = Math.min(32, hiddenSize);
+        hiddenToOutputRank = new double[hiddenSize * outputRank];
+        outputEmbedding = new double[outputCount * outputRank];
+        lastLatent = new double[outputRank];
+        latentGradient = new double[outputRank];
+        hiddenGradient = new double[hiddenSize];
         outputBias = new double[outputCount];
         state = new double[hiddenSize];
         lastInput = new double[inputCount];
@@ -259,7 +269,9 @@ public final class SuperNeuronV2 {
         putArray(root, "gateWeight", gateWeight);
         putArray(root, "gateBias", gateBias);
         putArray(root, "recurrentScale", recurrentScale);
-        root.put("outputRank", outputRank);\n        putArray(root, "hiddenToOutputRank", hiddenToOutputRank);\n        putArray(root, "outputEmbedding", outputEmbedding);
+        root.put("outputRank", outputRank);
+        putArray(root, "hiddenToOutputRank", hiddenToOutputRank);
+        putArray(root, "outputEmbedding", outputEmbedding);
         putArray(root, "outputBias", outputBias);
         putArray(root, "state", state);
         return root;
@@ -276,7 +288,10 @@ public final class SuperNeuronV2 {
         readArray(root, "gateWeight", result.gateWeight);
         readArray(root, "gateBias", result.gateBias);
         readArray(root, "recurrentScale", result.recurrentScale);
-        if (root.optInt("outputRank", result.outputRank) != result.outputRank)\n            throw new IllegalArgumentException("checkpoint outputRank mismatch");\n        readArray(root, "hiddenToOutputRank", result.hiddenToOutputRank);\n        readArray(root, "outputEmbedding", result.outputEmbedding);
+        if (root.optInt("outputRank", result.outputRank) != result.outputRank)
+            throw new IllegalArgumentException("checkpoint outputRank mismatch");
+        readArray(root, "hiddenToOutputRank", result.hiddenToOutputRank);
+        readArray(root, "outputEmbedding", result.outputEmbedding);
         readArray(root, "outputBias", result.outputBias);
         readArray(root, "state", result.state);
         result.forwardSteps = Math.max(0L, root.optLong("forwardSteps", 0L));
