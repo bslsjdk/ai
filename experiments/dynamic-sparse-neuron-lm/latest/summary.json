@@ -69,35 +69,35 @@
       "mean_parameters": 1570.0,
       "mean_heldout_loss": 2.094281315803528,
       "mean_heldout_accuracy": 0.5062785388127854,
-      "mean_wall_seconds": 1.8432000000000002
+      "mean_wall_seconds": 0.8976000000000001
     },
     "dense_parameter_matched": {
       "runs": 3,
       "mean_parameters": 1569.0,
       "mean_heldout_loss": 1.1934901873270671,
       "mean_heldout_accuracy": 0.7236729452054794,
-      "mean_wall_seconds": 1.2358666666666667
+      "mean_wall_seconds": 0.5867333333333333
     },
     "dynamic_sparse_f0_125": {
       "runs": 3,
       "mean_parameters": 1570.0,
       "mean_heldout_loss": 1.2974471251169841,
       "mean_heldout_accuracy": 0.7062642694063926,
-      "mean_wall_seconds": 1.9479
+      "mean_wall_seconds": 0.9308
     },
     "dynamic_sparse_f0_25": {
       "runs": 3,
       "mean_parameters": 1570.0,
-      "mean_heldout_loss": 1.4005165894826253,
+      "mean_heldout_loss": 1.4005165497461955,
       "mean_heldout_accuracy": 0.6791523972602739,
-      "mean_wall_seconds": 1.958
+      "mean_wall_seconds": 0.9131999999999999
     },
     "dynamic_sparse_f0_375": {
       "runs": 3,
       "mean_parameters": 1570.0,
       "mean_heldout_loss": 1.7012087106704712,
       "mean_heldout_accuracy": 0.5821917808219178,
-      "mean_wall_seconds": 1.9389333333333332
+      "mean_wall_seconds": 0.9028333333333333
     }
   },
   "runs": [
@@ -108,7 +108,7 @@
       "parameter_count": 1570,
       "heldout_loss": 2.1088478565216064,
       "heldout_accuracy": 0.480736301369863,
-      "wall_seconds": 1.9873,
+      "wall_seconds": 1.0686,
       "history": [
         {
           "epoch": 1,
@@ -122,7 +122,7 @@
         },
         {
           "epoch": 3,
-          "heldout_loss": 3.1145849227905273,
+          "heldout_loss": 3.1145851612091064,
           "heldout_accuracy": 0.21789383561643835
         },
         {
@@ -162,7 +162,7 @@
         },
         {
           "epoch": 11,
-          "heldout_loss": 2.8421261310577393,
+          "heldout_loss": 2.84212589263916,
           "heldout_accuracy": 0.22131849315068494
         },
         {
@@ -212,7 +212,7 @@
         },
         {
           "epoch": 21,
-          "heldout_loss": 2.2608187198638916,
+          "heldout_loss": 2.2608184814453125,
           "heldout_accuracy": 0.4400684931506849
         },
         {
@@ -239,7 +239,7 @@
       "parameter_count": 1569,
       "heldout_loss": 1.1979544162750244,
       "heldout_accuracy": 0.7403681506849316,
-      "wall_seconds": 1.2276,
+      "wall_seconds": 0.5717,
       "history": [
         {
           "epoch": 1,
@@ -303,7 +303,7 @@
         },
         {
           "epoch": 13,
-          "heldout_loss": 1.582849144935608,
+          "heldout_loss": 1.5828490257263184,
           "heldout_accuracy": 0.6397688356164384
         },
         {
@@ -323,7 +323,7 @@
         },
         {
           "epoch": 17,
-          "heldout_loss": 1.4028128385543823,
+          "heldout_loss": 1.4028127193450928,
           "heldout_accuracy": 0.693279109589041
         },
         {
@@ -348,7 +348,7 @@
         },
         {
           "epoch": 22,
-          "heldout_loss": 1.2482852935791016,
+          "heldout_loss": 1.248285174369812,
           "heldout_accuracy": 0.734375
         },
         {
@@ -370,7 +370,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.3299041986465454,
       "heldout_accuracy": 0.7026969178082192,
-      "wall_seconds": 1.9814,
+      "wall_seconds": 0.9625,
       "unit_details": [
         {
           "id": "neuron-006",
@@ -410,7 +410,7 @@
             32
           ],
           "input_weight_l2": 2.5492258071899414,
-          "output_weight_l2": 3.1251485347747803,
+          "output_weight_l2": 3.1251490116119385,
           "ablation_loss_delta": 0.09138262271881104
         },
         {
@@ -532,7 +532,7 @@
             27,
             28
           ],
-          "input_weight_l2": 1.7568775415420532,
+          "input_weight_l2": 1.7568774223327637,
           "output_weight_l2": 2.038597583770752,
           "ablation_loss_delta": 0.04182398319244385
         },
@@ -573,7 +573,7 @@
             31,
             32
           ],
-          "input_weight_l2": 1.9368293285369873,
+          "input_weight_l2": 1.9368292093276978,
           "output_weight_l2": 2.273979425430298,
           "ablation_loss_delta": 0.04023885726928711
         },
@@ -614,7 +614,7 @@
             30,
             32
           ],
-          "input_weight_l2": 1.9385398626327515,
+          "input_weight_l2": 1.938539743423462,
           "output_weight_l2": 2.3479390144348145,
           "ablation_loss_delta": 0.03550910949707031
         },
@@ -656,7 +656,7 @@
             32
           ],
           "input_weight_l2": 1.6428728103637695,
-          "output_weight_l2": 1.9030457735061646,
+          "output_weight_l2": 1.903045654296875,
           "ablation_loss_delta": 0.03158283233642578
         },
         {
@@ -696,9 +696,9 @@
             29,
             30
           ],
-          "input_weight_l2": 1.5454087257385254,
-          "output_weight_l2": 1.895887017250061,
-          "ablation_loss_delta": 0.03031325340270996
+          "input_weight_l2": 1.5454084873199463,
+          "output_weight_l2": 1.895886778831482,
+          "ablation_loss_delta": 0.03031337261199951
         },
         {
           "id": "neuron-042",
@@ -737,8 +737,8 @@
             30,
             32
           ],
-          "input_weight_l2": 1.910803198814392,
-          "output_weight_l2": 2.321476459503174,
+          "input_weight_l2": 1.9108033180236816,
+          "output_weight_l2": 2.321476697921753,
           "ablation_loss_delta": 0.030302882194519043
         },
         {
@@ -778,8 +778,8 @@
             30,
             31
           ],
-          "input_weight_l2": 1.8825819492340088,
-          "output_weight_l2": 2.245462656021118,
+          "input_weight_l2": 1.8825817108154297,
+          "output_weight_l2": 2.245462417602539,
           "ablation_loss_delta": 0.03024137020111084
         },
         {
@@ -819,7 +819,7 @@
             30,
             32
           ],
-          "input_weight_l2": 1.5884466171264648,
+          "input_weight_l2": 1.5884467363357544,
           "output_weight_l2": 1.8872300386428833,
           "ablation_loss_delta": 0.030126333236694336
         },
@@ -901,8 +901,8 @@
             32,
             33
           ],
-          "input_weight_l2": 1.3845535516738892,
-          "output_weight_l2": 1.5395807027816772,
+          "input_weight_l2": 1.3845536708831787,
+          "output_weight_l2": 1.5395808219909668,
           "ablation_loss_delta": 0.02855229377746582
         },
         {
@@ -944,7 +944,7 @@
           ],
           "input_weight_l2": 1.5619146823883057,
           "output_weight_l2": 1.91305410861969,
-          "ablation_loss_delta": 0.02827739715576172
+          "ablation_loss_delta": 0.02827751636505127
         },
         {
           "id": "neuron-007",
@@ -983,8 +983,8 @@
             32,
             33
           ],
-          "input_weight_l2": 1.71223783493042,
-          "output_weight_l2": 1.9552996158599854,
+          "input_weight_l2": 1.7122379541397095,
+          "output_weight_l2": 1.9552993774414062,
           "ablation_loss_delta": 0.02808833122253418
         },
         {
@@ -1024,9 +1024,9 @@
             31,
             33
           ],
-          "input_weight_l2": 1.345129370689392,
-          "output_weight_l2": 1.5590981245040894,
-          "ablation_loss_delta": 0.02532637119293213
+          "input_weight_l2": 1.3451292514801025,
+          "output_weight_l2": 1.5590977668762207,
+          "ablation_loss_delta": 0.02532649040222168
         },
         {
           "id": "neuron-037",
@@ -1065,9 +1065,9 @@
             29,
             30
           ],
-          "input_weight_l2": 1.5407108068466187,
+          "input_weight_l2": 1.540710687637329,
           "output_weight_l2": 1.9659587144851685,
-          "ablation_loss_delta": 0.02291083335876465
+          "ablation_loss_delta": 0.0229109525680542
         },
         {
           "id": "neuron-026",
@@ -1107,8 +1107,8 @@
             32
           ],
           "input_weight_l2": 1.3626294136047363,
-          "output_weight_l2": 1.6060997247695923,
-          "ablation_loss_delta": 0.020341157913208008
+          "output_weight_l2": 1.6060998439788818,
+          "ablation_loss_delta": 0.020341038703918457
         },
         {
           "id": "neuron-017",
@@ -1147,7 +1147,7 @@
             30,
             32
           ],
-          "input_weight_l2": 1.314487338066101,
+          "input_weight_l2": 1.3144872188568115,
           "output_weight_l2": 1.5236543416976929,
           "ablation_loss_delta": 0.017934083938598633
         },
@@ -1229,7 +1229,7 @@
             29,
             30
           ],
-          "input_weight_l2": 1.0657161474227905,
+          "input_weight_l2": 1.06571626663208,
           "output_weight_l2": 1.4202861785888672,
           "ablation_loss_delta": 0.016452908515930176
         },
@@ -1272,7 +1272,7 @@
           ],
           "input_weight_l2": 1.4093877077102661,
           "output_weight_l2": 1.671620488166809,
-          "ablation_loss_delta": 0.01634049415588379
+          "ablation_loss_delta": 0.01634073257446289
         },
         {
           "id": "neuron-002",
@@ -1393,8 +1393,8 @@
             27,
             32
           ],
-          "input_weight_l2": 1.4761136770248413,
-          "output_weight_l2": 1.9632281064987183,
+          "input_weight_l2": 1.4761137962341309,
+          "output_weight_l2": 1.9632279872894287,
           "ablation_loss_delta": 0.011760950088500977
         },
         {
@@ -1435,7 +1435,7 @@
             33
           ],
           "input_weight_l2": 1.4701181650161743,
-          "output_weight_l2": 1.8324238061904907,
+          "output_weight_l2": 1.8324235677719116,
           "ablation_loss_delta": 0.011432647705078125
         },
         {
@@ -1475,8 +1475,8 @@
             31,
             32
           ],
-          "input_weight_l2": 1.033400535583496,
-          "output_weight_l2": 1.4139784574508667,
+          "input_weight_l2": 1.0334006547927856,
+          "output_weight_l2": 1.4139785766601562,
           "ablation_loss_delta": 0.011058688163757324
         },
         {
@@ -1517,8 +1517,8 @@
             32
           ],
           "input_weight_l2": 1.2691296339035034,
-          "output_weight_l2": 1.7376577854156494,
-          "ablation_loss_delta": 0.010901093482971191
+          "output_weight_l2": 1.737657904624939,
+          "ablation_loss_delta": 0.010901212692260742
         },
         {
           "id": "neuron-028",
@@ -1559,7 +1559,7 @@
           ],
           "input_weight_l2": 1.0977953672409058,
           "output_weight_l2": 1.3023386001586914,
-          "ablation_loss_delta": 0.009983539581298828
+          "ablation_loss_delta": 0.009983658790588379
         },
         {
           "id": "neuron-022",
@@ -1598,7 +1598,7 @@
             25,
             32
           ],
-          "input_weight_l2": 1.2992072105407715,
+          "input_weight_l2": 1.299207091331482,
           "output_weight_l2": 1.4559839963912964,
           "ablation_loss_delta": 0.008924365043640137
         },
@@ -1639,9 +1639,9 @@
             29,
             33
           ],
-          "input_weight_l2": 0.9621520042419434,
-          "output_weight_l2": 1.0057368278503418,
-          "ablation_loss_delta": 0.008739471435546875
+          "input_weight_l2": 0.9621520638465881,
+          "output_weight_l2": 1.0057369470596313,
+          "ablation_loss_delta": 0.008739590644836426
         },
         {
           "id": "neuron-027",
@@ -1681,7 +1681,7 @@
             33
           ],
           "input_weight_l2": 0.882713258266449,
-          "output_weight_l2": 1.0881569385528564,
+          "output_weight_l2": 1.088156819343567,
           "ablation_loss_delta": 0.00808095932006836
         },
         {
@@ -1721,7 +1721,7 @@
             30,
             33
           ],
-          "input_weight_l2": 0.9517862200737,
+          "input_weight_l2": 0.9517862796783447,
           "output_weight_l2": 1.0774853229522705,
           "ablation_loss_delta": 0.004504680633544922
         },
@@ -1763,7 +1763,7 @@
             33
           ],
           "input_weight_l2": 1.2989331483840942,
-          "output_weight_l2": 1.5839513540267944,
+          "output_weight_l2": 1.5839512348175049,
           "ablation_loss_delta": 0.004477500915527344
         },
         {
@@ -1803,7 +1803,7 @@
             29,
             32
           ],
-          "input_weight_l2": 0.9830037951469421,
+          "input_weight_l2": 0.9830039143562317,
           "output_weight_l2": 1.1062361001968384,
           "ablation_loss_delta": 0.004042506217956543
         },
@@ -1844,8 +1844,8 @@
             30,
             33
           ],
-          "input_weight_l2": 0.8808046579360962,
-          "output_weight_l2": 0.9929080605506897,
+          "input_weight_l2": 0.880804717540741,
+          "output_weight_l2": 0.9929080009460449,
           "ablation_loss_delta": 0.003973722457885742
         },
         {
@@ -1887,7 +1887,7 @@
           ],
           "input_weight_l2": 0.990942656993866,
           "output_weight_l2": 1.1416362524032593,
-          "ablation_loss_delta": 0.003891468048095703
+          "ablation_loss_delta": 0.003891587257385254
         },
         {
           "id": "neuron-001",
@@ -1926,8 +1926,8 @@
             31,
             33
           ],
-          "input_weight_l2": 0.7600642442703247,
-          "output_weight_l2": 1.1150637865066528,
+          "input_weight_l2": 0.7600641846656799,
+          "output_weight_l2": 1.1150635480880737,
           "ablation_loss_delta": 0.003822922706604004
         },
         {
@@ -1968,7 +1968,7 @@
             32
           ],
           "input_weight_l2": 1.3956676721572876,
-          "output_weight_l2": 1.6870061159133911,
+          "output_weight_l2": 1.6870059967041016,
           "ablation_loss_delta": 0.0031473636627197266
         },
         {
@@ -2049,7 +2049,7 @@
             30,
             32
           ],
-          "input_weight_l2": 0.841223955154419,
+          "input_weight_l2": 0.8412240147590637,
           "output_weight_l2": 1.0452640056610107,
           "ablation_loss_delta": 0.0027496814727783203
         },
@@ -2172,8 +2172,8 @@
             30,
             33
           ],
-          "input_weight_l2": 0.8767089247703552,
-          "output_weight_l2": 0.9526743292808533,
+          "input_weight_l2": 0.876708984375,
+          "output_weight_l2": 0.952674388885498,
           "ablation_loss_delta": 0.00044357776641845703
         },
         {
@@ -2254,8 +2254,8 @@
             31,
             33
           ],
-          "input_weight_l2": 1.0022732019424438,
-          "output_weight_l2": 1.1737185716629028,
+          "input_weight_l2": 1.0022730827331543,
+          "output_weight_l2": 1.1737184524536133,
           "ablation_loss_delta": -0.0005856752395629883
         },
         {
@@ -2296,7 +2296,7 @@
             30
           ],
           "input_weight_l2": 0.9171372652053833,
-          "output_weight_l2": 1.0772960186004639,
+          "output_weight_l2": 1.0772961378097534,
           "ablation_loss_delta": -0.0011532306671142578
         },
         {
@@ -2354,7 +2354,7 @@
         },
         {
           "epoch": 3,
-          "heldout_loss": 3.072615146636963,
+          "heldout_loss": 3.072614908218384,
           "heldout_accuracy": 0.21789383561643835
         },
         {
@@ -2374,7 +2374,7 @@
         },
         {
           "epoch": 7,
-          "heldout_loss": 2.7042484283447266,
+          "heldout_loss": 2.7042481899261475,
           "heldout_accuracy": 0.2821061643835616
         },
         {
@@ -2389,7 +2389,7 @@
         },
         {
           "epoch": 10,
-          "heldout_loss": 2.4052977561950684,
+          "heldout_loss": 2.4052975177764893,
           "heldout_accuracy": 0.3717893835616438
         },
         {
@@ -2439,7 +2439,7 @@
         },
         {
           "epoch": 20,
-          "heldout_loss": 1.549048662185669,
+          "heldout_loss": 1.5490485429763794,
           "heldout_accuracy": 0.6626712328767124
         },
         {
@@ -2475,7 +2475,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.441727876663208,
       "heldout_accuracy": 0.6652397260273972,
-      "wall_seconds": 1.9546,
+      "wall_seconds": 0.9148,
       "unit_details": [
         {
           "id": "neuron-018",
@@ -2556,8 +2556,8 @@
             32
           ],
           "input_weight_l2": 2.4719531536102295,
-          "output_weight_l2": 3.0259225368499756,
-          "ablation_loss_delta": 0.06322813034057617
+          "output_weight_l2": 3.0259227752685547,
+          "ablation_loss_delta": 0.06322801113128662
         },
         {
           "id": "neuron-036",
@@ -2637,7 +2637,7 @@
             29,
             32
           ],
-          "input_weight_l2": 1.96646249294281,
+          "input_weight_l2": 1.9664623737335205,
           "output_weight_l2": 2.375342607498169,
           "ablation_loss_delta": 0.040170907974243164
         },
@@ -2678,9 +2678,9 @@
             28,
             31
           ],
-          "input_weight_l2": 1.6480261087417603,
+          "input_weight_l2": 1.6480259895324707,
           "output_weight_l2": 1.8805038928985596,
-          "ablation_loss_delta": 0.03986191749572754
+          "ablation_loss_delta": 0.03986179828643799
         },
         {
           "id": "neuron-020",
@@ -2720,7 +2720,7 @@
             32
           ],
           "input_weight_l2": 1.6557929515838623,
-          "output_weight_l2": 1.9154202938079834,
+          "output_weight_l2": 1.915420413017273,
           "ablation_loss_delta": 0.03917384147644043
         },
         {
@@ -2760,8 +2760,8 @@
             32,
             33
           ],
-          "input_weight_l2": 2.0196263790130615,
-          "output_weight_l2": 2.3302104473114014,
+          "input_weight_l2": 2.0196261405944824,
+          "output_weight_l2": 2.3302102088928223,
           "ablation_loss_delta": 0.03876912593841553
         },
         {
@@ -2802,7 +2802,7 @@
             30
           ],
           "input_weight_l2": 1.5558600425720215,
-          "output_weight_l2": 1.9936062097549438,
+          "output_weight_l2": 1.9936060905456543,
           "ablation_loss_delta": 0.03730320930480957
         },
         {
@@ -2842,9 +2842,9 @@
             31,
             32
           ],
-          "input_weight_l2": 1.609165072441101,
-          "output_weight_l2": 1.8864268064498901,
-          "ablation_loss_delta": 0.036608219146728516
+          "input_weight_l2": 1.6091649532318115,
+          "output_weight_l2": 1.8864266872406006,
+          "ablation_loss_delta": 0.036608099937438965
         },
         {
           "id": "neuron-039",
@@ -2883,7 +2883,7 @@
             31,
             32
           ],
-          "input_weight_l2": 1.6818350553512573,
+          "input_weight_l2": 1.6818351745605469,
           "output_weight_l2": 1.9938130378723145,
           "ablation_loss_delta": 0.03406679630279541
         },
@@ -2925,7 +2925,7 @@
             31
           ],
           "input_weight_l2": 1.7956238985061646,
-          "output_weight_l2": 2.1812145709991455,
+          "output_weight_l2": 2.1812143325805664,
           "ablation_loss_delta": 0.03063023090362549
         },
         {
@@ -2966,7 +2966,7 @@
             30
           ],
           "input_weight_l2": 1.6330384016036987,
-          "output_weight_l2": 2.0844504833221436,
+          "output_weight_l2": 2.0844507217407227,
           "ablation_loss_delta": 0.030098557472229004
         },
         {
@@ -3006,7 +3006,7 @@
             31,
             32
           ],
-          "input_weight_l2": 1.4338527917861938,
+          "input_weight_l2": 1.4338526725769043,
           "output_weight_l2": 1.7298060655593872,
           "ablation_loss_delta": 0.027529001235961914
         },
@@ -3047,8 +3047,8 @@
             31,
             32
           ],
-          "input_weight_l2": 1.4752380847930908,
-          "output_weight_l2": 1.8476117849349976,
+          "input_weight_l2": 1.4752382040023804,
+          "output_weight_l2": 1.847611904144287,
           "ablation_loss_delta": 0.02586495876312256
         },
         {
@@ -3088,7 +3088,7 @@
             30,
             32
           ],
-          "input_weight_l2": 1.9036791324615479,
+          "input_weight_l2": 1.9036790132522583,
           "output_weight_l2": 2.2785372734069824,
           "ablation_loss_delta": 0.025325655937194824
         },
@@ -3130,7 +3130,7 @@
             33
           ],
           "input_weight_l2": 1.294435739517212,
-          "output_weight_l2": 1.5222383737564087,
+          "output_weight_l2": 1.5222381353378296,
           "ablation_loss_delta": 0.02474689483642578
         },
         {
@@ -3213,7 +3213,7 @@
           ],
           "input_weight_l2": 1.6452401876449585,
           "output_weight_l2": 2.2077651023864746,
-          "ablation_loss_delta": 0.022802114486694336
+          "ablation_loss_delta": 0.022802233695983887
         },
         {
           "id": "neuron-010",
@@ -3253,7 +3253,7 @@
             30
           ],
           "input_weight_l2": 1.6159911155700684,
-          "output_weight_l2": 1.759127140045166,
+          "output_weight_l2": 1.7591272592544556,
           "ablation_loss_delta": 0.018394827842712402
         },
         {
@@ -3294,8 +3294,8 @@
             32
           ],
           "input_weight_l2": 1.6209654808044434,
-          "output_weight_l2": 1.9476494789123535,
-          "ablation_loss_delta": 0.017291903495788574
+          "output_weight_l2": 1.947649359703064,
+          "ablation_loss_delta": 0.017292022705078125
         },
         {
           "id": "neuron-011",
@@ -3376,8 +3376,8 @@
             33
           ],
           "input_weight_l2": 1.3405300378799438,
-          "output_weight_l2": 1.7059742212295532,
-          "ablation_loss_delta": 0.014986276626586914
+          "output_weight_l2": 1.7059741020202637,
+          "ablation_loss_delta": 0.014986395835876465
         },
         {
           "id": "neuron-019",
@@ -3416,8 +3416,8 @@
             31,
             32
           ],
-          "input_weight_l2": 1.2731590270996094,
-          "output_weight_l2": 1.7677963972091675,
+          "input_weight_l2": 1.2731589078903198,
+          "output_weight_l2": 1.767796277999878,
           "ablation_loss_delta": 0.014872550964355469
         },
         {
@@ -3499,7 +3499,7 @@
             33
           ],
           "input_weight_l2": 1.492244005203247,
-          "output_weight_l2": 1.8394455909729004,
+          "output_weight_l2": 1.83944571018219,
           "ablation_loss_delta": 0.01426708698272705
         },
         {
@@ -3539,7 +3539,7 @@
             27,
             30
           ],
-          "input_weight_l2": 1.1507867574691772,
+          "input_weight_l2": 1.1507866382598877,
           "output_weight_l2": 1.3796931505203247,
           "ablation_loss_delta": 0.012688040733337402
         },
@@ -3580,8 +3580,8 @@
             30,
             31
           ],
-          "input_weight_l2": 0.9989667534828186,
-          "output_weight_l2": 1.3859587907791138,
+          "input_weight_l2": 0.9989668130874634,
+          "output_weight_l2": 1.3859589099884033,
           "ablation_loss_delta": 0.012068986892700195
         },
         {
@@ -3621,7 +3621,7 @@
             32,
             33
           ],
-          "input_weight_l2": 1.1549952030181885,
+          "input_weight_l2": 1.154995322227478,
           "output_weight_l2": 1.2693623304367065,
           "ablation_loss_delta": 0.011518597602844238
         },
@@ -3662,7 +3662,7 @@
             31,
             32
           ],
-          "input_weight_l2": 0.9310626983642578,
+          "input_weight_l2": 0.9310627579689026,
           "output_weight_l2": 1.09293532371521,
           "ablation_loss_delta": 0.009801864624023438
         },
@@ -3703,7 +3703,7 @@
             31,
             33
           ],
-          "input_weight_l2": 0.9263712167739868,
+          "input_weight_l2": 0.9263713359832764,
           "output_weight_l2": 0.9884544014930725,
           "ablation_loss_delta": 0.008494138717651367
         },
@@ -3826,7 +3826,7 @@
             29,
             32
           ],
-          "input_weight_l2": 0.9905558824539185,
+          "input_weight_l2": 0.990556001663208,
           "output_weight_l2": 1.1120744943618774,
           "ablation_loss_delta": 0.004741668701171875
         },
@@ -3867,7 +3867,7 @@
             31,
             33
           ],
-          "input_weight_l2": 0.9982919096946716,
+          "input_weight_l2": 0.9982919692993164,
           "output_weight_l2": 1.3011822700500488,
           "ablation_loss_delta": 0.004082083702087402
         },
@@ -3908,7 +3908,7 @@
             30,
             33
           ],
-          "input_weight_l2": 0.8506200909614563,
+          "input_weight_l2": 0.8506200313568115,
           "output_weight_l2": 0.9766737818717957,
           "ablation_loss_delta": 0.003906965255737305
         },
@@ -3950,8 +3950,8 @@
             33
           ],
           "input_weight_l2": 0.7813968658447266,
-          "output_weight_l2": 1.148170828819275,
-          "ablation_loss_delta": 0.0036666393280029297
+          "output_weight_l2": 1.1481707096099854,
+          "ablation_loss_delta": 0.0036667585372924805
         },
         {
           "id": "neuron-047",
@@ -3991,8 +3991,8 @@
             32
           ],
           "input_weight_l2": 1.311110258102417,
-          "output_weight_l2": 1.6101949214935303,
-          "ablation_loss_delta": 0.003278374671936035
+          "output_weight_l2": 1.6101948022842407,
+          "ablation_loss_delta": 0.003278493881225586
         },
         {
           "id": "neuron-008",
@@ -4031,8 +4031,8 @@
             30,
             33
           ],
-          "input_weight_l2": 0.7674609422683716,
-          "output_weight_l2": 0.8658902049064636,
+          "input_weight_l2": 0.7674608826637268,
+          "output_weight_l2": 0.8658901453018188,
           "ablation_loss_delta": 0.0029554367065429688
         },
         {
@@ -4113,9 +4113,9 @@
             30,
             32
           ],
-          "input_weight_l2": 0.7098872661590576,
-          "output_weight_l2": 0.9532970190048218,
-          "ablation_loss_delta": 0.002559661865234375
+          "input_weight_l2": 0.7098873257637024,
+          "output_weight_l2": 0.9532971382141113,
+          "ablation_loss_delta": 0.0025595426559448242
         },
         {
           "id": "neuron-030",
@@ -4154,7 +4154,7 @@
             28,
             30
           ],
-          "input_weight_l2": 0.8068859577178955,
+          "input_weight_l2": 0.8068858981132507,
           "output_weight_l2": 0.9419211149215698,
           "ablation_loss_delta": 0.0021532773971557617
         },
@@ -4196,7 +4196,7 @@
             33
           ],
           "input_weight_l2": 0.6291161179542542,
-          "output_weight_l2": 0.7211138606071472,
+          "output_weight_l2": 0.721113920211792,
           "ablation_loss_delta": 0.0021306276321411133
         },
         {
@@ -4277,8 +4277,8 @@
             31,
             32
           ],
-          "input_weight_l2": 0.8036013841629028,
-          "output_weight_l2": 0.9716684222221375,
+          "input_weight_l2": 0.8036014437675476,
+          "output_weight_l2": 0.971668541431427,
           "ablation_loss_delta": 0.0014328956604003906
         },
         {
@@ -4318,9 +4318,9 @@
             30,
             32
           ],
-          "input_weight_l2": 1.288062572479248,
-          "output_weight_l2": 1.5294444561004639,
-          "ablation_loss_delta": 0.0014128684997558594
+          "input_weight_l2": 1.2880626916885376,
+          "output_weight_l2": 1.5294443368911743,
+          "ablation_loss_delta": 0.0014129877090454102
         },
         {
           "id": "neuron-031",
@@ -4359,7 +4359,7 @@
             31,
             33
           ],
-          "input_weight_l2": 1.0244674682617188,
+          "input_weight_l2": 1.0244675874710083,
           "output_weight_l2": 1.2434502840042114,
           "ablation_loss_delta": -0.0024225711822509766
         },
@@ -4400,7 +4400,7 @@
             30,
             32
           ],
-          "input_weight_l2": 1.092990517616272,
+          "input_weight_l2": 1.0929903984069824,
           "output_weight_l2": 1.165013074874878,
           "ablation_loss_delta": -0.0025107860565185547
         },
@@ -4441,8 +4441,8 @@
             25,
             33
           ],
-          "input_weight_l2": 1.143912434577942,
-          "output_weight_l2": 1.4251456260681152,
+          "input_weight_l2": 1.1439123153686523,
+          "output_weight_l2": 1.4251455068588257,
           "ablation_loss_delta": -0.006731271743774414
         }
       ],
@@ -4474,12 +4474,12 @@
         },
         {
           "epoch": 6,
-          "heldout_loss": 2.822397232055664,
+          "heldout_loss": 2.822397470474243,
           "heldout_accuracy": 0.2690496575342466
         },
         {
           "epoch": 7,
-          "heldout_loss": 2.7350213527679443,
+          "heldout_loss": 2.7350215911865234,
           "heldout_accuracy": 0.2679794520547945
         },
         {
@@ -4504,7 +4504,7 @@
         },
         {
           "epoch": 12,
-          "heldout_loss": 2.2895114421844482,
+          "heldout_loss": 2.2895116806030273,
           "heldout_accuracy": 0.3968321917808219
         },
         {
@@ -4544,7 +4544,7 @@
         },
         {
           "epoch": 20,
-          "heldout_loss": 1.658795952796936,
+          "heldout_loss": 1.6587960720062256,
           "heldout_accuracy": 0.6123715753424658
         },
         {
@@ -4580,7 +4580,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.650926947593689,
       "heldout_accuracy": 0.613013698630137,
-      "wall_seconds": 1.9842,
+      "wall_seconds": 0.9139,
       "unit_details": [
         {
           "id": "neuron-006",
@@ -4621,7 +4621,7 @@
           ],
           "input_weight_l2": 2.5226821899414062,
           "output_weight_l2": 3.226994514465332,
-          "ablation_loss_delta": 0.09357130527496338
+          "ablation_loss_delta": 0.09357154369354248
         },
         {
           "id": "neuron-042",
@@ -4702,7 +4702,7 @@
             32
           ],
           "input_weight_l2": 1.818690299987793,
-          "output_weight_l2": 2.212902069091797,
+          "output_weight_l2": 2.2129018306732178,
           "ablation_loss_delta": 0.05373954772949219
         },
         {
@@ -4743,7 +4743,7 @@
             32
           ],
           "input_weight_l2": 1.777140498161316,
-          "output_weight_l2": 2.162027359008789,
+          "output_weight_l2": 2.162027597427368,
           "ablation_loss_delta": 0.04855918884277344
         },
         {
@@ -4784,7 +4784,7 @@
             28
           ],
           "input_weight_l2": 1.824929118156433,
-          "output_weight_l2": 2.3241100311279297,
+          "output_weight_l2": 2.324110269546509,
           "ablation_loss_delta": 0.04602515697479248
         },
         {
@@ -4866,7 +4866,7 @@
             32
           ],
           "input_weight_l2": 1.4710886478424072,
-          "output_weight_l2": 1.732828974723816,
+          "output_weight_l2": 1.7328288555145264,
           "ablation_loss_delta": 0.037933349609375
         },
         {
@@ -4906,8 +4906,8 @@
             28,
             32
           ],
-          "input_weight_l2": 1.6958591938018799,
-          "output_weight_l2": 2.0416781902313232,
+          "input_weight_l2": 1.6958590745925903,
+          "output_weight_l2": 2.041677951812744,
           "ablation_loss_delta": 0.03504049777984619
         },
         {
@@ -5071,7 +5071,7 @@
             30
           ],
           "input_weight_l2": 1.2422997951507568,
-          "output_weight_l2": 1.432865023612976,
+          "output_weight_l2": 1.4328651428222656,
           "ablation_loss_delta": 0.029995203018188477
         },
         {
@@ -5111,7 +5111,7 @@
             30,
             32
           ],
-          "input_weight_l2": 1.776502013206482,
+          "input_weight_l2": 1.7765021324157715,
           "output_weight_l2": 2.1653873920440674,
           "ablation_loss_delta": 0.029835224151611328
         },
@@ -5193,7 +5193,7 @@
             32,
             33
           ],
-          "input_weight_l2": 1.673953890800476,
+          "input_weight_l2": 1.6739537715911865,
           "output_weight_l2": 2.1438748836517334,
           "ablation_loss_delta": 0.02612471580505371
         },
@@ -5234,7 +5234,7 @@
             30,
             32
           ],
-          "input_weight_l2": 1.413810133934021,
+          "input_weight_l2": 1.4138102531433105,
           "output_weight_l2": 1.7267992496490479,
           "ablation_loss_delta": 0.025986433029174805
         },
@@ -5276,7 +5276,7 @@
             28
           ],
           "input_weight_l2": 1.5228022336959839,
-          "output_weight_l2": 1.7144094705581665,
+          "output_weight_l2": 1.714409589767456,
           "ablation_loss_delta": 0.0201570987701416
         },
         {
@@ -5316,7 +5316,7 @@
             30,
             32
           ],
-          "input_weight_l2": 1.7060885429382324,
+          "input_weight_l2": 1.706088662147522,
           "output_weight_l2": 2.3818230628967285,
           "ablation_loss_delta": 0.020119667053222656
         },
@@ -5358,7 +5358,7 @@
             32
           ],
           "input_weight_l2": 1.1835803985595703,
-          "output_weight_l2": 1.481103777885437,
+          "output_weight_l2": 1.4811038970947266,
           "ablation_loss_delta": 0.017318248748779297
         },
         {
@@ -5399,7 +5399,7 @@
             32
           ],
           "input_weight_l2": 0.6724344491958618,
-          "output_weight_l2": 1.1037383079528809,
+          "output_weight_l2": 1.1037384271621704,
           "ablation_loss_delta": 0.01331174373626709
         },
         {
@@ -5439,7 +5439,7 @@
             31,
             33
           ],
-          "input_weight_l2": 1.3512520790100098,
+          "input_weight_l2": 1.3512521982192993,
           "output_weight_l2": 1.6329442262649536,
           "ablation_loss_delta": 0.013071298599243164
         },
@@ -5480,7 +5480,7 @@
             30,
             32
           ],
-          "input_weight_l2": 1.1605868339538574,
+          "input_weight_l2": 1.1605867147445679,
           "output_weight_l2": 1.3686574697494507,
           "ablation_loss_delta": 0.01293492317199707
         },
@@ -5563,7 +5563,7 @@
             31
           ],
           "input_weight_l2": 0.9756152033805847,
-          "output_weight_l2": 1.2905477285385132,
+          "output_weight_l2": 1.2905476093292236,
           "ablation_loss_delta": 0.010818123817443848
         },
         {
@@ -5603,8 +5603,8 @@
             29,
             30
           ],
-          "input_weight_l2": 1.250853419303894,
-          "output_weight_l2": 1.5406075716018677,
+          "input_weight_l2": 1.2508535385131836,
+          "output_weight_l2": 1.5406079292297363,
           "ablation_loss_delta": 0.009884238243103027
         },
         {
@@ -5685,7 +5685,7 @@
             30,
             32
           ],
-          "input_weight_l2": 1.1707266569137573,
+          "input_weight_l2": 1.1707265377044678,
           "output_weight_l2": 1.4565054178237915,
           "ablation_loss_delta": 0.009181380271911621
         },
@@ -5727,8 +5727,8 @@
             33
           ],
           "input_weight_l2": 0.9112968444824219,
-          "output_weight_l2": 1.0370553731918335,
-          "ablation_loss_delta": 0.007295370101928711
+          "output_weight_l2": 1.037055492401123,
+          "ablation_loss_delta": 0.007295489311218262
         },
         {
           "id": "neuron-026",
@@ -5767,9 +5767,9 @@
             27,
             30
           ],
-          "input_weight_l2": 0.7705014944076538,
-          "output_weight_l2": 0.9868347644805908,
-          "ablation_loss_delta": 0.007120728492736816
+          "input_weight_l2": 0.7705013751983643,
+          "output_weight_l2": 0.9868348240852356,
+          "ablation_loss_delta": 0.007120847702026367
         },
         {
           "id": "neuron-011",
@@ -5809,7 +5809,7 @@
             32
           ],
           "input_weight_l2": 0.7425714135169983,
-          "output_weight_l2": 0.9606560468673706,
+          "output_weight_l2": 0.9606559872627258,
           "ablation_loss_delta": 0.007045149803161621
         },
         {
@@ -5850,7 +5850,7 @@
             32
           ],
           "input_weight_l2": 1.0529838800430298,
-          "output_weight_l2": 1.3237872123718262,
+          "output_weight_l2": 1.3237873315811157,
           "ablation_loss_delta": 0.0068209171295166016
         },
         {
@@ -5890,7 +5890,7 @@
             30,
             33
           ],
-          "input_weight_l2": 0.6917757987976074,
+          "input_weight_l2": 0.6917757391929626,
           "output_weight_l2": 0.7289276123046875,
           "ablation_loss_delta": 0.004899144172668457
         },
@@ -5933,7 +5933,7 @@
           ],
           "input_weight_l2": 0.7888988852500916,
           "output_weight_l2": 1.2326997518539429,
-          "ablation_loss_delta": 0.0045157670974731445
+          "ablation_loss_delta": 0.004515647888183594
         },
         {
           "id": "neuron-029",
@@ -5972,7 +5972,7 @@
             31,
             32
           ],
-          "input_weight_l2": 0.6979811787605286,
+          "input_weight_l2": 0.6979812383651733,
           "output_weight_l2": 0.8250690698623657,
           "ablation_loss_delta": 0.004119753837585449
         },
@@ -6014,7 +6014,7 @@
             32
           ],
           "input_weight_l2": 0.7091449499130249,
-          "output_weight_l2": 0.8628564476966858,
+          "output_weight_l2": 0.862856388092041,
           "ablation_loss_delta": 0.0038853883743286133
         },
         {
@@ -6054,8 +6054,8 @@
             32,
             33
           ],
-          "input_weight_l2": 1.084969162940979,
-          "output_weight_l2": 1.3701473474502563,
+          "input_weight_l2": 1.0849690437316895,
+          "output_weight_l2": 1.3701472282409668,
           "ablation_loss_delta": 0.003081083297729492
         },
         {
@@ -6095,8 +6095,8 @@
             25,
             30
           ],
-          "input_weight_l2": 0.9036607146263123,
-          "output_weight_l2": 1.1566665172576904,
+          "input_weight_l2": 0.903660774230957,
+          "output_weight_l2": 1.15666663646698,
           "ablation_loss_delta": 0.0028913021087646484
         },
         {
@@ -6136,8 +6136,8 @@
             31,
             33
           ],
-          "input_weight_l2": 0.43938910961151123,
-          "output_weight_l2": 0.5671269297599792,
+          "input_weight_l2": 0.439389169216156,
+          "output_weight_l2": 0.567126989364624,
           "ablation_loss_delta": 0.002275228500366211
         },
         {
@@ -6177,7 +6177,7 @@
             32,
             33
           ],
-          "input_weight_l2": 0.5012098550796509,
+          "input_weight_l2": 0.5012097954750061,
           "output_weight_l2": 0.6091614961624146,
           "ablation_loss_delta": 0.002210855484008789
         },
@@ -6260,7 +6260,7 @@
             32
           ],
           "input_weight_l2": 0.821008563041687,
-          "output_weight_l2": 1.0645148754119873,
+          "output_weight_l2": 1.0645149946212769,
           "ablation_loss_delta": 0.00209808349609375
         },
         {
@@ -6300,8 +6300,8 @@
             29,
             30
           ],
-          "input_weight_l2": 0.6502594351768494,
-          "output_weight_l2": 0.7325206398963928,
+          "input_weight_l2": 0.6502594947814941,
+          "output_weight_l2": 0.7325206995010376,
           "ablation_loss_delta": 0.0017094612121582031
         },
         {
@@ -6341,8 +6341,8 @@
             22,
             30
           ],
-          "input_weight_l2": 0.4765423834323883,
-          "output_weight_l2": 0.562360405921936,
+          "input_weight_l2": 0.4765423536300659,
+          "output_weight_l2": 0.5623603463172913,
           "ablation_loss_delta": 0.00047457218170166016
         },
         {
@@ -6424,7 +6424,7 @@
             27
           ],
           "input_weight_l2": 1.023738145828247,
-          "output_weight_l2": 1.2806313037872314,
+          "output_weight_l2": 1.280631422996521,
           "ablation_loss_delta": 2.09808349609375e-05
         },
         {
@@ -6465,7 +6465,7 @@
             30
           ],
           "input_weight_l2": 1.1940821409225464,
-          "output_weight_l2": 1.3207011222839355,
+          "output_weight_l2": 1.320701003074646,
           "ablation_loss_delta": -0.0013556480407714844
         },
         {
@@ -6506,7 +6506,7 @@
             32
           ],
           "input_weight_l2": 1.104197382926941,
-          "output_weight_l2": 1.3284530639648438,
+          "output_weight_l2": 1.3284529447555542,
           "ablation_loss_delta": -0.004058122634887695
         },
         {
@@ -6547,8 +6547,8 @@
             32
           ],
           "input_weight_l2": 0.6687350273132324,
-          "output_weight_l2": 0.8538344502449036,
-          "ablation_loss_delta": -0.004895687103271484
+          "output_weight_l2": 0.853834331035614,
+          "ablation_loss_delta": -0.004895806312561035
         }
       ],
       "history": [
@@ -6564,7 +6564,7 @@
         },
         {
           "epoch": 3,
-          "heldout_loss": 3.0847387313842773,
+          "heldout_loss": 3.0847389698028564,
           "heldout_accuracy": 0.21789383561643835
         },
         {
@@ -6584,7 +6584,7 @@
         },
         {
           "epoch": 7,
-          "heldout_loss": 2.8253889083862305,
+          "heldout_loss": 2.8253886699676514,
           "heldout_accuracy": 0.2523544520547945
         },
         {
@@ -6649,12 +6649,12 @@
         },
         {
           "epoch": 20,
-          "heldout_loss": 1.8850785493850708,
+          "heldout_loss": 1.88507878780365,
           "heldout_accuracy": 0.5014982876712328
         },
         {
           "epoch": 21,
-          "heldout_loss": 1.8216924667358398,
+          "heldout_loss": 1.821692705154419,
           "heldout_accuracy": 0.5216181506849316
         },
         {
@@ -6685,7 +6685,7 @@
       "parameter_count": 1570,
       "heldout_loss": 2.2069761753082275,
       "heldout_accuracy": 0.4700342465753425,
-      "wall_seconds": 1.8001,
+      "wall_seconds": 0.811,
       "history": [
         {
           "epoch": 1,
@@ -6759,7 +6759,7 @@
         },
         {
           "epoch": 15,
-          "heldout_loss": 2.6639699935913086,
+          "heldout_loss": 2.6639697551727295,
           "heldout_accuracy": 0.2746147260273973
         },
         {
@@ -6769,7 +6769,7 @@
         },
         {
           "epoch": 17,
-          "heldout_loss": 2.5688719749450684,
+          "heldout_loss": 2.5688722133636475,
           "heldout_accuracy": 0.3240582191780822
         },
         {
@@ -6816,7 +6816,7 @@
       "parameter_count": 1569,
       "heldout_loss": 1.2309768199920654,
       "heldout_accuracy": 0.712970890410959,
-      "wall_seconds": 1.2445,
+      "wall_seconds": 0.5745,
       "history": [
         {
           "epoch": 1,
@@ -6855,12 +6855,12 @@
         },
         {
           "epoch": 8,
-          "heldout_loss": 1.8834233283996582,
+          "heldout_loss": 1.8834234476089478,
           "heldout_accuracy": 0.5699914383561644
         },
         {
           "epoch": 9,
-          "heldout_loss": 1.8055264949798584,
+          "heldout_loss": 1.8055267333984375,
           "heldout_accuracy": 0.5969606164383562
         },
         {
@@ -6875,7 +6875,7 @@
         },
         {
           "epoch": 12,
-          "heldout_loss": 1.6248807907104492,
+          "heldout_loss": 1.6248809099197388,
           "heldout_accuracy": 0.658818493150685
         },
         {
@@ -6890,7 +6890,7 @@
         },
         {
           "epoch": 15,
-          "heldout_loss": 1.4913161993026733,
+          "heldout_loss": 1.4913160800933838,
           "heldout_accuracy": 0.6971318493150684
         },
         {
@@ -6910,7 +6910,7 @@
         },
         {
           "epoch": 19,
-          "heldout_loss": 1.356931447982788,
+          "heldout_loss": 1.3569315671920776,
           "heldout_accuracy": 0.7116866438356164
         },
         {
@@ -6947,7 +6947,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.27273690700531,
       "heldout_accuracy": 0.6971318493150684,
-      "wall_seconds": 1.9207,
+      "wall_seconds": 0.9094,
       "unit_details": [
         {
           "id": "neuron-031",
@@ -7027,8 +7027,8 @@
             31,
             32
           ],
-          "input_weight_l2": 1.8810290098190308,
-          "output_weight_l2": 2.340031623840332,
+          "input_weight_l2": 1.8810291290283203,
+          "output_weight_l2": 2.340031385421753,
           "ablation_loss_delta": 0.06292736530303955
         },
         {
@@ -7069,8 +7069,8 @@
             32
           ],
           "input_weight_l2": 2.2506115436553955,
-          "output_weight_l2": 2.547616958618164,
-          "ablation_loss_delta": 0.0567859411239624
+          "output_weight_l2": 2.547616720199585,
+          "ablation_loss_delta": 0.05678606033325195
         },
         {
           "id": "neuron-017",
@@ -7150,9 +7150,9 @@
             26,
             32
           ],
-          "input_weight_l2": 1.7120386362075806,
-          "output_weight_l2": 2.2231595516204834,
-          "ablation_loss_delta": 0.042098283767700195
+          "input_weight_l2": 1.712038516998291,
+          "output_weight_l2": 2.2231593132019043,
+          "ablation_loss_delta": 0.042098402976989746
         },
         {
           "id": "neuron-041",
@@ -7314,9 +7314,9 @@
             27,
             29
           ],
-          "input_weight_l2": 1.6912615299224854,
-          "output_weight_l2": 2.010159730911255,
-          "ablation_loss_delta": 0.028453469276428223
+          "input_weight_l2": 1.691261649131775,
+          "output_weight_l2": 2.010159492492676,
+          "ablation_loss_delta": 0.028453588485717773
         },
         {
           "id": "neuron-038",
@@ -7356,7 +7356,7 @@
             32
           ],
           "input_weight_l2": 1.5362619161605835,
-          "output_weight_l2": 1.6902358531951904,
+          "output_weight_l2": 1.69023597240448,
           "ablation_loss_delta": 0.02787482738494873
         },
         {
@@ -7397,7 +7397,7 @@
             31
           ],
           "input_weight_l2": 1.2743773460388184,
-          "output_weight_l2": 1.759441614151001,
+          "output_weight_l2": 1.7594417333602905,
           "ablation_loss_delta": 0.027108073234558105
         },
         {
@@ -7519,7 +7519,7 @@
             25,
             32
           ],
-          "input_weight_l2": 2.0040502548217773,
+          "input_weight_l2": 2.0040500164031982,
           "output_weight_l2": 2.3894991874694824,
           "ablation_loss_delta": 0.024509787559509277
         },
@@ -7561,8 +7561,8 @@
             29
           ],
           "input_weight_l2": 1.527255654335022,
-          "output_weight_l2": 1.8007928133010864,
-          "ablation_loss_delta": 0.02396571636199951
+          "output_weight_l2": 1.800792932510376,
+          "ablation_loss_delta": 0.02396559715270996
         },
         {
           "id": "neuron-036",
@@ -7602,7 +7602,7 @@
             33
           ],
           "input_weight_l2": 1.4215401411056519,
-          "output_weight_l2": 1.8339977264404297,
+          "output_weight_l2": 1.8339978456497192,
           "ablation_loss_delta": 0.02382040023803711
         },
         {
@@ -7642,8 +7642,8 @@
             32,
             33
           ],
-          "input_weight_l2": 1.8161906003952026,
-          "output_weight_l2": 2.0940239429473877,
+          "input_weight_l2": 1.8161907196044922,
+          "output_weight_l2": 2.094024181365967,
           "ablation_loss_delta": 0.023193359375
         },
         {
@@ -7683,7 +7683,7 @@
             31,
             33
           ],
-          "input_weight_l2": 1.5375831127166748,
+          "input_weight_l2": 1.5375829935073853,
           "output_weight_l2": 1.9517215490341187,
           "ablation_loss_delta": 0.021653413772583008
         },
@@ -7725,7 +7725,7 @@
             28
           ],
           "input_weight_l2": 1.2518160343170166,
-          "output_weight_l2": 1.6580021381378174,
+          "output_weight_l2": 1.658002257347107,
           "ablation_loss_delta": 0.019385337829589844
         },
         {
@@ -7807,7 +7807,7 @@
             31
           ],
           "input_weight_l2": 1.2503602504730225,
-          "output_weight_l2": 1.4498785734176636,
+          "output_weight_l2": 1.4498786926269531,
           "ablation_loss_delta": 0.017697811126708984
         },
         {
@@ -7848,7 +7848,7 @@
             31
           ],
           "input_weight_l2": 1.2324374914169312,
-          "output_weight_l2": 1.491211175918579,
+          "output_weight_l2": 1.4912110567092896,
           "ablation_loss_delta": 0.0161055326461792
         },
         {
@@ -7889,8 +7889,8 @@
             32
           ],
           "input_weight_l2": 1.837253212928772,
-          "output_weight_l2": 2.1300854682922363,
-          "ablation_loss_delta": 0.01603555679321289
+          "output_weight_l2": 2.130084991455078,
+          "ablation_loss_delta": 0.01603543758392334
         },
         {
           "id": "neuron-006",
@@ -7929,7 +7929,7 @@
             31,
             33
           ],
-          "input_weight_l2": 0.9546991586685181,
+          "input_weight_l2": 0.9546990990638733,
           "output_weight_l2": 1.1513947248458862,
           "ablation_loss_delta": 0.014801025390625
         },
@@ -7971,7 +7971,7 @@
             32
           ],
           "input_weight_l2": 1.2931225299835205,
-          "output_weight_l2": 1.7394288778305054,
+          "output_weight_l2": 1.7394287586212158,
           "ablation_loss_delta": 0.014451026916503906
         },
         {
@@ -8052,8 +8052,8 @@
             29,
             31
           ],
-          "input_weight_l2": 1.0228849649429321,
-          "output_weight_l2": 1.4241664409637451,
+          "input_weight_l2": 1.0228848457336426,
+          "output_weight_l2": 1.4241665601730347,
           "ablation_loss_delta": 0.014037251472473145
         },
         {
@@ -8218,7 +8218,7 @@
           ],
           "input_weight_l2": 1.3112012147903442,
           "output_weight_l2": 1.6072776317596436,
-          "ablation_loss_delta": 0.01210927963256836
+          "ablation_loss_delta": 0.012109160423278809
         },
         {
           "id": "neuron-018",
@@ -8298,7 +8298,7 @@
             30,
             32
           ],
-          "input_weight_l2": 1.3404642343521118,
+          "input_weight_l2": 1.3404643535614014,
           "output_weight_l2": 1.519087314605713,
           "ablation_loss_delta": 0.010838627815246582
         },
@@ -8380,7 +8380,7 @@
             29,
             32
           ],
-          "input_weight_l2": 0.9800732135772705,
+          "input_weight_l2": 0.9800732731819153,
           "output_weight_l2": 1.5796095132827759,
           "ablation_loss_delta": 0.00895392894744873
         },
@@ -8422,7 +8422,7 @@
             29
           ],
           "input_weight_l2": 1.2918394804000854,
-          "output_weight_l2": 1.5811147689819336,
+          "output_weight_l2": 1.5811148881912231,
           "ablation_loss_delta": 0.008946776390075684
         },
         {
@@ -8462,9 +8462,9 @@
             26,
             31
           ],
-          "input_weight_l2": 0.8943901062011719,
+          "input_weight_l2": 0.8943901658058167,
           "output_weight_l2": 1.0569679737091064,
-          "ablation_loss_delta": 0.008111357688903809
+          "ablation_loss_delta": 0.00811147689819336
         },
         {
           "id": "neuron-008",
@@ -8503,7 +8503,7 @@
             27,
             28
           ],
-          "input_weight_l2": 1.1761062145233154,
+          "input_weight_l2": 1.1761060953140259,
           "output_weight_l2": 1.3861761093139648,
           "ablation_loss_delta": 0.0077506303787231445
         },
@@ -8544,8 +8544,8 @@
             31,
             32
           ],
-          "input_weight_l2": 1.5469413995742798,
-          "output_weight_l2": 1.8674397468566895,
+          "input_weight_l2": 1.5469415187835693,
+          "output_weight_l2": 1.867439866065979,
           "ablation_loss_delta": 0.0074394941329956055
         },
         {
@@ -8585,7 +8585,7 @@
             30,
             32
           ],
-          "input_weight_l2": 0.8850230574607849,
+          "input_weight_l2": 0.8850229978561401,
           "output_weight_l2": 1.1161341667175293,
           "ablation_loss_delta": 0.006044149398803711
         },
@@ -8627,7 +8627,7 @@
             33
           ],
           "input_weight_l2": 1.188759446144104,
-          "output_weight_l2": 1.2728345394134521,
+          "output_weight_l2": 1.2728344202041626,
           "ablation_loss_delta": 0.004658818244934082
         },
         {
@@ -8667,7 +8667,7 @@
             31,
             32
           ],
-          "input_weight_l2": 0.6750358939170837,
+          "input_weight_l2": 0.6750359535217285,
           "output_weight_l2": 0.8113649487495422,
           "ablation_loss_delta": 0.0038324594497680664
         },
@@ -8751,7 +8751,7 @@
           ],
           "input_weight_l2": 1.1686034202575684,
           "output_weight_l2": 1.3543510437011719,
-          "ablation_loss_delta": 0.0030618906021118164
+          "ablation_loss_delta": 0.0030617713928222656
         },
         {
           "id": "neuron-026",
@@ -8831,8 +8831,8 @@
             29,
             31
           ],
-          "input_weight_l2": 0.8770831823348999,
-          "output_weight_l2": 1.0216076374053955,
+          "input_weight_l2": 0.8770831227302551,
+          "output_weight_l2": 1.021607518196106,
           "ablation_loss_delta": 0.002066969871520996
         },
         {
@@ -8872,7 +8872,7 @@
             28,
             30
           ],
-          "input_weight_l2": 0.7841185927391052,
+          "input_weight_l2": 0.78411865234375,
           "output_weight_l2": 1.043014407157898,
           "ablation_loss_delta": 0.0015742778778076172
         },
@@ -8951,7 +8951,7 @@
         },
         {
           "epoch": 7,
-          "heldout_loss": 2.7549309730529785,
+          "heldout_loss": 2.7549312114715576,
           "heldout_accuracy": 0.2564212328767123
         },
         {
@@ -8981,12 +8981,12 @@
         },
         {
           "epoch": 13,
-          "heldout_loss": 2.1338083744049072,
+          "heldout_loss": 2.133808135986328,
           "heldout_accuracy": 0.4606164383561644
         },
         {
           "epoch": 14,
-          "heldout_loss": 2.0303213596343994,
+          "heldout_loss": 2.0303211212158203,
           "heldout_accuracy": 0.4749571917808219
         },
         {
@@ -9006,7 +9006,7 @@
         },
         {
           "epoch": 18,
-          "heldout_loss": 1.6466392278671265,
+          "heldout_loss": 1.646639347076416,
           "heldout_accuracy": 0.6264982876712328
         },
         {
@@ -9021,7 +9021,7 @@
         },
         {
           "epoch": 21,
-          "heldout_loss": 1.4280227422714233,
+          "heldout_loss": 1.4280226230621338,
           "heldout_accuracy": 0.666095890410959
         },
         {
@@ -9050,9 +9050,9 @@
       "seed": 20261011,
       "hidden_units": 48,
       "parameter_count": 1570,
-      "heldout_loss": 1.3887505531311035,
+      "heldout_loss": 1.388750433921814,
       "heldout_accuracy": 0.6723030821917808,
-      "wall_seconds": 1.9226,
+      "wall_seconds": 0.9123,
       "unit_details": [
         {
           "id": "neuron-044",
@@ -9092,7 +9092,7 @@
             32
           ],
           "input_weight_l2": 2.502101421356201,
-          "output_weight_l2": 2.845240592956543,
+          "output_weight_l2": 2.845240354537964,
           "ablation_loss_delta": 0.09213066101074219
         },
         {
@@ -9134,7 +9134,7 @@
           ],
           "input_weight_l2": 2.0559651851654053,
           "output_weight_l2": 2.577256917953491,
-          "ablation_loss_delta": 0.09137415885925293
+          "ablation_loss_delta": 0.09137427806854248
         },
         {
           "id": "neuron-024",
@@ -9175,7 +9175,7 @@
           ],
           "input_weight_l2": 1.7342851161956787,
           "output_weight_l2": 2.2489969730377197,
-          "ablation_loss_delta": 0.0476834774017334
+          "ablation_loss_delta": 0.04768359661102295
         },
         {
           "id": "neuron-022",
@@ -9214,9 +9214,9 @@
             28,
             29
           ],
-          "input_weight_l2": 1.7272160053253174,
-          "output_weight_l2": 2.034689426422119,
-          "ablation_loss_delta": 0.04761481285095215
+          "input_weight_l2": 1.7272157669067383,
+          "output_weight_l2": 2.03468918800354,
+          "ablation_loss_delta": 0.0476149320602417
         },
         {
           "id": "neuron-017",
@@ -9255,9 +9255,9 @@
             31,
             33
           ],
-          "input_weight_l2": 1.7607789039611816,
+          "input_weight_l2": 1.760778784751892,
           "output_weight_l2": 2.2169947624206543,
-          "ablation_loss_delta": 0.045706868171691895
+          "ablation_loss_delta": 0.045706987380981445
         },
         {
           "id": "neuron-005",
@@ -9296,9 +9296,9 @@
             31,
             32
           ],
-          "input_weight_l2": 1.6210672855377197,
-          "output_weight_l2": 2.0556039810180664,
-          "ablation_loss_delta": 0.04275059700012207
+          "input_weight_l2": 1.6210671663284302,
+          "output_weight_l2": 2.0556037425994873,
+          "ablation_loss_delta": 0.04275071620941162
         },
         {
           "id": "neuron-038",
@@ -9337,9 +9337,9 @@
             30,
             32
           ],
-          "input_weight_l2": 1.924483299255371,
+          "input_weight_l2": 1.9244831800460815,
           "output_weight_l2": 2.1191658973693848,
-          "ablation_loss_delta": 0.0412144660949707
+          "ablation_loss_delta": 0.041214585304260254
         },
         {
           "id": "neuron-000",
@@ -9378,9 +9378,9 @@
             27,
             33
           ],
-          "input_weight_l2": 1.9638572931289673,
+          "input_weight_l2": 1.9638574123382568,
           "output_weight_l2": 2.2374165058135986,
-          "ablation_loss_delta": 0.03813672065734863
+          "ablation_loss_delta": 0.038136839866638184
         },
         {
           "id": "neuron-011",
@@ -9421,7 +9421,7 @@
           ],
           "input_weight_l2": 1.7380297183990479,
           "output_weight_l2": 2.09859561920166,
-          "ablation_loss_delta": 0.035640835762023926
+          "ablation_loss_delta": 0.03564095497131348
         },
         {
           "id": "neuron-035",
@@ -9461,8 +9461,8 @@
             32
           ],
           "input_weight_l2": 1.7299466133117676,
-          "output_weight_l2": 2.338287830352783,
-          "ablation_loss_delta": 0.03449082374572754
+          "output_weight_l2": 2.3382880687713623,
+          "ablation_loss_delta": 0.03449094295501709
         },
         {
           "id": "neuron-036",
@@ -9503,7 +9503,7 @@
           ],
           "input_weight_l2": 1.4414596557617188,
           "output_weight_l2": 1.8752702474594116,
-          "ablation_loss_delta": 0.029552578926086426
+          "ablation_loss_delta": 0.029552698135375977
         },
         {
           "id": "neuron-013",
@@ -9542,7 +9542,7 @@
             30,
             31
           ],
-          "input_weight_l2": 1.2631852626800537,
+          "input_weight_l2": 1.2631851434707642,
           "output_weight_l2": 1.7533072233200073,
           "ablation_loss_delta": 0.027709484100341797
         },
@@ -9583,8 +9583,8 @@
             29,
             31
           ],
-          "input_weight_l2": 1.1728891134262085,
-          "output_weight_l2": 1.4110740423202515,
+          "input_weight_l2": 1.172889232635498,
+          "output_weight_l2": 1.411074161529541,
           "ablation_loss_delta": 0.02546215057373047
         },
         {
@@ -9624,9 +9624,9 @@
             31,
             32
           ],
-          "input_weight_l2": 1.3599427938461304,
+          "input_weight_l2": 1.35994291305542,
           "output_weight_l2": 1.633682370185852,
-          "ablation_loss_delta": 0.024152517318725586
+          "ablation_loss_delta": 0.024152636528015137
         },
         {
           "id": "neuron-043",
@@ -9666,8 +9666,8 @@
             32
           ],
           "input_weight_l2": 1.49382483959198,
-          "output_weight_l2": 1.8187671899795532,
-          "ablation_loss_delta": 0.024141788482666016
+          "output_weight_l2": 1.8187670707702637,
+          "ablation_loss_delta": 0.024141907691955566
         },
         {
           "id": "neuron-025",
@@ -9706,8 +9706,8 @@
             29,
             32
           ],
-          "input_weight_l2": 1.7848302125930786,
-          "output_weight_l2": 2.1698927879333496,
+          "input_weight_l2": 1.7848303318023682,
+          "output_weight_l2": 2.1698925495147705,
           "ablation_loss_delta": 0.023028254508972168
         },
         {
@@ -9749,7 +9749,7 @@
           ],
           "input_weight_l2": 1.4483537673950195,
           "output_weight_l2": 1.6517012119293213,
-          "ablation_loss_delta": 0.022695064544677734
+          "ablation_loss_delta": 0.022695183753967285
         },
         {
           "id": "neuron-021",
@@ -9789,8 +9789,8 @@
             28
           ],
           "input_weight_l2": 1.2302192449569702,
-          "output_weight_l2": 1.657183289527893,
-          "ablation_loss_delta": 0.022600293159484863
+          "output_weight_l2": 1.6571834087371826,
+          "ablation_loss_delta": 0.022600412368774414
         },
         {
           "id": "neuron-045",
@@ -9830,8 +9830,8 @@
             32
           ],
           "input_weight_l2": 1.9383587837219238,
-          "output_weight_l2": 2.387528896331787,
-          "ablation_loss_delta": 0.02009260654449463
+          "output_weight_l2": 2.387529134750366,
+          "ablation_loss_delta": 0.02009272575378418
         },
         {
           "id": "neuron-010",
@@ -9872,7 +9872,7 @@
           ],
           "input_weight_l2": 1.330869436264038,
           "output_weight_l2": 1.841677188873291,
-          "ablation_loss_delta": 0.01854729652404785
+          "ablation_loss_delta": 0.018547415733337402
         },
         {
           "id": "neuron-034",
@@ -9913,7 +9913,7 @@
           ],
           "input_weight_l2": 1.0814008712768555,
           "output_weight_l2": 1.5100715160369873,
-          "ablation_loss_delta": 0.017187118530273438
+          "ablation_loss_delta": 0.01718723773956299
         },
         {
           "id": "neuron-020",
@@ -9954,7 +9954,7 @@
           ],
           "input_weight_l2": 1.1530821323394775,
           "output_weight_l2": 1.594323992729187,
-          "ablation_loss_delta": 0.016229748725891113
+          "ablation_loss_delta": 0.016229867935180664
         },
         {
           "id": "neuron-033",
@@ -9995,7 +9995,7 @@
           ],
           "input_weight_l2": 1.287499189376831,
           "output_weight_l2": 1.5281106233596802,
-          "ablation_loss_delta": 0.015817642211914062
+          "ablation_loss_delta": 0.015817761421203613
         },
         {
           "id": "neuron-030",
@@ -10035,8 +10035,8 @@
             30
           ],
           "input_weight_l2": 1.3374829292297363,
-          "output_weight_l2": 1.5431715250015259,
-          "ablation_loss_delta": 0.015089035034179688
+          "output_weight_l2": 1.5431714057922363,
+          "ablation_loss_delta": 0.015089154243469238
         },
         {
           "id": "neuron-009",
@@ -10076,8 +10076,8 @@
             32
           ],
           "input_weight_l2": 1.4475644826889038,
-          "output_weight_l2": 1.75328528881073,
-          "ablation_loss_delta": 0.014792561531066895
+          "output_weight_l2": 1.7532851696014404,
+          "ablation_loss_delta": 0.014792680740356445
         },
         {
           "id": "neuron-015",
@@ -10116,9 +10116,9 @@
             31,
             32
           ],
-          "input_weight_l2": 1.4413799047470093,
-          "output_weight_l2": 1.7402511835098267,
-          "ablation_loss_delta": 0.014706850051879883
+          "input_weight_l2": 1.4413800239562988,
+          "output_weight_l2": 1.7402513027191162,
+          "ablation_loss_delta": 0.014706969261169434
         },
         {
           "id": "neuron-016",
@@ -10159,7 +10159,7 @@
           ],
           "input_weight_l2": 1.4415991306304932,
           "output_weight_l2": 1.7798120975494385,
-          "ablation_loss_delta": 0.014641046524047852
+          "ablation_loss_delta": 0.014641165733337402
         },
         {
           "id": "neuron-001",
@@ -10200,7 +10200,7 @@
           ],
           "input_weight_l2": 1.328965425491333,
           "output_weight_l2": 1.6255388259887695,
-          "ablation_loss_delta": 0.013945221900939941
+          "ablation_loss_delta": 0.013945341110229492
         },
         {
           "id": "neuron-019",
@@ -10239,9 +10239,9 @@
             31,
             33
           ],
-          "input_weight_l2": 1.3152940273284912,
-          "output_weight_l2": 1.6336445808410645,
-          "ablation_loss_delta": 0.011815190315246582
+          "input_weight_l2": 1.3152941465377808,
+          "output_weight_l2": 1.6336448192596436,
+          "ablation_loss_delta": 0.011815309524536133
         },
         {
           "id": "neuron-027",
@@ -10281,8 +10281,8 @@
             32
           ],
           "input_weight_l2": 0.9248706102371216,
-          "output_weight_l2": 1.094022512435913,
-          "ablation_loss_delta": 0.011551737785339355
+          "output_weight_l2": 1.0940223932266235,
+          "ablation_loss_delta": 0.011551856994628906
         },
         {
           "id": "neuron-003",
@@ -10405,7 +10405,7 @@
           ],
           "input_weight_l2": 0.9326125979423523,
           "output_weight_l2": 1.0628999471664429,
-          "ablation_loss_delta": 0.010463237762451172
+          "ablation_loss_delta": 0.010463356971740723
         },
         {
           "id": "neuron-028",
@@ -10444,9 +10444,9 @@
             32,
             33
           ],
-          "input_weight_l2": 1.1380391120910645,
-          "output_weight_l2": 1.349737524986267,
-          "ablation_loss_delta": 0.00849759578704834
+          "input_weight_l2": 1.138038992881775,
+          "output_weight_l2": 1.3497374057769775,
+          "ablation_loss_delta": 0.00849771499633789
         },
         {
           "id": "neuron-004",
@@ -10485,8 +10485,8 @@
             29,
             31
           ],
-          "input_weight_l2": 0.9343558549880981,
-          "output_weight_l2": 1.287672519683838,
+          "input_weight_l2": 0.9343559741973877,
+          "output_weight_l2": 1.287672758102417,
           "ablation_loss_delta": 0.007994651794433594
         },
         {
@@ -10528,7 +10528,7 @@
           ],
           "input_weight_l2": 0.8855173587799072,
           "output_weight_l2": 1.1309263706207275,
-          "ablation_loss_delta": 0.006044983863830566
+          "ablation_loss_delta": 0.006045222282409668
         },
         {
           "id": "neuron-037",
@@ -10567,9 +10567,9 @@
             28,
             30
           ],
-          "input_weight_l2": 0.8046137690544128,
+          "input_weight_l2": 0.8046137094497681,
           "output_weight_l2": 1.0662496089935303,
-          "ablation_loss_delta": 0.0051354169845581055
+          "ablation_loss_delta": 0.005135536193847656
         },
         {
           "id": "neuron-039",
@@ -10608,9 +10608,9 @@
             32,
             33
           ],
-          "input_weight_l2": 1.0489466190338135,
-          "output_weight_l2": 1.1254727840423584,
-          "ablation_loss_delta": 0.004690647125244141
+          "input_weight_l2": 1.048946738243103,
+          "output_weight_l2": 1.125472903251648,
+          "ablation_loss_delta": 0.004690766334533691
         },
         {
           "id": "neuron-012",
@@ -10651,7 +10651,7 @@
           ],
           "input_weight_l2": 0.6636335849761963,
           "output_weight_l2": 0.784134030342102,
-          "ablation_loss_delta": 0.004610419273376465
+          "ablation_loss_delta": 0.004610538482666016
         },
         {
           "id": "neuron-008",
@@ -10732,8 +10732,8 @@
             32
           ],
           "input_weight_l2": 1.3723541498184204,
-          "output_weight_l2": 1.653904676437378,
-          "ablation_loss_delta": 0.004051566123962402
+          "output_weight_l2": 1.6539045572280884,
+          "ablation_loss_delta": 0.004051804542541504
         },
         {
           "id": "neuron-040",
@@ -10774,7 +10774,7 @@
           ],
           "input_weight_l2": 0.5858374834060669,
           "output_weight_l2": 0.8706173300743103,
-          "ablation_loss_delta": 0.0038251876831054688
+          "ablation_loss_delta": 0.0038253068923950195
         },
         {
           "id": "neuron-029",
@@ -10814,8 +10814,8 @@
             33
           ],
           "input_weight_l2": 0.804370105266571,
-          "output_weight_l2": 1.0396902561187744,
-          "ablation_loss_delta": 0.003750920295715332
+          "output_weight_l2": 1.0396900177001953,
+          "ablation_loss_delta": 0.003751039505004883
         },
         {
           "id": "neuron-007",
@@ -10856,7 +10856,7 @@
           ],
           "input_weight_l2": 0.5842186212539673,
           "output_weight_l2": 0.7354456782341003,
-          "ablation_loss_delta": 0.002428770065307617
+          "ablation_loss_delta": 0.002428889274597168
         },
         {
           "id": "neuron-046",
@@ -10896,8 +10896,8 @@
             29
           ],
           "input_weight_l2": 0.8395788669586182,
-          "output_weight_l2": 0.9667902588844299,
-          "ablation_loss_delta": 0.0021016597747802734
+          "output_weight_l2": 0.9667901992797852,
+          "ablation_loss_delta": 0.0021017789840698242
         },
         {
           "id": "neuron-002",
@@ -10937,8 +10937,8 @@
             31
           ],
           "input_weight_l2": 0.6859399676322937,
-          "output_weight_l2": 0.8299403190612793,
-          "ablation_loss_delta": 0.0016775131225585938
+          "output_weight_l2": 0.8299402594566345,
+          "ablation_loss_delta": 0.0016776323318481445
         },
         {
           "id": "neuron-026",
@@ -10979,7 +10979,7 @@
           ],
           "input_weight_l2": 0.35734686255455017,
           "output_weight_l2": 0.6051701903343201,
-          "ablation_loss_delta": 0.0008989572525024414
+          "ablation_loss_delta": 0.0008990764617919922
         },
         {
           "id": "neuron-006",
@@ -11019,8 +11019,8 @@
             33
           ],
           "input_weight_l2": 0.3237670063972473,
-          "output_weight_l2": 0.6252288818359375,
-          "ablation_loss_delta": 1.3947486877441406e-05
+          "output_weight_l2": 0.6252288222312927,
+          "ablation_loss_delta": 1.4066696166992188e-05
         }
       ],
       "history": [
@@ -11041,7 +11041,7 @@
         },
         {
           "epoch": 4,
-          "heldout_loss": 3.0150182247161865,
+          "heldout_loss": 3.0150184631347656,
           "heldout_accuracy": 0.21789383561643835
         },
         {
@@ -11056,12 +11056,12 @@
         },
         {
           "epoch": 7,
-          "heldout_loss": 2.8065264225006104,
+          "heldout_loss": 2.8065261840820312,
           "heldout_accuracy": 0.2564212328767123
         },
         {
           "epoch": 8,
-          "heldout_loss": 2.7241787910461426,
+          "heldout_loss": 2.7241785526275635,
           "heldout_accuracy": 0.2564212328767123
         },
         {
@@ -11101,7 +11101,7 @@
         },
         {
           "epoch": 16,
-          "heldout_loss": 1.9738506078720093,
+          "heldout_loss": 1.9738503694534302,
           "heldout_accuracy": 0.4822345890410959
         },
         {
@@ -11131,7 +11131,7 @@
         },
         {
           "epoch": 22,
-          "heldout_loss": 1.5019080638885498,
+          "heldout_loss": 1.5019079446792603,
           "heldout_accuracy": 0.6673801369863014
         },
         {
@@ -11141,7 +11141,7 @@
         },
         {
           "epoch": 24,
-          "heldout_loss": 1.3887505531311035,
+          "heldout_loss": 1.388750433921814,
           "heldout_accuracy": 0.6723030821917808
         }
       ],
@@ -11157,7 +11157,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.7941442728042603,
       "heldout_accuracy": 0.5295376712328768,
-      "wall_seconds": 1.9279,
+      "wall_seconds": 0.8949,
       "unit_details": [
         {
           "id": "neuron-005",
@@ -11196,8 +11196,8 @@
             30,
             31
           ],
-          "input_weight_l2": 1.7041723728179932,
-          "output_weight_l2": 2.158876657485962,
+          "input_weight_l2": 1.7041722536087036,
+          "output_weight_l2": 2.158876419067383,
           "ablation_loss_delta": 0.0690007209777832
         },
         {
@@ -11319,8 +11319,8 @@
             29,
             32
           ],
-          "input_weight_l2": 1.6152524948120117,
-          "output_weight_l2": 1.8863804340362549,
+          "input_weight_l2": 1.6152526140213013,
+          "output_weight_l2": 1.8863807916641235,
           "ablation_loss_delta": 0.051282286643981934
         },
         {
@@ -11362,7 +11362,7 @@
           ],
           "input_weight_l2": 1.5354011058807373,
           "output_weight_l2": 1.8929110765457153,
-          "ablation_loss_delta": 0.04932963848114014
+          "ablation_loss_delta": 0.049329400062561035
         },
         {
           "id": "neuron-044",
@@ -11401,9 +11401,9 @@
             30,
             32
           ],
-          "input_weight_l2": 1.3930047750473022,
+          "input_weight_l2": 1.3930048942565918,
           "output_weight_l2": 1.6529685258865356,
-          "ablation_loss_delta": 0.04490220546722412
+          "ablation_loss_delta": 0.04490208625793457
         },
         {
           "id": "neuron-010",
@@ -11443,8 +11443,8 @@
             32
           ],
           "input_weight_l2": 1.553601861000061,
-          "output_weight_l2": 2.0265069007873535,
-          "ablation_loss_delta": 0.035079360008239746
+          "output_weight_l2": 2.0265071392059326,
+          "ablation_loss_delta": 0.035079121589660645
         },
         {
           "id": "neuron-000",
@@ -11525,7 +11525,7 @@
             32
           ],
           "input_weight_l2": 1.303035855293274,
-          "output_weight_l2": 1.5615664720535278,
+          "output_weight_l2": 1.561566710472107,
           "ablation_loss_delta": 0.032268404960632324
         },
         {
@@ -11606,8 +11606,8 @@
             31,
             32
           ],
-          "input_weight_l2": 1.7854872941970825,
-          "output_weight_l2": 2.412594795227051,
+          "input_weight_l2": 1.785487174987793,
+          "output_weight_l2": 2.4125945568084717,
           "ablation_loss_delta": 0.02830636501312256
         },
         {
@@ -11647,8 +11647,8 @@
             30,
             32
           ],
-          "input_weight_l2": 1.4341760873794556,
-          "output_weight_l2": 1.6754142045974731,
+          "input_weight_l2": 1.4341762065887451,
+          "output_weight_l2": 1.6754143238067627,
           "ablation_loss_delta": 0.02806997299194336
         },
         {
@@ -11688,8 +11688,8 @@
             30,
             33
           ],
-          "input_weight_l2": 1.5864311456680298,
-          "output_weight_l2": 2.0394039154052734,
+          "input_weight_l2": 1.5864310264587402,
+          "output_weight_l2": 2.0394036769866943,
           "ablation_loss_delta": 0.0241624116897583
         },
         {
@@ -11729,7 +11729,7 @@
             30,
             31
           ],
-          "input_weight_l2": 1.3330979347229004,
+          "input_weight_l2": 1.33309805393219,
           "output_weight_l2": 1.565805196762085,
           "ablation_loss_delta": 0.02318131923675537
         },
@@ -11771,7 +11771,7 @@
             33
           ],
           "input_weight_l2": 1.3267712593078613,
-          "output_weight_l2": 1.6606935262680054,
+          "output_weight_l2": 1.6606934070587158,
           "ablation_loss_delta": 0.022978663444519043
         },
         {
@@ -11852,8 +11852,8 @@
             30,
             33
           ],
-          "input_weight_l2": 1.2412047386169434,
-          "output_weight_l2": 1.6428029537200928,
+          "input_weight_l2": 1.241204857826233,
+          "output_weight_l2": 1.6428030729293823,
           "ablation_loss_delta": 0.02127707004547119
         },
         {
@@ -11935,7 +11935,7 @@
             30
           ],
           "input_weight_l2": 0.8359991312026978,
-          "output_weight_l2": 1.0711722373962402,
+          "output_weight_l2": 1.0711723566055298,
           "ablation_loss_delta": 0.019453048706054688
         },
         {
@@ -11975,8 +11975,8 @@
             31,
             32
           ],
-          "input_weight_l2": 0.9698802828788757,
-          "output_weight_l2": 1.3518823385238647,
+          "input_weight_l2": 0.969880223274231,
+          "output_weight_l2": 1.3518824577331543,
           "ablation_loss_delta": 0.018164634704589844
         },
         {
@@ -12016,7 +12016,7 @@
             31,
             32
           ],
-          "input_weight_l2": 1.5393606424331665,
+          "input_weight_l2": 1.539360523223877,
           "output_weight_l2": 1.8806148767471313,
           "ablation_loss_delta": 0.01744067668914795
         },
@@ -12058,7 +12058,7 @@
             32
           ],
           "input_weight_l2": 1.4007982015609741,
-          "output_weight_l2": 1.6402339935302734,
+          "output_weight_l2": 1.640234112739563,
           "ablation_loss_delta": 0.015045642852783203
         },
         {
@@ -12098,9 +12098,9 @@
             30,
             32
           ],
-          "input_weight_l2": 1.6497811079025269,
-          "output_weight_l2": 1.866945505142212,
-          "ablation_loss_delta": 0.014566779136657715
+          "input_weight_l2": 1.6497812271118164,
+          "output_weight_l2": 1.8669453859329224,
+          "ablation_loss_delta": 0.014566540718078613
         },
         {
           "id": "neuron-001",
@@ -12180,8 +12180,8 @@
             30,
             32
           ],
-          "input_weight_l2": 0.8412589430809021,
-          "output_weight_l2": 0.9863754510879517,
+          "input_weight_l2": 0.8412588834762573,
+          "output_weight_l2": 0.9863755106925964,
           "ablation_loss_delta": 0.013974189758300781
         },
         {
@@ -12223,7 +12223,7 @@
           ],
           "input_weight_l2": 1.406316876411438,
           "output_weight_l2": 1.6736444234848022,
-          "ablation_loss_delta": 0.013507843017578125
+          "ablation_loss_delta": 0.013507604598999023
         },
         {
           "id": "neuron-020",
@@ -12303,7 +12303,7 @@
             31,
             32
           ],
-          "input_weight_l2": 0.6857633590698242,
+          "input_weight_l2": 0.6857632398605347,
           "output_weight_l2": 0.9540364742279053,
           "ablation_loss_delta": 0.010427474975585938
         },
@@ -12426,7 +12426,7 @@
             31,
             32
           ],
-          "input_weight_l2": 0.5943707227706909,
+          "input_weight_l2": 0.5943706035614014,
           "output_weight_l2": 0.9128573536872864,
           "ablation_loss_delta": 0.007248997688293457
         },
@@ -12467,7 +12467,7 @@
             28,
             31
           ],
-          "input_weight_l2": 0.9557498693466187,
+          "input_weight_l2": 0.9557499289512634,
           "output_weight_l2": 1.167062520980835,
           "ablation_loss_delta": 0.00456845760345459
         },
@@ -12550,7 +12550,7 @@
             32
           ],
           "input_weight_l2": 0.5932893753051758,
-          "output_weight_l2": 0.8112008571624756,
+          "output_weight_l2": 0.8112009167671204,
           "ablation_loss_delta": 0.004372358322143555
         },
         {
@@ -12590,8 +12590,8 @@
             30,
             33
           ],
-          "input_weight_l2": 0.8332086205482483,
-          "output_weight_l2": 1.1391205787658691,
+          "input_weight_l2": 0.8332083821296692,
+          "output_weight_l2": 1.13912034034729,
           "ablation_loss_delta": 0.003143310546875
         },
         {
@@ -12633,7 +12633,7 @@
           ],
           "input_weight_l2": 0.7292819023132324,
           "output_weight_l2": 0.8497076034545898,
-          "ablation_loss_delta": 0.0027348995208740234
+          "ablation_loss_delta": 0.002734661102294922
         },
         {
           "id": "neuron-040",
@@ -12672,9 +12672,9 @@
             30,
             32
           ],
-          "input_weight_l2": 0.370883584022522,
+          "input_weight_l2": 0.37088361382484436,
           "output_weight_l2": 0.7490505576133728,
-          "ablation_loss_delta": 0.0024307966232299805
+          "ablation_loss_delta": 0.002430558204650879
         },
         {
           "id": "neuron-012",
@@ -12755,7 +12755,7 @@
             33
           ],
           "input_weight_l2": 1.0807503461837769,
-          "output_weight_l2": 1.1909844875335693,
+          "output_weight_l2": 1.1909843683242798,
           "ablation_loss_delta": 0.0016028881072998047
         },
         {
@@ -12795,9 +12795,9 @@
             31,
             33
           ],
-          "input_weight_l2": 0.32258516550064087,
+          "input_weight_l2": 0.3225851356983185,
           "output_weight_l2": 0.5961440205574036,
-          "ablation_loss_delta": 0.0012850761413574219
+          "ablation_loss_delta": 0.001284956932067871
         },
         {
           "id": "neuron-002",
@@ -12878,7 +12878,7 @@
             32
           ],
           "input_weight_l2": 0.46195870637893677,
-          "output_weight_l2": 0.6544070839881897,
+          "output_weight_l2": 0.6544070243835449,
           "ablation_loss_delta": 0.0003361701965332031
         },
         {
@@ -12960,7 +12960,7 @@
             31
           ],
           "input_weight_l2": 0.4479857087135315,
-          "output_weight_l2": 0.8141325116157532,
+          "output_weight_l2": 0.8141324520111084,
           "ablation_loss_delta": 0.00014007091522216797
         },
         {
@@ -13082,9 +13082,9 @@
             30,
             32
           ],
-          "input_weight_l2": 0.5677635669708252,
-          "output_weight_l2": 0.8151775598526001,
-          "ablation_loss_delta": -0.000274658203125
+          "input_weight_l2": 0.5677635073661804,
+          "output_weight_l2": 0.8151774406433105,
+          "ablation_loss_delta": -0.00027501583099365234
         },
         {
           "id": "neuron-019",
@@ -13123,8 +13123,8 @@
             32,
             33
           ],
-          "input_weight_l2": 1.6149870157241821,
-          "output_weight_l2": 1.8920592069625854,
+          "input_weight_l2": 1.6149871349334717,
+          "output_weight_l2": 1.892059326171875,
           "ablation_loss_delta": -0.0014330148696899414
         }
       ],
@@ -13156,12 +13156,12 @@
         },
         {
           "epoch": 6,
-          "heldout_loss": 2.947126626968384,
+          "heldout_loss": 2.9471263885498047,
           "heldout_accuracy": 0.2564212328767123
         },
         {
           "epoch": 7,
-          "heldout_loss": 2.894547700881958,
+          "heldout_loss": 2.894547462463379,
           "heldout_accuracy": 0.2564212328767123
         },
         {
@@ -13176,7 +13176,7 @@
         },
         {
           "epoch": 10,
-          "heldout_loss": 2.7130661010742188,
+          "heldout_loss": 2.7130658626556396,
           "heldout_accuracy": 0.2690496575342466
         },
         {
@@ -13206,7 +13206,7 @@
         },
         {
           "epoch": 16,
-          "heldout_loss": 2.293670177459717,
+          "heldout_loss": 2.293670415878296,
           "heldout_accuracy": 0.3976883561643836
         },
         {
@@ -13231,7 +13231,7 @@
         },
         {
           "epoch": 21,
-          "heldout_loss": 1.979772925376892,
+          "heldout_loss": 1.979772686958313,
           "heldout_accuracy": 0.4477739726027397
         },
         {
@@ -13262,7 +13262,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.9670199155807495,
       "heldout_accuracy": 0.5680650684931506,
-      "wall_seconds": 1.7422,
+      "wall_seconds": 0.8132,
       "history": [
         {
           "epoch": 1,
@@ -13336,7 +13336,7 @@
         },
         {
           "epoch": 15,
-          "heldout_loss": 2.610116958618164,
+          "heldout_loss": 2.610116720199585,
           "heldout_accuracy": 0.3715753424657534
         },
         {
@@ -13393,7 +13393,7 @@
       "parameter_count": 1569,
       "heldout_loss": 1.1515393257141113,
       "heldout_accuracy": 0.717679794520548,
-      "wall_seconds": 1.2355,
+      "wall_seconds": 0.614,
       "history": [
         {
           "epoch": 1,
@@ -13402,7 +13402,7 @@
         },
         {
           "epoch": 2,
-          "heldout_loss": 2.7393264770507812,
+          "heldout_loss": 2.739326238632202,
           "heldout_accuracy": 0.270333904109589
         },
         {
@@ -13427,7 +13427,7 @@
         },
         {
           "epoch": 7,
-          "heldout_loss": 1.947852611541748,
+          "heldout_loss": 1.947852373123169,
           "heldout_accuracy": 0.5434503424657534
         },
         {
@@ -13442,12 +13442,12 @@
         },
         {
           "epoch": 10,
-          "heldout_loss": 1.6813749074935913,
+          "heldout_loss": 1.6813750267028809,
           "heldout_accuracy": 0.6016695205479452
         },
         {
           "epoch": 11,
-          "heldout_loss": 1.6160697937011719,
+          "heldout_loss": 1.6160696744918823,
           "heldout_accuracy": 0.610445205479452
         },
         {
@@ -13487,7 +13487,7 @@
         },
         {
           "epoch": 19,
-          "heldout_loss": 1.2725884914398193,
+          "heldout_loss": 1.2725886106491089,
           "heldout_accuracy": 0.6913527397260274
         },
         {
@@ -13524,7 +13524,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.2897002696990967,
       "heldout_accuracy": 0.7189640410958904,
-      "wall_seconds": 1.9416,
+      "wall_seconds": 0.9205,
       "unit_details": [
         {
           "id": "neuron-036",
@@ -13565,7 +13565,7 @@
           ],
           "input_weight_l2": 1.8915941715240479,
           "output_weight_l2": 2.224003553390503,
-          "ablation_loss_delta": 0.05103731155395508
+          "ablation_loss_delta": 0.05103719234466553
         },
         {
           "id": "neuron-046",
@@ -13604,8 +13604,8 @@
             29,
             32
           ],
-          "input_weight_l2": 1.7167083024978638,
-          "output_weight_l2": 2.1624596118927,
+          "input_weight_l2": 1.7167084217071533,
+          "output_weight_l2": 2.162459373474121,
           "ablation_loss_delta": 0.04610121250152588
         },
         {
@@ -13646,7 +13646,7 @@
             32
           ],
           "input_weight_l2": 2.0703725814819336,
-          "output_weight_l2": 2.5620036125183105,
+          "output_weight_l2": 2.5620033740997314,
           "ablation_loss_delta": 0.04281485080718994
         },
         {
@@ -13686,8 +13686,8 @@
             28,
             32
           ],
-          "input_weight_l2": 1.6974599361419678,
-          "output_weight_l2": 2.0652835369110107,
+          "input_weight_l2": 1.6974596977233887,
+          "output_weight_l2": 2.0652832984924316,
           "ablation_loss_delta": 0.04077506065368652
         },
         {
@@ -13728,7 +13728,7 @@
             25
           ],
           "input_weight_l2": 2.1515393257141113,
-          "output_weight_l2": 2.4867470264434814,
+          "output_weight_l2": 2.4867472648620605,
           "ablation_loss_delta": 0.04075038433074951
         },
         {
@@ -13769,7 +13769,7 @@
             33
           ],
           "input_weight_l2": 1.9809691905975342,
-          "output_weight_l2": 2.3714237213134766,
+          "output_weight_l2": 2.3714239597320557,
           "ablation_loss_delta": 0.03949236869812012
         },
         {
@@ -13893,7 +13893,7 @@
           ],
           "input_weight_l2": 1.8429501056671143,
           "output_weight_l2": 2.3297226428985596,
-          "ablation_loss_delta": 0.03604292869567871
+          "ablation_loss_delta": 0.03604304790496826
         },
         {
           "id": "neuron-001",
@@ -13975,7 +13975,7 @@
           ],
           "input_weight_l2": 1.6568833589553833,
           "output_weight_l2": 2.0360147953033447,
-          "ablation_loss_delta": 0.03346133232116699
+          "ablation_loss_delta": 0.03346145153045654
         },
         {
           "id": "neuron-019",
@@ -14015,7 +14015,7 @@
             33
           ],
           "input_weight_l2": 1.4653781652450562,
-          "output_weight_l2": 1.7866841554641724,
+          "output_weight_l2": 1.7866843938827515,
           "ablation_loss_delta": 0.032106757164001465
         },
         {
@@ -14056,7 +14056,7 @@
             32
           ],
           "input_weight_l2": 1.8691335916519165,
-          "output_weight_l2": 2.1069886684417725,
+          "output_weight_l2": 2.1069881916046143,
           "ablation_loss_delta": 0.031507015228271484
         },
         {
@@ -14096,9 +14096,9 @@
             27,
             33
           ],
-          "input_weight_l2": 1.84062659740448,
+          "input_weight_l2": 1.8406267166137695,
           "output_weight_l2": 2.275665044784546,
-          "ablation_loss_delta": 0.02990245819091797
+          "ablation_loss_delta": 0.02990257740020752
         },
         {
           "id": "neuron-047",
@@ -14137,8 +14137,8 @@
             30,
             32
           ],
-          "input_weight_l2": 1.3545770645141602,
-          "output_weight_l2": 1.5675849914550781,
+          "input_weight_l2": 1.3545769453048706,
+          "output_weight_l2": 1.5675848722457886,
           "ablation_loss_delta": 0.026921510696411133
         },
         {
@@ -14179,7 +14179,7 @@
             33
           ],
           "input_weight_l2": 1.292784333229065,
-          "output_weight_l2": 1.7013661861419678,
+          "output_weight_l2": 1.7013664245605469,
           "ablation_loss_delta": 0.026454925537109375
         },
         {
@@ -14220,7 +14220,7 @@
             32
           ],
           "input_weight_l2": 1.396820306777954,
-          "output_weight_l2": 1.5812549591064453,
+          "output_weight_l2": 1.5812550783157349,
           "ablation_loss_delta": 0.024742484092712402
         },
         {
@@ -14260,7 +14260,7 @@
             25,
             31
           ],
-          "input_weight_l2": 1.3891633749008179,
+          "input_weight_l2": 1.3891632556915283,
           "output_weight_l2": 1.7764108180999756,
           "ablation_loss_delta": 0.022461295127868652
         },
@@ -14342,8 +14342,8 @@
             27,
             29
           ],
-          "input_weight_l2": 1.2101147174835205,
-          "output_weight_l2": 1.3990538120269775,
+          "input_weight_l2": 1.21011483669281,
+          "output_weight_l2": 1.399053931236267,
           "ablation_loss_delta": 0.01979959011077881
         },
         {
@@ -14384,7 +14384,7 @@
             33
           ],
           "input_weight_l2": 1.4434155225753784,
-          "output_weight_l2": 1.7691783905029297,
+          "output_weight_l2": 1.7691786289215088,
           "ablation_loss_delta": 0.01966404914855957
         },
         {
@@ -14425,8 +14425,8 @@
             32
           ],
           "input_weight_l2": 1.3909560441970825,
-          "output_weight_l2": 1.6360560655593872,
-          "ablation_loss_delta": 0.01833808422088623
+          "output_weight_l2": 1.6360559463500977,
+          "ablation_loss_delta": 0.01833820343017578
         },
         {
           "id": "neuron-016",
@@ -14465,7 +14465,7 @@
             30,
             33
           ],
-          "input_weight_l2": 1.4780397415161133,
+          "input_weight_l2": 1.4780398607254028,
           "output_weight_l2": 1.666336178779602,
           "ablation_loss_delta": 0.016811370849609375
         },
@@ -14508,7 +14508,7 @@
           ],
           "input_weight_l2": 1.419989824295044,
           "output_weight_l2": 1.64292573928833,
-          "ablation_loss_delta": 0.015835881233215332
+          "ablation_loss_delta": 0.01583576202392578
         },
         {
           "id": "neuron-031",
@@ -14549,7 +14549,7 @@
           ],
           "input_weight_l2": 1.3694305419921875,
           "output_weight_l2": 1.6651151180267334,
-          "ablation_loss_delta": 0.01508796215057373
+          "ablation_loss_delta": 0.015088081359863281
         },
         {
           "id": "neuron-029",
@@ -14588,7 +14588,7 @@
             21,
             24
           ],
-          "input_weight_l2": 1.2189116477966309,
+          "input_weight_l2": 1.2189115285873413,
           "output_weight_l2": 1.4709724187850952,
           "ablation_loss_delta": 0.013216733932495117
         },
@@ -14670,7 +14670,7 @@
             31,
             32
           ],
-          "input_weight_l2": 1.2650272846221924,
+          "input_weight_l2": 1.265027403831482,
           "output_weight_l2": 1.4897900819778442,
           "ablation_loss_delta": 0.012683510780334473
         },
@@ -14794,8 +14794,8 @@
             30
           ],
           "input_weight_l2": 1.014041543006897,
-          "output_weight_l2": 1.2524526119232178,
-          "ablation_loss_delta": 0.010227322578430176
+          "output_weight_l2": 1.2524527311325073,
+          "ablation_loss_delta": 0.010227441787719727
         },
         {
           "id": "neuron-030",
@@ -14834,9 +14834,9 @@
             19,
             30
           ],
-          "input_weight_l2": 1.287062168121338,
-          "output_weight_l2": 1.4902483224868774,
-          "ablation_loss_delta": 0.008990287780761719
+          "input_weight_l2": 1.2870622873306274,
+          "output_weight_l2": 1.490248441696167,
+          "ablation_loss_delta": 0.00899040699005127
         },
         {
           "id": "neuron-043",
@@ -14875,7 +14875,7 @@
             28,
             29
           ],
-          "input_weight_l2": 1.1341809034347534,
+          "input_weight_l2": 1.1341807842254639,
           "output_weight_l2": 1.363211750984192,
           "ablation_loss_delta": 0.008684992790222168
         },
@@ -14917,8 +14917,8 @@
             33
           ],
           "input_weight_l2": 0.8604215383529663,
-          "output_weight_l2": 0.9653009176254272,
-          "ablation_loss_delta": 0.008291006088256836
+          "output_weight_l2": 0.965300977230072,
+          "ablation_loss_delta": 0.008290886878967285
         },
         {
           "id": "neuron-007",
@@ -14958,8 +14958,8 @@
             25
           ],
           "input_weight_l2": 1.298363208770752,
-          "output_weight_l2": 1.575089693069458,
-          "ablation_loss_delta": 0.008197546005249023
+          "output_weight_l2": 1.5750895738601685,
+          "ablation_loss_delta": 0.008197307586669922
         },
         {
           "id": "neuron-008",
@@ -15039,8 +15039,8 @@
             23,
             29
           ],
-          "input_weight_l2": 0.7102639079093933,
-          "output_weight_l2": 0.8176431655883789,
+          "input_weight_l2": 0.7102638483047485,
+          "output_weight_l2": 0.8176431059837341,
           "ablation_loss_delta": 0.00736689567565918
         },
         {
@@ -15080,7 +15080,7 @@
             30,
             33
           ],
-          "input_weight_l2": 0.9413881897926331,
+          "input_weight_l2": 0.9413881301879883,
           "output_weight_l2": 1.1377975940704346,
           "ablation_loss_delta": 0.006615638732910156
         },
@@ -15121,8 +15121,8 @@
             21,
             30
           ],
-          "input_weight_l2": 1.2162764072418213,
-          "output_weight_l2": 1.3605560064315796,
+          "input_weight_l2": 1.2162765264511108,
+          "output_weight_l2": 1.3605561256408691,
           "ablation_loss_delta": 0.006555795669555664
         },
         {
@@ -15163,7 +15163,7 @@
             32
           ],
           "input_weight_l2": 1.1044769287109375,
-          "output_weight_l2": 1.326684832572937,
+          "output_weight_l2": 1.3266847133636475,
           "ablation_loss_delta": 0.006175398826599121
         },
         {
@@ -15244,8 +15244,8 @@
             31,
             32
           ],
-          "input_weight_l2": 1.3424980640411377,
-          "output_weight_l2": 1.459240198135376,
+          "input_weight_l2": 1.3424981832504272,
+          "output_weight_l2": 1.4592403173446655,
           "ablation_loss_delta": 0.005849957466125488
         },
         {
@@ -15285,7 +15285,7 @@
             26,
             29
           ],
-          "input_weight_l2": 0.957200825214386,
+          "input_weight_l2": 0.9572008848190308,
           "output_weight_l2": 1.0451878309249878,
           "ablation_loss_delta": 0.005577206611633301
         },
@@ -15326,8 +15326,8 @@
             32,
             33
           ],
-          "input_weight_l2": 0.8396687507629395,
-          "output_weight_l2": 1.2921053171157837,
+          "input_weight_l2": 0.8396688103675842,
+          "output_weight_l2": 1.2921054363250732,
           "ablation_loss_delta": 0.005027651786804199
         },
         {
@@ -15367,8 +15367,8 @@
             31,
             32
           ],
-          "input_weight_l2": 1.504694938659668,
-          "output_weight_l2": 1.7019606828689575,
+          "input_weight_l2": 1.5046948194503784,
+          "output_weight_l2": 1.701960802078247,
           "ablation_loss_delta": 0.004477739334106445
         },
         {
@@ -15409,7 +15409,7 @@
             30
           ],
           "input_weight_l2": 0.6212431192398071,
-          "output_weight_l2": 0.7693696618080139,
+          "output_weight_l2": 0.7693696022033691,
           "ablation_loss_delta": 0.002839803695678711
         },
         {
@@ -15449,7 +15449,7 @@
             26,
             30
           ],
-          "input_weight_l2": 1.1218721866607666,
+          "input_weight_l2": 1.121872067451477,
           "output_weight_l2": 1.2897496223449707,
           "ablation_loss_delta": 0.0006278753280639648
         },
@@ -15490,7 +15490,7 @@
             29,
             31
           ],
-          "input_weight_l2": 1.1865222454071045,
+          "input_weight_l2": 1.186522364616394,
           "output_weight_l2": 1.6177436113357544,
           "ablation_loss_delta": -0.002869725227355957
         }
@@ -15629,7 +15629,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.3710713386535645,
       "heldout_accuracy": 0.6999143835616438,
-      "wall_seconds": 1.9968,
+      "wall_seconds": 0.9125,
       "unit_details": [
         {
           "id": "neuron-035",
@@ -15668,7 +15668,7 @@
             30,
             31
           ],
-          "input_weight_l2": 2.2836577892303467,
+          "input_weight_l2": 2.283658027648926,
           "output_weight_l2": 2.6587133407592773,
           "ablation_loss_delta": 0.06419610977172852
         },
@@ -15709,8 +15709,8 @@
             29,
             32
           ],
-          "input_weight_l2": 1.8950769901275635,
-          "output_weight_l2": 2.341262102127075,
+          "input_weight_l2": 1.895077109336853,
+          "output_weight_l2": 2.3412623405456543,
           "ablation_loss_delta": 0.055246949195861816
         },
         {
@@ -15751,8 +15751,8 @@
             32
           ],
           "input_weight_l2": 2.1477808952331543,
-          "output_weight_l2": 2.443190813064575,
-          "ablation_loss_delta": 0.05272555351257324
+          "output_weight_l2": 2.443190336227417,
+          "ablation_loss_delta": 0.05272543430328369
         },
         {
           "id": "neuron-036",
@@ -15833,7 +15833,7 @@
             30
           ],
           "input_weight_l2": 2.1721060276031494,
-          "output_weight_l2": 2.607360601425171,
+          "output_weight_l2": 2.607361078262329,
           "ablation_loss_delta": 0.05132293701171875
         },
         {
@@ -15874,7 +15874,7 @@
             30
           ],
           "input_weight_l2": 1.7417725324630737,
-          "output_weight_l2": 2.3700437545776367,
+          "output_weight_l2": 2.370043992996216,
           "ablation_loss_delta": 0.04720020294189453
         },
         {
@@ -15915,7 +15915,7 @@
             32
           ],
           "input_weight_l2": 1.9294685125350952,
-          "output_weight_l2": 2.4752190113067627,
+          "output_weight_l2": 2.475219249725342,
           "ablation_loss_delta": 0.04077863693237305
         },
         {
@@ -15997,7 +15997,7 @@
             32
           ],
           "input_weight_l2": 1.5126594305038452,
-          "output_weight_l2": 1.9152008295059204,
+          "output_weight_l2": 1.9152007102966309,
           "ablation_loss_delta": 0.038587212562561035
         },
         {
@@ -16037,7 +16037,7 @@
             32,
             33
           ],
-          "input_weight_l2": 1.435383915901184,
+          "input_weight_l2": 1.4353840351104736,
           "output_weight_l2": 1.8476693630218506,
           "ablation_loss_delta": 0.03718721866607666
         },
@@ -16120,7 +16120,7 @@
             31
           ],
           "input_weight_l2": 1.6255381107330322,
-          "output_weight_l2": 2.3359944820404053,
+          "output_weight_l2": 2.335994243621826,
           "ablation_loss_delta": 0.03259885311126709
         },
         {
@@ -16160,9 +16160,9 @@
             31,
             33
           ],
-          "input_weight_l2": 1.7310668230056763,
+          "input_weight_l2": 1.7310667037963867,
           "output_weight_l2": 2.1528525352478027,
-          "ablation_loss_delta": 0.031856656074523926
+          "ablation_loss_delta": 0.031856536865234375
         },
         {
           "id": "neuron-004",
@@ -16202,8 +16202,8 @@
             33
           ],
           "input_weight_l2": 1.796776533126831,
-          "output_weight_l2": 2.1968352794647217,
-          "ablation_loss_delta": 0.03151369094848633
+          "output_weight_l2": 2.1968350410461426,
+          "ablation_loss_delta": 0.03151381015777588
         },
         {
           "id": "neuron-030",
@@ -16283,8 +16283,8 @@
             32,
             33
           ],
-          "input_weight_l2": 1.5147150754928589,
-          "output_weight_l2": 1.9158252477645874,
+          "input_weight_l2": 1.5147151947021484,
+          "output_weight_l2": 1.915825366973877,
           "ablation_loss_delta": 0.030270814895629883
         },
         {
@@ -16324,9 +16324,9 @@
             31,
             33
           ],
-          "input_weight_l2": 1.6026062965393066,
+          "input_weight_l2": 1.6026064157485962,
           "output_weight_l2": 1.916988492012024,
-          "ablation_loss_delta": 0.028853654861450195
+          "ablation_loss_delta": 0.028853774070739746
         },
         {
           "id": "neuron-041",
@@ -16365,8 +16365,8 @@
             31,
             32
           ],
-          "input_weight_l2": 1.3367347717285156,
-          "output_weight_l2": 1.6834661960601807,
+          "input_weight_l2": 1.336734652519226,
+          "output_weight_l2": 1.6834663152694702,
           "ablation_loss_delta": 0.023039579391479492
         },
         {
@@ -16407,7 +16407,7 @@
             31
           ],
           "input_weight_l2": 1.5504685640335083,
-          "output_weight_l2": 1.7299240827560425,
+          "output_weight_l2": 1.729924201965332,
           "ablation_loss_delta": 0.022731423377990723
         },
         {
@@ -16447,8 +16447,8 @@
             30,
             32
           ],
-          "input_weight_l2": 1.477353572845459,
-          "output_weight_l2": 1.7474440336227417,
+          "input_weight_l2": 1.4773534536361694,
+          "output_weight_l2": 1.7474441528320312,
           "ablation_loss_delta": 0.021511435508728027
         },
         {
@@ -16530,7 +16530,7 @@
             30
           ],
           "input_weight_l2": 1.4990452527999878,
-          "output_weight_l2": 1.699973225593567,
+          "output_weight_l2": 1.6999729871749878,
           "ablation_loss_delta": 0.01974630355834961
         },
         {
@@ -16570,7 +16570,7 @@
             28,
             33
           ],
-          "input_weight_l2": 1.2587170600891113,
+          "input_weight_l2": 1.2587169408798218,
           "output_weight_l2": 1.462254524230957,
           "ablation_loss_delta": 0.01964259147644043
         },
@@ -16611,9 +16611,9 @@
             23,
             25
           ],
-          "input_weight_l2": 1.5347079038619995,
-          "output_weight_l2": 1.8184006214141846,
-          "ablation_loss_delta": 0.015826106071472168
+          "input_weight_l2": 1.53470778465271,
+          "output_weight_l2": 1.8184008598327637,
+          "ablation_loss_delta": 0.01582622528076172
         },
         {
           "id": "neuron-033",
@@ -16652,7 +16652,7 @@
             29,
             32
           ],
-          "input_weight_l2": 1.0531898736953735,
+          "input_weight_l2": 1.053189992904663,
           "output_weight_l2": 1.215969204902649,
           "ablation_loss_delta": 0.01289522647857666
         },
@@ -16693,8 +16693,8 @@
             29,
             32
           ],
-          "input_weight_l2": 0.9614793062210083,
-          "output_weight_l2": 1.0978230237960815,
+          "input_weight_l2": 0.9614793658256531,
+          "output_weight_l2": 1.097823143005371,
           "ablation_loss_delta": 0.012022137641906738
         },
         {
@@ -16776,7 +16776,7 @@
             33
           ],
           "input_weight_l2": 1.3543812036514282,
-          "output_weight_l2": 1.5656851530075073,
+          "output_weight_l2": 1.5656852722167969,
           "ablation_loss_delta": 0.011072874069213867
         },
         {
@@ -16816,8 +16816,8 @@
             32,
             33
           ],
-          "input_weight_l2": 1.117339015007019,
-          "output_weight_l2": 1.3789265155792236,
+          "input_weight_l2": 1.1173388957977295,
+          "output_weight_l2": 1.3789266347885132,
           "ablation_loss_delta": 0.010290980339050293
         },
         {
@@ -16857,8 +16857,8 @@
             30,
             31
           ],
-          "input_weight_l2": 1.5401842594146729,
-          "output_weight_l2": 1.780361533164978,
+          "input_weight_l2": 1.5401841402053833,
+          "output_weight_l2": 1.7803614139556885,
           "ablation_loss_delta": 0.009991049766540527
         },
         {
@@ -16939,9 +16939,9 @@
             29,
             30
           ],
-          "input_weight_l2": 0.9140035510063171,
+          "input_weight_l2": 0.9140034914016724,
           "output_weight_l2": 1.1177650690078735,
-          "ablation_loss_delta": 0.00973653793334961
+          "ablation_loss_delta": 0.009736418724060059
         },
         {
           "id": "neuron-006",
@@ -16981,7 +16981,7 @@
             33
           ],
           "input_weight_l2": 1.0058670043945312,
-          "output_weight_l2": 1.4537473917007446,
+          "output_weight_l2": 1.4537475109100342,
           "ablation_loss_delta": 0.008988738059997559
         },
         {
@@ -17022,7 +17022,7 @@
             32
           ],
           "input_weight_l2": 1.1471149921417236,
-          "output_weight_l2": 1.3898564577102661,
+          "output_weight_l2": 1.389856219291687,
           "ablation_loss_delta": 0.00864410400390625
         },
         {
@@ -17144,8 +17144,8 @@
             28,
             31
           ],
-          "input_weight_l2": 1.005662441253662,
-          "output_weight_l2": 1.194332480430603,
+          "input_weight_l2": 1.0056623220443726,
+          "output_weight_l2": 1.1943325996398926,
           "ablation_loss_delta": 0.007056713104248047
         },
         {
@@ -17226,7 +17226,7 @@
             30,
             32
           ],
-          "input_weight_l2": 1.2018288373947144,
+          "input_weight_l2": 1.201828956604004,
           "output_weight_l2": 1.3571809530258179,
           "ablation_loss_delta": 0.005193948745727539
         },
@@ -17268,7 +17268,7 @@
             27
           ],
           "input_weight_l2": 0.7329595685005188,
-          "output_weight_l2": 0.9096707105636597,
+          "output_weight_l2": 0.9096706509590149,
           "ablation_loss_delta": 0.005085349082946777
         },
         {
@@ -17308,7 +17308,7 @@
             32,
             33
           ],
-          "input_weight_l2": 0.8802210688591003,
+          "input_weight_l2": 0.8802210092544556,
           "output_weight_l2": 1.0752179622650146,
           "ablation_loss_delta": 0.003751397132873535
         },
@@ -17349,7 +17349,7 @@
             23,
             26
           ],
-          "input_weight_l2": 0.8233422040939331,
+          "input_weight_l2": 0.8233421444892883,
           "output_weight_l2": 0.878413200378418,
           "ablation_loss_delta": 0.003601551055908203
         },
@@ -17391,7 +17391,7 @@
             29
           ],
           "input_weight_l2": 0.5175947546958923,
-          "output_weight_l2": 0.6298061609268188,
+          "output_weight_l2": 0.6298061013221741,
           "ablation_loss_delta": 0.0021991729736328125
         },
         {
@@ -17432,7 +17432,7 @@
             33
           ],
           "input_weight_l2": 0.7059691548347473,
-          "output_weight_l2": 0.8219745755195618,
+          "output_weight_l2": 0.8219746351242065,
           "ablation_loss_delta": 0.002032637596130371
         },
         {
@@ -17472,7 +17472,7 @@
             28,
             29
           ],
-          "input_weight_l2": 0.9636244773864746,
+          "input_weight_l2": 0.9636244177818298,
           "output_weight_l2": 1.3616634607315063,
           "ablation_loss_delta": 0.0019315481185913086
         },
@@ -17554,7 +17554,7 @@
             31,
             32
           ],
-          "input_weight_l2": 0.5305963158607483,
+          "input_weight_l2": 0.5305963754653931,
           "output_weight_l2": 0.5675433874130249,
           "ablation_loss_delta": 0.001555800437927246
         },
@@ -17596,7 +17596,7 @@
             22
           ],
           "input_weight_l2": 0.6697365641593933,
-          "output_weight_l2": 0.7651887536048889,
+          "output_weight_l2": 0.7651886940002441,
           "ablation_loss_delta": 0.0004818439483642578
         }
       ],
@@ -17734,7 +17734,7 @@
       "parameter_count": 1570,
       "heldout_loss": 1.6585549116134644,
       "heldout_accuracy": 0.6040239726027398,
-      "wall_seconds": 1.9047,
+      "wall_seconds": 0.8997,
       "unit_details": [
         {
           "id": "neuron-023",
@@ -17856,7 +17856,7 @@
             32
           ],
           "input_weight_l2": 2.0583903789520264,
-          "output_weight_l2": 2.3331947326660156,
+          "output_weight_l2": 2.3331944942474365,
           "ablation_loss_delta": 0.0698169469833374
         },
         {
@@ -17896,8 +17896,8 @@
             31,
             32
           ],
-          "input_weight_l2": 1.6568578481674194,
-          "output_weight_l2": 1.954767107963562,
+          "input_weight_l2": 1.6568580865859985,
+          "output_weight_l2": 1.9547673463821411,
           "ablation_loss_delta": 0.05198478698730469
         },
         {
@@ -17978,9 +17978,9 @@
             27,
             28
           ],
-          "input_weight_l2": 1.6768125295639038,
+          "input_weight_l2": 1.6768124103546143,
           "output_weight_l2": 2.0852010250091553,
-          "ablation_loss_delta": 0.03882336616516113
+          "ablation_loss_delta": 0.038823485374450684
         },
         {
           "id": "neuron-005",
@@ -18060,8 +18060,8 @@
             30,
             32
           ],
-          "input_weight_l2": 1.6222435235977173,
-          "output_weight_l2": 1.9679014682769775,
+          "input_weight_l2": 1.6222436428070068,
+          "output_weight_l2": 1.967901587486267,
           "ablation_loss_delta": 0.03700292110443115
         },
         {
@@ -18143,7 +18143,7 @@
             32
           ],
           "input_weight_l2": 1.4712251424789429,
-          "output_weight_l2": 1.8364324569702148,
+          "output_weight_l2": 1.8364320993423462,
           "ablation_loss_delta": 0.034377455711364746
         },
         {
@@ -18183,8 +18183,8 @@
             26,
             28
           ],
-          "input_weight_l2": 1.4599711894989014,
-          "output_weight_l2": 1.8623408079147339,
+          "input_weight_l2": 1.4599710702896118,
+          "output_weight_l2": 1.8623405694961548,
           "ablation_loss_delta": 0.03403651714324951
         },
         {
@@ -18224,7 +18224,7 @@
             30,
             32
           ],
-          "input_weight_l2": 1.2394896745681763,
+          "input_weight_l2": 1.2394895553588867,
           "output_weight_l2": 1.6902817487716675,
           "ablation_loss_delta": 0.031148195266723633
         },
@@ -18266,7 +18266,7 @@
             33
           ],
           "input_weight_l2": 1.312152624130249,
-          "output_weight_l2": 1.6498719453811646,
+          "output_weight_l2": 1.649871826171875,
           "ablation_loss_delta": 0.02990710735321045
         },
         {
@@ -18388,8 +18388,8 @@
             29,
             30
           ],
-          "input_weight_l2": 1.36703622341156,
-          "output_weight_l2": 1.8715860843658447,
+          "input_weight_l2": 1.3670361042022705,
+          "output_weight_l2": 1.8715859651565552,
           "ablation_loss_delta": 0.026825428009033203
         },
         {
@@ -18430,7 +18430,7 @@
             33
           ],
           "input_weight_l2": 1.192180871963501,
-          "output_weight_l2": 1.4515268802642822,
+          "output_weight_l2": 1.4515269994735718,
           "ablation_loss_delta": 0.024224042892456055
         },
         {
@@ -18635,7 +18635,7 @@
             28
           ],
           "input_weight_l2": 1.0700827836990356,
-          "output_weight_l2": 1.289841651916504,
+          "output_weight_l2": 1.2898415327072144,
           "ablation_loss_delta": 0.017751336097717285
         },
         {
@@ -18675,8 +18675,8 @@
             30,
             33
           ],
-          "input_weight_l2": 1.126279592514038,
-          "output_weight_l2": 1.4643042087554932,
+          "input_weight_l2": 1.1262797117233276,
+          "output_weight_l2": 1.4643043279647827,
           "ablation_loss_delta": 0.016120195388793945
         },
         {
@@ -18716,7 +18716,7 @@
             29,
             32
           ],
-          "input_weight_l2": 1.7085354328155518,
+          "input_weight_l2": 1.7085355520248413,
           "output_weight_l2": 1.9064747095108032,
           "ablation_loss_delta": 0.015536785125732422
         },
@@ -18840,7 +18840,7 @@
             30
           ],
           "input_weight_l2": 1.4177643060684204,
-          "output_weight_l2": 1.776355266571045,
+          "output_weight_l2": 1.7763556241989136,
           "ablation_loss_delta": 0.012188076972961426
         },
         {
@@ -18881,8 +18881,8 @@
             32
           ],
           "input_weight_l2": 1.0902982950210571,
-          "output_weight_l2": 1.3095699548721313,
-          "ablation_loss_delta": 0.010931015014648438
+          "output_weight_l2": 1.309570074081421,
+          "ablation_loss_delta": 0.010931134223937988
         },
         {
           "id": "neuron-033",
@@ -18922,8 +18922,8 @@
             31
           ],
           "input_weight_l2": 0.7950340509414673,
-          "output_weight_l2": 0.9480602145195007,
-          "ablation_loss_delta": 0.009871840476989746
+          "output_weight_l2": 0.948060154914856,
+          "ablation_loss_delta": 0.009871721267700195
         },
         {
           "id": "neuron-002",
@@ -19045,8 +19045,8 @@
             33
           ],
           "input_weight_l2": 0.75159752368927,
-          "output_weight_l2": 0.8924565315246582,
-          "ablation_loss_delta": 0.007972002029418945
+          "output_weight_l2": 0.892456591129303,
+          "ablation_loss_delta": 0.007972121238708496
         },
         {
           "id": "neuron-006",
@@ -19085,9 +19085,9 @@
             32,
             33
           ],
-          "input_weight_l2": 0.6820062398910522,
-          "output_weight_l2": 1.2415214776992798,
-          "ablation_loss_delta": 0.007673859596252441
+          "input_weight_l2": 0.6820061802864075,
+          "output_weight_l2": 1.2415213584899902,
+          "ablation_loss_delta": 0.007673978805541992
         },
         {
           "id": "neuron-028",
@@ -19250,7 +19250,7 @@
             32
           ],
           "input_weight_l2": 0.7413713335990906,
-          "output_weight_l2": 1.0061936378479004,
+          "output_weight_l2": 1.00619375705719,
           "ablation_loss_delta": 0.0025600194931030273
         },
         {
@@ -19292,7 +19292,7 @@
           ],
           "input_weight_l2": 0.666782021522522,
           "output_weight_l2": 0.7125087380409241,
-          "ablation_loss_delta": 0.0022687911987304688
+          "ablation_loss_delta": 0.0022689104080200195
         },
         {
           "id": "neuron-009",
@@ -19414,7 +19414,7 @@
             32
           ],
           "input_weight_l2": 0.663694441318512,
-          "output_weight_l2": 0.7918869853019714,
+          "output_weight_l2": 0.7918868660926819,
           "ablation_loss_delta": 0.0009667873382568359
         },
         {
@@ -19454,8 +19454,8 @@
             30,
             32
           ],
-          "input_weight_l2": 0.41492265462875366,
-          "output_weight_l2": 0.5895209312438965,
+          "input_weight_l2": 0.41492268443107605,
+          "output_weight_l2": 0.5895209908485413,
           "ablation_loss_delta": 0.0005317926406860352
         },
         {
@@ -19496,7 +19496,7 @@
             33
           ],
           "input_weight_l2": 0.3855114281177521,
-          "output_weight_l2": 0.6785237193107605,
+          "output_weight_l2": 0.6785237789154053,
           "ablation_loss_delta": 0.00047838687896728516
         },
         {
@@ -19538,7 +19538,7 @@
           ],
           "input_weight_l2": 0.3126288056373596,
           "output_weight_l2": 0.36868613958358765,
-          "ablation_loss_delta": 0.0003446340560913086
+          "ablation_loss_delta": 0.0003447532653808594
         },
         {
           "id": "neuron-012",
@@ -19660,7 +19660,7 @@
             32
           ],
           "input_weight_l2": 0.344123512506485,
-          "output_weight_l2": 0.4657263457775116,
+          "output_weight_l2": 0.465726375579834,
           "ablation_loss_delta": -0.0014995336532592773
         },
         {
@@ -19700,8 +19700,8 @@
             27,
             29
           ],
-          "input_weight_l2": 0.8361058235168457,
-          "output_weight_l2": 1.1299055814743042,
+          "input_weight_l2": 0.8361058831214905,
+          "output_weight_l2": 1.1299057006835938,
           "ablation_loss_delta": -0.0017415285110473633
         }
       ],
@@ -19783,7 +19783,7 @@
         },
         {
           "epoch": 16,
-          "heldout_loss": 2.221381664276123,
+          "heldout_loss": 2.221381902694702,
           "heldout_accuracy": 0.4325770547945205
         },
         {
