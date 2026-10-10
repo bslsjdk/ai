@@ -324,7 +324,8 @@ public final class SelfOrganizingNeuronGraph {
         return state[id];
     }
     public long estimatedStorageBytes() {
-        return (long) maxNeurons * (1 + 1 + 1 + 8 * 3)
+        // Primitive-array payload estimate; excludes object headers and JSON snapshots.
+        return (long) maxNeurons * (1 + 1 + 1 + 4 + 8 * 4)
                 + (long) maxEdges * (4 * 2 + 8 * 3 + 1);
     }
 
@@ -338,6 +339,9 @@ public final class SelfOrganizingNeuronGraph {
         root.put("edgeCount", edgeCount);
         root.put("inputCount", inputCount);
         root.put("outputCount", outputCount);
+        JSONArray portOrder = new JSONArray();
+        for (int p = 0; p < inputCount; p++) portOrder.put(inputOrder[p]);
+        root.put("inputOrder", portOrder);
         root.put("rewardBaseline", rewardBaseline);
         root.put("ticks", ticks);
         root.put("topologyChanges", topologyChanges);
@@ -383,6 +387,7 @@ public final class SelfOrganizingNeuronGraph {
                 root.getDouble("traceDecay"), seed);
         JSONArray nodes = root.getJSONArray("neurons");
         JSONArray edges = root.getJSONArray("edges");
+        JSONArray portOrder = root.optJSONArray("inputOrder");
         if (nodes.length() != nCount || edges.length() != eCount)
             throw new JSONException("checkpoint count mismatch");
         for (int i = 0; i < nCount; i++) {
@@ -394,6 +399,18 @@ public final class SelfOrganizingNeuronGraph {
             g.activityMean[i] = finite(n.optDouble("activityMean", 0), "activityMean");
             if (n.optBoolean("input", false)) g.markInputPort(i);
             if (n.optBoolean("output", false)) g.markOutputPort(i);
+        }
+        if (portOrder != null) {
+            if (portOrder.length() != g.inputCount) throw new JSONException("input port order mismatch");
+            boolean[] seenInputs = new boolean[nCount];
+            for (int p = 0; p < portOrder.length(); p++) {
+                int id = portOrder.getInt(p);
+                if (id < 0 || id >= nCount || !g.inputPort[id] || seenInputs[id])
+                    throw new JSONException("invalid input port order");
+                seenInputs[id] = true;
+                g.inputOrder[p] = id;
+            }
+            g.nextInputOrder = g.inputCount;
         }
         for (int e = 0; e < eCount; e++) {
             JSONObject edge = edges.getJSONObject(e);
