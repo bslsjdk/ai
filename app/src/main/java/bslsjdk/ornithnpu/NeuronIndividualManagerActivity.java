@@ -124,6 +124,10 @@ public final class NeuronIndividualManagerActivity extends Activity {
         addButton(row5, "保存当前个体", v -> { if (current != null) { try { writeIndividual(current); toast("当前个体已保存"); } catch (Exception e) { showError("保存失败", e); } } });
         root.addView(row5);
 
+        LinearLayout row6 = makeRow();
+        addButton(row6, "依次训练选中个体", v -> runBatchTrainingSelected());
+        root.addView(row6);
+
         currentInfo = new TextView(this);
         currentInfo.setTextSize(14);
         currentInfo.setPadding(0, dp(12), 0, dp(8));
@@ -377,6 +381,49 @@ public final class NeuronIndividualManagerActivity extends Activity {
     private void updateButtons() {
         if (saveSelectedButton != null) saveSelectedButton.setEnabled(!selectedIds.isEmpty());
         if (exportSelectedButton != null) exportSelectedButton.setEnabled(!selectedIds.isEmpty());
+    }
+
+    private void runBatchTrainingSelected() {
+        if (experimentRunning) { toast("已有训练/验证任务运行中，请稍候"); return; }
+        List<Individual> batch = new ArrayList<>();
+        for (Individual item : individuals) if (selectedIds.contains(item.id)) batch.add(item);
+        if (batch.isEmpty()) { toast("请先勾选要训练的个体"); return; }
+        final List<Individual> targets = new ArrayList<>(batch);
+        experimentRunning = true;
+        status.setText("批量训练开始：共 " + targets.size()
+                + " 个个体，每个依次训练 25 局。为控制内存，同一时刻只训练一个个体。");
+        new Thread(() -> {
+            int completedCount = 0;
+            StringBuilder summary = new StringBuilder();
+            for (Individual target : targets) {
+                try {
+                    long seed = System.nanoTime() ^ target.id.hashCode();
+                    SelfOrganizingMazeTrainer.Result result =
+                            SelfOrganizingMazeTrainer.run(target.graph, 25, seed, true);
+                    target.lastTrainingResult = result.toDisplayString();
+                    writeIndividual(target);
+                    completedCount++;
+                    summary.append(target.name).append("：")
+                            .append(String.format(java.util.Locale.US, "%.1f%%", result.successRate * 100))
+                            .append(" 训练成功率\\n");
+                } catch (Exception e) {
+                    summary.append(target.name).append("：失败 ")
+                            .append(e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage())
+                            .append("\\n");
+                }
+            }
+            final int done = completedCount;
+            final String report = summary.toString();
+            runOnUiThread(() -> {
+                experimentRunning = false;
+                refresh();
+                status.setText("批量训练完成：" + done + "/" + targets.size()
+                        + " 个个体已训练并保存。请分别运行独立验证后再比较排名。");
+                new AlertDialog.Builder(this).setTitle("批量训练结果")
+                        .setMessage(report.isEmpty() ? "没有生成结果。" : report)
+                        .setPositiveButton("确定", null).show();
+            });
+        }, "NeuronBatchTrain").start();
     }
 
     private void chooseTrainingEpisodes() {
