@@ -216,11 +216,19 @@ public final class SparseDiffusionMobileModel {
             int[] active = topK(energy, activeK);
             float[][] messages = new float[neurons][width];
             float[] energyIncoming = new float[neurons];
+            int propagatedMessages = 0;
+            StringBuilder edgeTrace = new StringBuilder();
             for (int src : active) {
                 for (int e = 0; e < fanout; e++) {
                     int dst = (int) neighbors[src * fanout + e];
                     if (dst < 0 || dst >= neurons) continue;
                     float ew = edgeWeights[src * fanout + e];
+                    if (propagatedMessages < 12) {
+                        if (edgeTrace.length() > 0) edgeTrace.append(", ");
+                        edgeTrace.append(src).append("→").append(dst).append("(")
+                                .append(String.format(java.util.Locale.ROOT, "%.3f", ew)).append(")");
+                    }
+                    propagatedMessages++;
                     float absMean = 0;
                     for (int j = 0; j < width; j++) {
                         float msg = state[src][j] * ew;
@@ -269,8 +277,10 @@ public final class SparseDiffusionMobileModel {
             for (int id : candidates) {
                 if (shown++ >= Math.min(8, candidates.length)) break;
                 if (shown > 1) trace.append(", ");
-                trace.append(id);
+                trace.append(id).append("(").append(String.format(java.util.Locale.ROOT, "%.3f", energy[id])).append(")");
             }
+            trace.append("\n实际消息传播：").append(propagatedMessages).append(" 条");
+            if (edgeTrace.length() > 0) trace.append(" · ").append(edgeTrace);
             trace.append("\n能量总和：").append(String.format(java.util.Locale.ROOT, "%.5f", energySum))
                     .append(" · 状态平均变化：").append(String.format(java.util.Locale.ROOT, "%.6f", deltaMean))
                     .append("\n停止概率：").append(String.format(java.util.Locale.ROOT, "%.2f%%", halt * 100f));
