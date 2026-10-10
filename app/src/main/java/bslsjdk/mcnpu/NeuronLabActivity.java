@@ -684,6 +684,11 @@ public final class NeuronLabActivity extends Activity {
         autoTest.setOnClickListener(v -> showPage("autotest"));
         quick.addView(autoTest, params(-1, 50, 0, 8, 0, 0));
 
+        Button individuals = primaryButton("打开神经网络个体管理 · 独立保存/批量操作");
+        individuals.setOnClickListener(v -> startActivity(
+                new Intent(NeuronLabActivity.this, NeuronIndividualManagerActivity.class)));
+        quick.addView(individuals, params(-1, 50, 0, 8, 0, 0));
+
         Button gridWorld = primaryButton("打开迷宫实验 · 观看神经网络学习");
         gridWorld.setOnClickListener(v -> startActivity(
                 new Intent(NeuronLabActivity.this, GridWorldLabActivity.class)));
