@@ -78,7 +78,7 @@ public final class AimengNeuronService extends Service {
                 .setContentText("本机状态已驻留；空闲时不持续计算，等待输入")
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setOngoing(true)
-                .addAction(new Notification.Action.Builder(null, "停止驻留", stopPending).build());
+                .addAction(new Notification.Action.Builder(android.R.drawable.ic_media_pause, "停止驻留", stopPending).build());
         if (Build.VERSION.SDK_INT >= 34) {
             startForeground(NOTIFICATION_ID, builder.build(),
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
