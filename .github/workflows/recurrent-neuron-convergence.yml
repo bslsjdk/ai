@@ -44,7 +44,7 @@ jobs:
               text = response.read().decode("utf-8", errors="replace")
           start = text.find("*** START OF THE PROJECT GUTENBERG EBOOK")
           if start >= 0:
-              text = text[text.find("\\n", start) + 1:]
+              text = text[text.find("\n", start) + 1:]
           end = text.find("*** END OF THE PROJECT GUTENBERG EBOOK")
           if end >= 0:
               text = text[:end]
@@ -133,7 +133,7 @@ jobs:
                              "This 40-epoch diagnostic has more training budget than the original 30-epoch RNN and is not directly compute-matched to the fixed-window experiment.",
                              "The validation set selects checkpoints; test metrics are reported only after training."]
           }
-          (root / "summary.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+          (root / "summary.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           print("RECURRENT_CONVERGENCE_SUMMARY", json.dumps(report, ensure_ascii=False, sort_keys=True))
           PY
       - name: Commit convergence reports
