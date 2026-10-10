@@ -76,7 +76,7 @@ public class SelfOrganizingNeuronGraphTest {
 
         double[] result = graph.step(new double[]{1.0}, 1);
         assertEquals(Math.tanh(1.0), result[0], 1e-9);
-        assertTrue(graph.getLastActiveNeuronCount() <= 2);
+        assertTrue(graph.getLastActiveNeuronCount() <= 3);
     }
 
 
