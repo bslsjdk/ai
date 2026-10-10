@@ -52,13 +52,15 @@ public final class NeuronIndividualManagerActivity extends Activity {
     private TextView currentInfo;
     private Button saveSelectedButton;
     private Button exportSelectedButton;
-    private int exportIndex;
+    private boolean experimentRunning;
 
     private static final class Individual {
         String id;
         String name;
         String fileName;
         SelfOrganizingNeuronGraph graph;
+        String lastTrainingResult = "尚无训练记录";
+        String lastValidationResult = "尚无独立验证记录";
         boolean checked;
         Individual(String id, String name, String fileName, SelfOrganizingNeuronGraph graph) {
             this.id = id; this.name = name; this.fileName = fileName; this.graph = graph;
@@ -110,6 +112,11 @@ public final class NeuronIndividualManagerActivity extends Activity {
         addButton(row3, "删除选中", v -> deleteSelected());
         addButton(row3, "刷新列表", v -> { loadAll(); refresh(); });
         root.addView(row3);
+
+        LinearLayout row4 = makeRow();
+        addButton(row4, "训练当前个体", v -> chooseTrainingEpisodes());
+        addButton(row4, "独立验证当前", v -> runExperiment(false, 40));
+        root.addView(row4);
 
         currentInfo = new TextView(this);
         currentInfo.setTextSize(14);
@@ -191,6 +198,8 @@ public final class NeuronIndividualManagerActivity extends Activity {
         root.put("id", item.id);
         root.put("name", item.name);
         root.put("savedAt", System.currentTimeMillis());
+        root.put("lastTrainingResult", item.lastTrainingResult);
+        root.put("lastValidationResult", item.lastValidationResult);
         root.put("graph", item.graph.toJson());
         return root;
     }
@@ -225,7 +234,10 @@ public final class NeuronIndividualManagerActivity extends Activity {
         boolean duplicate = false;
         for (Individual item : individuals) if (item.id.equals(id)) { duplicate = true; break; }
         if (duplicate) id = UUID.randomUUID().toString();
-        Individual item = new Individual(id, name, id + ".json", graph);\n        item.lastTrainingResult = root.optString("lastTrainingResult", "尚无训练记录");\n        item.lastValidationResult = root.optString("lastValidationResult", "尚无独立验证记录");\n        return item;
+        Individual item = new Individual(id, name, id + ".json", graph);
+        item.lastTrainingResult = root.optString("lastTrainingResult", "尚无训练记录");
+        item.lastValidationResult = root.optString("lastValidationResult", "尚无独立验证记录");
+        return item;
     }
 
     private void loadAll() {
@@ -309,7 +321,8 @@ public final class NeuronIndividualManagerActivity extends Activity {
                 + "\n完整结构：" + current.graph.getNeuronCount() + " 个神经元 / "
                 + current.graph.getActiveEdgeCount() + " 条活跃连接 / "
                 + current.graph.getEdgeSlotCount() + " 个连接槽"
-                + "\n检查点估算数组内存：" + (current.graph.estimatedStorageBytes() / 1024) + " KiB");
+                + "\n检查点估算数组内存：" + (current.graph.estimatedStorageBytes() / 1024) + " KiB"
+                + "\n" + current.lastTrainingResult + "\n" + current.lastValidationResult);
         status.setText("本地个体数：" + individuals.size() + " · 已选中：" + selectedIds.size()
                 + "\n文件目录：应用私有存储 / neuron_individuals");
         updateButtons();
