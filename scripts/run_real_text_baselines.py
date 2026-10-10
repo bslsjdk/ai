@@ -120,9 +120,26 @@ def ngram_baselines(train_ids, all_ids, validation_positions, validation_context
     return results
 
 
+def chunked_training_batch(all_ids, train_end, context, chunk_size, batch_size, rng, pad_id):
+    # Sample a random 64-character sequence start and an offset inside it,
+    # matching the recurrent trainer's reset-at-sequence-start protocol.
+    max_start = train_end - chunk_size - 1
+    starts = rng.integers(0, max_start + 1, size=batch_size)
+    offsets = rng.integers(0, chunk_size, size=batch_size)
+    input_positions = starts + offsets
+    x = np.full((batch_size, context), int(pad_id), dtype=np.int32)
+    for i, (start, position) in enumerate(zip(starts, input_positions)):
+        values = all_ids[max(int(start), int(position)-context+1):int(position)+1]
+        if len(values):
+            x[i, -len(values):] = values
+    y = all_ids[input_positions + 1]
+    return x, y
+
+
 class FixedWindowLM:
     def __init__(self, vocab_size, context, hidden, seed, pad_id=None):
         self.vocab_size, self.context, self.hidden = vocab_size, context, hidden
+        self.pad_id = None if pad_id is None else int(pad_id)
         rng = np.random.default_rng(seed)
         self.wx = (rng.standard_normal((context, vocab_size, hidden)) /
                    math.sqrt(context * vocab_size)).astype(np.float32)
@@ -164,6 +181,8 @@ class FixedWindowLM:
         dwx = np.zeros_like(self.wx)
         for pos in range(self.context):
             np.add.at(dwx[pos], x[:, pos], dh)
+        if self.pad_id is not None:
+            dwx[:, self.pad_id, :] = 0.0
         grads = [dwx, dbh, dwy, dby]
         norm = math.sqrt(sum(float(np.sum(g*g)) for g in grads))
         if norm > 1.0:
@@ -175,6 +194,8 @@ class FixedWindowLM:
             mh = self.m[i] / (1.0 - 0.9**self.step)
             vh = self.v[i] / (1.0 - 0.999**self.step)
             param -= lr * mh / (np.sqrt(vh) + 1e-8)
+        if self.pad_id is not None:
+            self.wx[:, self.pad_id, :] = 0.0
 
     def evaluate(self, x, y, batch_size=512):
         loss, correct, count = 0.0, 0, 0
@@ -227,7 +248,6 @@ def main():
         context_starts=test_context_starts, pad_id=pad_id)
     if len(validation_positions) != 7168 or len(test_positions) != 14400:
         raise SystemExit("evaluation target counts do not match the recurrent chunk protocol")
-    train_positions = np.arange(args.context, train_end, dtype=np.int32)
     data_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
     if args.expected_dataset_sha256 and data_hash != args.expected_dataset_sha256:
         raise SystemExit(f"dataset hash mismatch: expected {args.expected_dataset_sha256}, got {data_hash}")
@@ -255,9 +275,9 @@ def main():
         for epoch in range(1, args.epochs+1):
             batch_losses = []
             for _ in range(args.steps_per_epoch):
-                starts = rng.choice(train_positions, size=args.batch_size, replace=True)
-                x = all_ids[starts[:,None] - args.context + np.arange(args.context)[None,:]]
-                y = all_ids[starts]
+                x, y = chunked_training_batch(
+                    all_ids, train_end, args.context, recurrent_context,
+                    args.batch_size, rng, pad_id)
                 p, _ = model.forward(x)
                 batch_losses.append(float(-np.log(np.clip(p[np.arange(len(y)), y],1e-12,1)).mean()))
                 model.train_batch(x,y,args.learning_rate)
