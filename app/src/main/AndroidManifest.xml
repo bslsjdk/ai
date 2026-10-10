@@ -16,7 +16,7 @@
         <package android:name="com.aiunit.aon" />
         <intent><action android:name="oplus.intent.action.AIUNIT_SERVICE" /></intent>
     </queries>
-    <application android:allowBackup="false" android:label="AIMENG 神经元" android:supportsRtl="true">
+    <application android:name=".AimengApplication" android:allowBackup="false" android:label="AIMENG 神经元" android:supportsRtl="true">
         <meta-data android:name="com.oplus.aiunit.auth_style" android:value="0" />
         <uses-native-library android:name="libcdsprpc.so" android:required="false" />
         <uses-native-library android:name="libadsprpc.so" android:required="false" />
