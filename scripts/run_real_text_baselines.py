@@ -168,11 +168,11 @@ def main():
     ap.add_argument("--ngram-alpha", type=float, default=0.1)
     args = ap.parse_args()
 
-    text = args.text_file.read_text(encoding="utf-8", errors="replace").replace("\\r\\n", "\\n")
+    text = args.text_file.read_text(encoding="utf-8", errors="replace").replace("\r\n", "\n")
     train_text, val_text, test_text = split_text(text)
     chars = sorted(set(train_text))
-    if "\\ufffd" not in chars:
-        chars.append("\\ufffd")
+    if "\ufffd" not in chars:
+        chars.append("\ufffd")
     vocab = {ch:i for i,ch in enumerate(chars)}
     all_ids = encode(text, vocab)
     train_end, val_end = len(train_text), len(train_text)+len(val_text)
