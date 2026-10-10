@@ -241,7 +241,7 @@ def main():
     ablation = []
     for j in range(model.hidden):
         model.unit_enabled[j] = False
-        loss_without, _ = model.loss_accuracy(np.asarray(eval_x), np.asarray(eval_y))
+        loss_without, _ = model.loss_accuracy(test_x, test_y)
         model.unit_enabled[j] = True
         ablation.append(loss_without - final_loss)
     metadata = {
