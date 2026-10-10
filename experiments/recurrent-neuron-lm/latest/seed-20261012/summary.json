@@ -1,0 +1,77 @@
+{
+  "format": "aimeng-recurrent-neuron-lm-report/v1",
+  "architecture": "individually addressable recurrent neuron units",
+  "parameter_count": 13964,
+  "hidden_neurons": 64,
+  "context_characters": 64,
+  "vocabulary_size": 76,
+  "unigram_baseline_heldout_loss": 3.170140011296197,
+  "final_heldout_loss": 1.808879567252265,
+  "final_heldout_bits_per_char": 2.609661581240217,
+  "final_heldout_char_accuracy": 0.49395833333333333,
+  "wall_seconds": 5.701,
+  "generation_sample": "Alice now they cuncounted to smedest that’s to call net mudly, and they know whily onged to begar yould an the ain: “buting be if.\n\n“The Morching intore wind she sall on the was\nnown him hir saig Alice\nsather, and with of counce or in\nthe hed no madely in houphed the Catear that\nthe furded,\nwhen shat dini",
+  "unit_ablation_loss_delta_mean": 0.07772591224975058,
+  "unit_ablation_loss_delta_max": 0.1945933183034263,
+  "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
+  "history": [
+    {
+      "epoch": 1,
+      "mean_train_batch_loss": 2.761337627356665,
+      "heldout_loss": 2.297582656012641,
+      "heldout_bits_per_char": 3.31471110386193,
+      "heldout_char_accuracy": 0.3823611111111111
+    },
+    {
+      "epoch": 2,
+      "mean_train_batch_loss": 2.1675600548481775,
+      "heldout_loss": 2.0822606394026013,
+      "heldout_bits_per_char": 3.004067098304415,
+      "heldout_char_accuracy": 0.4305555555555556
+    },
+    {
+      "epoch": 3,
+      "mean_train_batch_loss": 2.0073562632418342,
+      "heldout_loss": 1.992645427915785,
+      "heldout_bits_per_char": 2.8747796771041694,
+      "heldout_char_accuracy": 0.44916666666666666
+    },
+    {
+      "epoch": 4,
+      "mean_train_batch_loss": 1.919640765991062,
+      "heldout_loss": 1.9259289783901639,
+      "heldout_bits_per_char": 2.7785281862278373,
+      "heldout_char_accuracy": 0.4675694444444444
+    },
+    {
+      "epoch": 5,
+      "mean_train_batch_loss": 1.8565334671590892,
+      "heldout_loss": 1.8851447412702773,
+      "heldout_bits_per_char": 2.719688969588537,
+      "heldout_char_accuracy": 0.4675694444444444
+    },
+    {
+      "epoch": 6,
+      "mean_train_batch_loss": 1.8128374399099914,
+      "heldout_loss": 1.8555048688252767,
+      "heldout_bits_per_char": 2.6769276725995534,
+      "heldout_char_accuracy": 0.4806944444444444
+    },
+    {
+      "epoch": 7,
+      "mean_train_batch_loss": 1.7757700750242091,
+      "heldout_loss": 1.8329678026835123,
+      "heldout_bits_per_char": 2.6444135590406432,
+      "heldout_char_accuracy": 0.4879861111111111
+    },
+    {
+      "epoch": 8,
+      "mean_train_batch_loss": 1.7521012367008046,
+      "heldout_loss": 1.808879567252265,
+      "heldout_bits_per_char": 2.609661581240217,
+      "heldout_char_accuracy": 0.49395833333333333
+    }
+  ],
+  "model_file": "model.json",
+  "limitations": "Single public-domain book, character-level prediction, vanilla RNN, fixed dense recurrent connections; not a chat model or general reasoning benchmark."
+}

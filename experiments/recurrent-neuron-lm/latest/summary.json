@@ -1,0 +1,72 @@
+{
+  "format": "aimeng-recurrent-neuron-lm-multiseed/v1",
+  "dataset": "Alice's Adventures in Wonderland, public-domain Project Gutenberg text",
+  "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1",
+  "model": "from-scratch character-level vanilla RNN with individually addressable recurrent neuron units",
+  "settings": {
+    "hidden": 64,
+    "context": 64,
+    "epochs": 8,
+    "steps_per_epoch": 180,
+    "batch_size": 32,
+    "learning_rate": 0.003,
+    "seeds": [
+      20261010,
+      20261011,
+      20261012
+    ]
+  },
+  "aggregate": {
+    "mean_baseline_loss": 3.170140011296197,
+    "mean_heldout_loss": 1.8045165053120367,
+    "mean_bits_per_char": 2.603367013415958,
+    "mean_char_accuracy": 0.49243055555555554,
+    "mean_wall_seconds": 5.629666666666667,
+    "mean_ablation_delta_mean": 0.07627130783818385,
+    "mean_ablation_delta_max": 0.17737077342139354,
+    "parameter_count": 13964
+  },
+  "runs": [
+    {
+      "seed": 20261010,
+      "parameter_count": 13964,
+      "baseline_loss": 3.170140011296197,
+      "heldout_loss": 1.8033112875620525,
+      "bits_per_char": 2.601628251744865,
+      "char_accuracy": 0.4922222222222222,
+      "wall_seconds": 5.493,
+      "ablation_delta_mean": 0.07699408402873402,
+      "ablation_delta_max": 0.18186558193630642,
+      "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
+    },
+    {
+      "seed": 20261011,
+      "parameter_count": 13964,
+      "baseline_loss": 3.170140011296197,
+      "heldout_loss": 1.8013586611217922,
+      "bits_per_char": 2.5988112072627927,
+      "char_accuracy": 0.4911111111111111,
+      "wall_seconds": 5.695,
+      "ablation_delta_mean": 0.07409392723606698,
+      "ablation_delta_max": 0.15565342002444793,
+      "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
+    },
+    {
+      "seed": 20261012,
+      "parameter_count": 13964,
+      "baseline_loss": 3.170140011296197,
+      "heldout_loss": 1.808879567252265,
+      "bits_per_char": 2.609661581240217,
+      "char_accuracy": 0.49395833333333333,
+      "wall_seconds": 5.701,
+      "ablation_delta_mean": 0.07772591224975058,
+      "ablation_delta_max": 0.1945933183034263,
+      "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
+    }
+  ],
+  "limitations": [
+    "One public-domain book and character-level prediction only.",
+    "This is not a chat LLM and is not directly comparable to a pretrained 9B model's QA accuracy.",
+    "A real-text next-character benchmark is a foundation for scaling and tokenizer experiments, not proof of reasoning ability."
+  ]
+}
