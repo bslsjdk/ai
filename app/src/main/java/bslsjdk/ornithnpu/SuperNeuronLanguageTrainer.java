@@ -155,6 +155,21 @@ public final class SuperNeuronLanguageTrainer {
     public int getVocabularySize() { return vocabularySize; }
     public int getEmbeddingSize() { return embeddingSize; }
     public long getTrainedTokenTargets() { return trainedTokenTargets; }
+
+    /** Compact JSON checkpoint containing the model, embedding table and progress counter. */
+    public org.json.JSONObject toJson() throws org.json.JSONException {
+        org.json.JSONObject root = new org.json.JSONObject();
+        root.put("format", "aimeng-character-trainer/v1");
+        root.put("vocabularySize", vocabularySize);
+        root.put("embeddingSize", embeddingSize);
+        root.put("trainedTokenTargets", trainedTokenTargets);
+        root.put("model", model.toJson());
+        org.json.JSONArray values = new org.json.JSONArray();
+        for (double value : embeddings) values.put(value);
+        root.put("embeddings", values);
+        return root;
+    }
+
     public long getParameterCount() {
         return model.getParameterCount() + (long) embeddings.length;
     }
