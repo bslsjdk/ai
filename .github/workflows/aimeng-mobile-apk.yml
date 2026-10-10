@@ -1,0 +1,55 @@
+name: AIMENG mobile debug APK
+
+on:
+  push:
+    branches: [feat/aimeng-mobile-diffusion-runtime]
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/src/main/**"
+      - "app/build.gradle"
+      - "build.gradle"
+      - "settings.gradle"
+      - ".github/workflows/aimeng-mobile-apk.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  debug-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-35 build-tools;35.0.0 cmake;3.31.6 ndk;27.0.12077973"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+      - name: Fetch pinned QNN headers required by native build
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 https://github.com/bslsjdk/npu_probe.git qnn_probe
+          git -C qnn_probe fetch --depth 1 origin 8fab2ee58cd4ce17ddc18e36a6a7b4992c85c52a
+          git -C qnn_probe checkout --detach 8fab2ee58cd4ce17ddc18e36a6a7b4992c85c52a
+          test -f qnn_probe/app/src/main/cpp/qnn_inc/QNN/QnnInterface.h
+      - name: Build installable debug APK
+        env:
+          QNN_INC: ${{ github.workspace }}/qnn_probe/app/src/main/cpp/qnn_inc
+        run: |
+          set -o pipefail
+          gradle :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee build-aimeng-debug.log
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          ls -lh app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: aimeng-android-debug-${{ github.run_number }}
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
