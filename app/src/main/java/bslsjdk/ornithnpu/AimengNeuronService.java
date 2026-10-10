@@ -95,7 +95,10 @@ public final class AimengNeuronService extends Service {
         }
     }
 
-    private File modelFile() { return new File(getFilesDir(), "aimeng-mobile-diffusion.json"); }
+    private File modelFile() {
+        File binary = new File(getFilesDir(), "aimeng-mobile-diffusion.aimg");
+        return binary.isFile() ? binary : new File(getFilesDir(), "aimeng-mobile-diffusion.json");
+    }
     private File learningFile() { return new File(getFilesDir(), "aimeng-learning-state.json"); }
     private File runtimeFile() { return new File(getFilesDir(), "aimeng-neuron-residual.bin"); }
 
