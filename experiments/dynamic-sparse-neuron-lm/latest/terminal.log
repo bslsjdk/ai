@@ -22,9 +22,59 @@ DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "ep
 DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 22, "heldout_accuracy": 0.6815068493150684, "heldout_loss": 1.411743402481079, "seed": 20261010}
 DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 23, "heldout_accuracy": 0.7059075342465754, "heldout_loss": 1.3630952835083008, "seed": 20261010}
 DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 24, "heldout_accuracy": 0.7071917808219178, "heldout_loss": 1.318726897239685, "seed": 20261010}
-DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.4396404109589041, "heldout_loss": 2.1885831356048584, "hidden_units": 48, "kind": "sparse", "parameter_count": 1426, "seed": 20261010, "wall_seconds": 1.3514}
-DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.7403681506849316, "heldout_loss": 1.1979544162750244, "hidden_units": 5, "kind": "dense_parameter_matched", "parameter_count": 1569, "seed": 20261010, "wall_seconds": 0.7306}
-DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.7071917808219178, "heldout_loss": 1.318726897239685, "hidden_units": 48, "kind": "dynamic_sparse_f0_125", "parameter_count": 1426, "parameter_difference_vs_sparse_pct": 0.0, "rewire_fraction": 0.125, "seed": 20261010, "target_sparse_parameter_count": 1426, "wall_seconds": 1.2758}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 1, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.2670228481292725, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 2, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.1514832973480225, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 3, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.0852723121643066, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 4, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.024153232574463, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 5, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 2.9595041275024414, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 6, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 2.8850178718566895, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 7, "heldout_accuracy": 0.2564212328767123, "heldout_loss": 2.7972428798675537, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 8, "heldout_accuracy": 0.2821061643835616, "heldout_loss": 2.7042653560638428, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 9, "heldout_accuracy": 0.307791095890411, "heldout_loss": 2.606736421585083, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 10, "heldout_accuracy": 0.3125, "heldout_loss": 2.5092074871063232, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 11, "heldout_accuracy": 0.3844178082191781, "heldout_loss": 2.414036273956299, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 12, "heldout_accuracy": 0.3974743150684932, "heldout_loss": 2.31923508644104, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 13, "heldout_accuracy": 0.4240154109589041, "heldout_loss": 2.227327585220337, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 14, "heldout_accuracy": 0.4591181506849315, "heldout_loss": 2.1403005123138428, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 15, "heldout_accuracy": 0.4841609589041096, "heldout_loss": 2.053483247756958, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 16, "heldout_accuracy": 0.5079195205479452, "heldout_loss": 1.9715772867202759, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 17, "heldout_accuracy": 0.519263698630137, "heldout_loss": 1.889807105064392, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 18, "heldout_accuracy": 0.5434503424657534, "heldout_loss": 1.81484854221344, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 19, "heldout_accuracy": 0.5573630136986302, "heldout_loss": 1.742112398147583, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 20, "heldout_accuracy": 0.5862585616438356, "heldout_loss": 1.6768730878829956, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 21, "heldout_accuracy": 0.603167808219178, "heldout_loss": 1.6146833896636963, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 22, "heldout_accuracy": 0.620291095890411, "heldout_loss": 1.5600394010543823, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 23, "heldout_accuracy": 0.6419092465753424, "heldout_loss": 1.5066797733306885, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 24, "heldout_accuracy": 0.6457619863013698, "heldout_loss": 1.457201600074768, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 1, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.2670228481292725, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 2, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.1516380310058594, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 3, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.093658924102783, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 4, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.04335618019104, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 5, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 2.989506244659424, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 6, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 2.933030605316162, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 7, "heldout_accuracy": 0.2549229452054795, "heldout_loss": 2.8697850704193115, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 8, "heldout_accuracy": 0.2564212328767123, "heldout_loss": 2.803500175476074, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 9, "heldout_accuracy": 0.2808219178082192, "heldout_loss": 2.726360321044922, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 10, "heldout_accuracy": 0.2998715753424658, "heldout_loss": 2.6470775604248047, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 11, "heldout_accuracy": 0.3206335616438356, "heldout_loss": 2.5645151138305664, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 12, "heldout_accuracy": 0.3392551369863014, "heldout_loss": 2.4827280044555664, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 13, "heldout_accuracy": 0.3835616438356164, "heldout_loss": 2.403632879257202, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 14, "heldout_accuracy": 0.3951198630136986, "heldout_loss": 2.3255903720855713, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 15, "heldout_accuracy": 0.4002568493150685, "heldout_loss": 2.250110387802124, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 16, "heldout_accuracy": 0.4180222602739726, "heldout_loss": 2.1754329204559326, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 17, "heldout_accuracy": 0.4753852739726027, "heldout_loss": 2.1019372940063477, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 18, "heldout_accuracy": 0.4800941780821918, "heldout_loss": 2.032287120819092, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 19, "heldout_accuracy": 0.5147688356164384, "heldout_loss": 1.9629113674163818, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 20, "heldout_accuracy": 0.5310359589041096, "heldout_loss": 1.8940402269363403, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 21, "heldout_accuracy": 0.5625, "heldout_loss": 1.8296672105789185, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 22, "heldout_accuracy": 0.5832619863013698, "heldout_loss": 1.7676901817321777, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 23, "heldout_accuracy": 0.6025256849315068, "heldout_loss": 1.711517095565796, "seed": 20261010}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 24, "heldout_accuracy": 0.614083904109589, "heldout_loss": 1.658881425857544, "seed": 20261010}
+DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.4396404109589041, "heldout_loss": 2.1885831356048584, "hidden_units": 48, "kind": "sparse", "parameter_count": 1426, "seed": 20261010, "wall_seconds": 0.95}
+DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.7403681506849316, "heldout_loss": 1.1979544162750244, "hidden_units": 5, "kind": "dense_parameter_matched", "parameter_count": 1569, "seed": 20261010, "wall_seconds": 0.5634}
+DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.7071917808219178, "heldout_loss": 1.318726897239685, "hidden_units": 48, "kind": "dynamic_sparse_f0_125", "parameter_count": 1426, "parameter_difference_vs_sparse_pct": 0.0, "rewire_fraction": 0.125, "seed": 20261010, "target_sparse_parameter_count": 1426, "wall_seconds": 0.8824}
+DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.6457619863013698, "heldout_loss": 1.457201600074768, "hidden_units": 48, "kind": "dynamic_sparse_f0_25", "parameter_count": 1426, "parameter_difference_vs_sparse_pct": 0.0, "rewire_fraction": 0.25, "seed": 20261010, "target_sparse_parameter_count": 1426, "wall_seconds": 0.8771}
+DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.614083904109589, "heldout_loss": 1.658881425857544, "hidden_units": 48, "kind": "dynamic_sparse_f0_375", "parameter_count": 1426, "parameter_difference_vs_sparse_pct": 0.0, "rewire_fraction": 0.375, "seed": 20261010, "target_sparse_parameter_count": 1426, "wall_seconds": 0.8369}
 DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 1, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.228878974914551, "seed": 20261011}
 DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 2, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.1331465244293213, "seed": 20261011}
 DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 3, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.064218282699585, "seed": 20261011}
@@ -49,9 +99,59 @@ DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "ep
 DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 22, "heldout_accuracy": 0.6919948630136986, "heldout_loss": 1.5171778202056885, "seed": 20261011}
 DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 23, "heldout_accuracy": 0.7016267123287672, "heldout_loss": 1.46731436252594, "seed": 20261011}
 DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 24, "heldout_accuracy": 0.7016267123287672, "heldout_loss": 1.4191980361938477, "seed": 20261011}
-DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.5378852739726028, "heldout_loss": 2.140194892883301, "hidden_units": 48, "kind": "sparse", "parameter_count": 1426, "seed": 20261011, "wall_seconds": 1.2497}
-DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.712970890410959, "heldout_loss": 1.2309768199920654, "hidden_units": 5, "kind": "dense_parameter_matched", "parameter_count": 1569, "seed": 20261011, "wall_seconds": 0.7154}
-DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.7016267123287672, "heldout_loss": 1.4191980361938477, "hidden_units": 48, "kind": "dynamic_sparse_f0_125", "parameter_count": 1426, "parameter_difference_vs_sparse_pct": 0.0, "rewire_fraction": 0.125, "seed": 20261011, "target_sparse_parameter_count": 1426, "wall_seconds": 1.2674}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 1, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.228878974914551, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 2, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.1347413063049316, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 3, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.0697736740112305, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 4, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.0079269409179688, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 5, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 2.940075397491455, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 6, "heldout_accuracy": 0.24486301369863014, "heldout_loss": 2.8686602115631104, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 7, "heldout_accuracy": 0.2564212328767123, "heldout_loss": 2.7878942489624023, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 8, "heldout_accuracy": 0.2617722602739726, "heldout_loss": 2.7016170024871826, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 9, "heldout_accuracy": 0.2988013698630137, "heldout_loss": 2.6098358631134033, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 10, "heldout_accuracy": 0.3193493150684932, "heldout_loss": 2.515099048614502, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 11, "heldout_accuracy": 0.3589469178082192, "heldout_loss": 2.420011281967163, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 12, "heldout_accuracy": 0.3692208904109589, "heldout_loss": 2.3282785415649414, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 13, "heldout_accuracy": 0.4030393835616438, "heldout_loss": 2.24066424369812, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 14, "heldout_accuracy": 0.4330051369863014, "heldout_loss": 2.1582157611846924, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 15, "heldout_accuracy": 0.4355736301369863, "heldout_loss": 2.0776209831237793, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 16, "heldout_accuracy": 0.4574058219178082, "heldout_loss": 1.9996588230133057, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 17, "heldout_accuracy": 0.4721746575342466, "heldout_loss": 1.9254248142242432, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 18, "heldout_accuracy": 0.5293236301369864, "heldout_loss": 1.854646921157837, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 19, "heldout_accuracy": 0.549443493150685, "heldout_loss": 1.787433385848999, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 20, "heldout_accuracy": 0.6290667808219178, "heldout_loss": 1.7232060432434082, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 21, "heldout_accuracy": 0.6399828767123288, "heldout_loss": 1.663698434829712, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 22, "heldout_accuracy": 0.6581763698630136, "heldout_loss": 1.6072784662246704, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 23, "heldout_accuracy": 0.6626712328767124, "heldout_loss": 1.5538265705108643, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 24, "heldout_accuracy": 0.6639554794520548, "heldout_loss": 1.5041474103927612, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 1, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.228878974914551, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 2, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.1338822841644287, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 3, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.074615955352783, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 4, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.021545648574829, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 5, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 2.962453842163086, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 6, "heldout_accuracy": 0.24357876712328766, "heldout_loss": 2.9049623012542725, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 7, "heldout_accuracy": 0.2564212328767123, "heldout_loss": 2.8397293090820312, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 8, "heldout_accuracy": 0.2564212328767123, "heldout_loss": 2.7715139389038086, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 9, "heldout_accuracy": 0.261986301369863, "heldout_loss": 2.6960837841033936, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 10, "heldout_accuracy": 0.2949486301369863, "heldout_loss": 2.621713161468506, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 11, "heldout_accuracy": 0.3270547945205479, "heldout_loss": 2.5424938201904297, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 12, "heldout_accuracy": 0.3345462328767123, "heldout_loss": 2.464789867401123, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 13, "heldout_accuracy": 0.3846318493150685, "heldout_loss": 2.3856310844421387, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 14, "heldout_accuracy": 0.3974743150684932, "heldout_loss": 2.3115062713623047, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 15, "heldout_accuracy": 0.4101027397260274, "heldout_loss": 2.233821153640747, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 16, "heldout_accuracy": 0.4225171232876712, "heldout_loss": 2.1640236377716064, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 17, "heldout_accuracy": 0.4473458904109589, "heldout_loss": 2.0941898822784424, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 18, "heldout_accuracy": 0.4616866438356164, "heldout_loss": 2.029987096786499, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 19, "heldout_accuracy": 0.4738869863013699, "heldout_loss": 1.9669320583343506, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 20, "heldout_accuracy": 0.4785958904109589, "heldout_loss": 1.9081069231033325, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 21, "heldout_accuracy": 0.488013698630137, "heldout_loss": 1.8516814708709717, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 22, "heldout_accuracy": 0.5068493150684932, "heldout_loss": 1.7971948385238647, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 23, "heldout_accuracy": 0.552654109589041, "heldout_loss": 1.7460306882858276, "seed": 20261011}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 24, "heldout_accuracy": 0.5704195205479452, "heldout_loss": 1.6958410739898682, "seed": 20261011}
+DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.5378852739726028, "heldout_loss": 2.140194892883301, "hidden_units": 48, "kind": "sparse", "parameter_count": 1426, "seed": 20261011, "wall_seconds": 0.7884}
+DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.712970890410959, "heldout_loss": 1.2309768199920654, "hidden_units": 5, "kind": "dense_parameter_matched", "parameter_count": 1569, "seed": 20261011, "wall_seconds": 0.5624}
+DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.7016267123287672, "heldout_loss": 1.4191980361938477, "hidden_units": 48, "kind": "dynamic_sparse_f0_125", "parameter_count": 1426, "parameter_difference_vs_sparse_pct": 0.0, "rewire_fraction": 0.125, "seed": 20261011, "target_sparse_parameter_count": 1426, "wall_seconds": 0.8433}
+DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.6639554794520548, "heldout_loss": 1.5041474103927612, "hidden_units": 48, "kind": "dynamic_sparse_f0_25", "parameter_count": 1426, "parameter_difference_vs_sparse_pct": 0.0, "rewire_fraction": 0.25, "seed": 20261011, "target_sparse_parameter_count": 1426, "wall_seconds": 0.8647}
+DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.5704195205479452, "heldout_loss": 1.6958410739898682, "hidden_units": 48, "kind": "dynamic_sparse_f0_375", "parameter_count": 1426, "parameter_difference_vs_sparse_pct": 0.0, "rewire_fraction": 0.375, "seed": 20261011, "target_sparse_parameter_count": 1426, "wall_seconds": 0.839}
 DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 1, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.2472965717315674, "seed": 20261012}
 DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 2, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.154086112976074, "seed": 20261012}
 DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 3, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.0811264514923096, "seed": 20261012}
@@ -76,7 +176,57 @@ DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "ep
 DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 22, "heldout_accuracy": 0.653681506849315, "heldout_loss": 1.5097333192825317, "seed": 20261012}
 DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 23, "heldout_accuracy": 0.653681506849315, "heldout_loss": 1.4651397466659546, "seed": 20261012}
 DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 24, "heldout_accuracy": 0.653681506849315, "heldout_loss": 1.418821096420288, "seed": 20261012}
-DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.4372859589041096, "heldout_loss": 2.174241542816162, "hidden_units": 48, "kind": "sparse", "parameter_count": 1426, "seed": 20261012, "wall_seconds": 1.2466}
-DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.717679794520548, "heldout_loss": 1.1515393257141113, "hidden_units": 5, "kind": "dense_parameter_matched", "parameter_count": 1569, "seed": 20261012, "wall_seconds": 0.7232}
-DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.653681506849315, "heldout_loss": 1.418821096420288, "hidden_units": 48, "kind": "dynamic_sparse_f0_125", "parameter_count": 1426, "parameter_difference_vs_sparse_pct": 0.0, "rewire_fraction": 0.125, "seed": 20261012, "target_sparse_parameter_count": 1426, "wall_seconds": 1.231}
-DYNAMIC_SPARSE_AGGREGATE {"dense_parameter_matched": {"mean_heldout_accuracy": 0.7236729452054794, "mean_heldout_loss": 1.1934901873270671, "mean_parameters": 1569.0, "mean_wall_seconds": 0.7230666666666666, "runs": 3}, "dynamic_sparse_f0_125": {"mean_heldout_accuracy": 0.6875, "mean_heldout_loss": 1.3855820099512737, "mean_parameters": 1426.0, "mean_wall_seconds": 1.2580666666666669, "runs": 3}, "sparse": {"mean_heldout_accuracy": 0.4716038812785388, "mean_heldout_loss": 2.167673190434774, "mean_parameters": 1426.0, "mean_wall_seconds": 1.2825666666666666, "runs": 3}}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 1, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.2472965717315674, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 2, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.1543359756469727, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 3, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.0801842212677, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 4, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.00980544090271, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 5, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 2.9346303939819336, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 6, "heldout_accuracy": 0.24357876712328766, "heldout_loss": 2.8557426929473877, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 7, "heldout_accuracy": 0.2564212328767123, "heldout_loss": 2.7704882621765137, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 8, "heldout_accuracy": 0.2564212328767123, "heldout_loss": 2.6820411682128906, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 9, "heldout_accuracy": 0.3202054794520548, "heldout_loss": 2.592655897140503, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 10, "heldout_accuracy": 0.3463184931506849, "heldout_loss": 2.5027713775634766, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 11, "heldout_accuracy": 0.3724315068493151, "heldout_loss": 2.4136414527893066, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 12, "heldout_accuracy": 0.383347602739726, "heldout_loss": 2.329296350479126, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 13, "heldout_accuracy": 0.4021832191780822, "heldout_loss": 2.2478787899017334, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 14, "heldout_accuracy": 0.4533390410958904, "heldout_loss": 2.171773672103882, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 15, "heldout_accuracy": 0.4867294520547945, "heldout_loss": 2.0958402156829834, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 16, "heldout_accuracy": 0.4875856164383562, "heldout_loss": 2.020331621170044, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 17, "heldout_accuracy": 0.513056506849315, "heldout_loss": 1.9505728483200073, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 18, "heldout_accuracy": 0.5475171232876712, "heldout_loss": 1.8787444829940796, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 19, "heldout_accuracy": 0.5597174657534246, "heldout_loss": 1.8121001720428467, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 20, "heldout_accuracy": 0.5695633561643836, "heldout_loss": 1.747852087020874, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 21, "heldout_accuracy": 0.599529109589041, "heldout_loss": 1.691838026046753, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 22, "heldout_accuracy": 0.606806506849315, "heldout_loss": 1.6346181631088257, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 23, "heldout_accuracy": 0.623929794520548, "heldout_loss": 1.5856367349624634, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 24, "heldout_accuracy": 0.6324914383561644, "heldout_loss": 1.533276081085205, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 1, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.2472965717315674, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 2, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.155952215194702, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 3, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.0945658683776855, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 4, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 3.038987159729004, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 5, "heldout_accuracy": 0.21789383561643835, "heldout_loss": 2.977698802947998, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 6, "heldout_accuracy": 0.24357876712328766, "heldout_loss": 2.917268991470337, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 7, "heldout_accuracy": 0.2564212328767123, "heldout_loss": 2.846050977706909, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 8, "heldout_accuracy": 0.2564212328767123, "heldout_loss": 2.7732694149017334, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 9, "heldout_accuracy": 0.2564212328767123, "heldout_loss": 2.698307514190674, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 10, "heldout_accuracy": 0.3191352739726027, "heldout_loss": 2.622058153152466, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 11, "heldout_accuracy": 0.3369006849315068, "heldout_loss": 2.5443105697631836, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 12, "heldout_accuracy": 0.3512414383561644, "heldout_loss": 2.468297243118286, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 13, "heldout_accuracy": 0.3627996575342466, "heldout_loss": 2.393935203552246, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 14, "heldout_accuracy": 0.3861301369863014, "heldout_loss": 2.3234493732452393, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 15, "heldout_accuracy": 0.409888698630137, "heldout_loss": 2.2533442974090576, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 16, "heldout_accuracy": 0.4246575342465753, "heldout_loss": 2.1860463619232178, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 17, "heldout_accuracy": 0.4486301369863014, "heldout_loss": 2.121227502822876, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 18, "heldout_accuracy": 0.4961472602739726, "heldout_loss": 2.058821678161621, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 19, "heldout_accuracy": 0.5143407534246576, "heldout_loss": 1.997559666633606, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 20, "heldout_accuracy": 0.5175513698630136, "heldout_loss": 1.941572666168213, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 21, "heldout_accuracy": 0.5404537671232876, "heldout_loss": 1.885681390762329, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 22, "heldout_accuracy": 0.5742722602739726, "heldout_loss": 1.8287031650543213, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 23, "heldout_accuracy": 0.5847602739726028, "heldout_loss": 1.7760837078094482, "seed": 20261012}
+DYNAMIC_SPARSE_EPOCH {"active_input_edges": 768, "active_output_edges": 576, "epoch": 24, "heldout_accuracy": 0.5851883561643836, "heldout_loss": 1.7238041162490845, "seed": 20261012}
+DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.4372859589041096, "heldout_loss": 2.174241542816162, "hidden_units": 48, "kind": "sparse", "parameter_count": 1426, "seed": 20261012, "wall_seconds": 0.7963}
+DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.717679794520548, "heldout_loss": 1.1515393257141113, "hidden_units": 5, "kind": "dense_parameter_matched", "parameter_count": 1569, "seed": 20261012, "wall_seconds": 0.5542}
+DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.653681506849315, "heldout_loss": 1.418821096420288, "hidden_units": 48, "kind": "dynamic_sparse_f0_125", "parameter_count": 1426, "parameter_difference_vs_sparse_pct": 0.0, "rewire_fraction": 0.125, "seed": 20261012, "target_sparse_parameter_count": 1426, "wall_seconds": 0.8549}
+DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.6324914383561644, "heldout_loss": 1.533276081085205, "hidden_units": 48, "kind": "dynamic_sparse_f0_25", "parameter_count": 1426, "parameter_difference_vs_sparse_pct": 0.0, "rewire_fraction": 0.25, "seed": 20261012, "target_sparse_parameter_count": 1426, "wall_seconds": 0.8486}
+DYNAMIC_SPARSE_RESULT {"heldout_accuracy": 0.5851883561643836, "heldout_loss": 1.7238041162490845, "hidden_units": 48, "kind": "dynamic_sparse_f0_375", "parameter_count": 1426, "parameter_difference_vs_sparse_pct": 0.0, "rewire_fraction": 0.375, "seed": 20261012, "target_sparse_parameter_count": 1426, "wall_seconds": 0.8144}
+DYNAMIC_SPARSE_AGGREGATE {"dense_parameter_matched": {"mean_heldout_accuracy": 0.7236729452054794, "mean_heldout_loss": 1.1934901873270671, "mean_parameters": 1569.0, "mean_wall_seconds": 0.56, "runs": 3}, "dynamic_sparse_f0_125": {"mean_heldout_accuracy": 0.6875, "mean_heldout_loss": 1.3855820099512737, "mean_parameters": 1426.0, "mean_wall_seconds": 0.8602, "runs": 3}, "dynamic_sparse_f0_25": {"mean_heldout_accuracy": 0.6474029680365296, "mean_heldout_loss": 1.4982083638509114, "mean_parameters": 1426.0, "mean_wall_seconds": 0.8634666666666666, "runs": 3}, "dynamic_sparse_f0_375": {"mean_heldout_accuracy": 0.5898972602739726, "mean_heldout_loss": 1.6928422053654988, "mean_parameters": 1426.0, "mean_wall_seconds": 0.8301, "runs": 3}, "sparse": {"mean_heldout_accuracy": 0.4716038812785388, "mean_heldout_loss": 2.167673190434774, "mean_parameters": 1426.0, "mean_wall_seconds": 0.8449, "runs": 3}}
