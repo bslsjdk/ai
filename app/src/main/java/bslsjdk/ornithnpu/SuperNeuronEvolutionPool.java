@@ -22,6 +22,7 @@ public final class SuperNeuronEvolutionPool {
     private long generation;
     private long lastTrainingSteps;
     private double bestValidationLoss = Double.POSITIVE_INFINITY;
+    private double initialBestValidationLoss = Double.POSITIVE_INFINITY;
     private SuperNeuronLanguageTrainer bestTrainer;
     private SuperNeuronLanguageTrainer currentTrainer;
     private boolean stoppedEarly;
@@ -49,6 +50,9 @@ public final class SuperNeuronEvolutionPool {
             throw new IllegalArgumentException("training and validation sequences need at least two tokens");
         if (totalSteps < 1 || totalSteps > 100000L)
             throw new IllegalArgumentException("totalSteps must be 1..100000 for the mobile experiment");
+        initialBestValidationLoss = Double.POSITIVE_INFINITY;
+        for (SuperNeuronLanguageTrainer candidate : population)
+            initialBestValidationLoss = Math.min(initialBestValidationLoss, candidate.evaluateSequence(validationTokens));
         long base = totalSteps / population.size();
         long remainder = totalSteps % population.size();
         long completed = 0;
@@ -113,6 +117,7 @@ public final class SuperNeuronEvolutionPool {
         return bestTrainer;
     }
     public double getBestValidationLoss() { return bestValidationLoss; }
+    public double getInitialBestValidationLoss() { return initialBestValidationLoss; }
     public SuperNeuronLanguageTrainer getCurrentTrainer() { return currentTrainer; }
     public boolean wasStoppedEarly() { return stoppedEarly; }
     public long getGeneration() { return generation; }
