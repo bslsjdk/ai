@@ -1,0 +1,87 @@
+name: N-gram smoothing alpha sensitivity
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/mobile-neuron-unit-runtime
+    paths:
+      - "scripts/run_ngram_alpha_sensitivity.py"
+      - ".github/workflows/ngram-alpha-sensitivity.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ngram-alpha-sensitivity-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sensitivity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install NumPy
+        run: python -m pip install numpy
+      - name: Fetch canonical public-domain corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p experiments/ngram-alpha-sensitivity/latest
+          python - <<'PY'
+          from urllib.request import Request, urlopen
+          from pathlib import Path
+          url = "https://www.gutenberg.org/cache/epub/11/pg11.txt"
+          req = Request(url, headers={"User-Agent": "AIMENG-Neuron-LM-Research/1.0"})
+          with urlopen(req, timeout=60) as r:
+              text = r.read().decode("utf-8", errors="replace")
+          start = text.find("*** START OF THE PROJECT GUTENBERG EBOOK")
+          if start >= 0:
+              text = text[text.find("\\n", start)+1:]
+          end = text.find("*** END OF THE PROJECT GUTENBERG EBOOK")
+          if end >= 0:
+              text = text[:end]
+          text = text.replace("\\r\\n", "\\n").replace("\\r", "\\n")
+          Path("experiments/ngram-alpha-sensitivity/latest/alice.txt").write_text(text, encoding="utf-8")
+          print("CORPUS_CHARACTERS", len(text))
+          PY
+      - name: Run expanded alpha grid
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile scripts/run_real_text_baselines.py scripts/run_ngram_alpha_sensitivity.py
+          python scripts/run_ngram_alpha_sensitivity.py \\
+            --text-file experiments/ngram-alpha-sensitivity/latest/alice.txt \\
+            --output-file experiments/ngram-alpha-sensitivity/latest/summary.json \\
+            2>&1 | tee experiments/ngram-alpha-sensitivity/latest/terminal.log
+      - name: Commit sensitivity results
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          REPORT_DIR="experiments/ngram-alpha-sensitivity/latest"
+          BACKUP_DIR="$(mktemp -d)"
+          cp -a "$REPORT_DIR/." "$BACKUP_DIR/"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "${GITHUB_REF_NAME}"
+            git reset --hard "origin/${GITHUB_REF_NAME}"
+            mkdir -p "$REPORT_DIR"
+            cp -a "$BACKUP_DIR/." "$REPORT_DIR/"
+            git add "$REPORT_DIR"
+            if git diff --cached --quiet; then echo "No changed sensitivity results"; exit 0; fi
+            git commit -m "Record n-gram smoothing alpha sensitivity [skip ci]"
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then rm -rf "$BACKUP_DIR"; exit 0; fi
+            sleep 2
+          done
+          rm -rf "$BACKUP_DIR"
+          echo "Could not push sensitivity results after retries" >&2
+          exit 1
