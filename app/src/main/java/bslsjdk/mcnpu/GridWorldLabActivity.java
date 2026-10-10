@@ -587,8 +587,11 @@ public final class GridWorldLabActivity extends Activity {
     private EvolutionScore scoreEvo16(EvoNet16 candidate, List<MapData> maps) {
         int wins = 0, fastWins = 0;
         long actualStepsTotal = 0L, penalizedStepsTotal = 0L, shapedProgress = 0L;
+        int mapIndex = 0;
         for (MapData map : maps) {
             Evo16EpisodeResult result = runEvo16Episode(candidate, map);
+            // Training-time memory checks during long validation/bank scoring batches too.
+            if (training && (++mapIndex % 4 == 0)) sampleEvo16ProcessMemory();
             int shortest = shortestDistance(map);
             shapedProgress += result.potentialDelta;
             actualStepsTotal += result.steps;
