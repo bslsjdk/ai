@@ -25,12 +25,28 @@ android {
             }
         }
     }
+    // Stable update signing is enabled when the repository's protected Actions
+    // secrets provide the dedicated test keystore. Never reuse the production
+    // Ornith/MCNPU signing key for this separate experimental package.
+    def aimengKeystorePath = System.getenv("AIMENG_KEYSTORE_PATH")
+    def aimengKeystoreExists = aimengKeystorePath != null && file(aimengKeystorePath).isFile()
+    signingConfigs {
+        if (aimengKeystoreExists) {
+            aimengStable {
+                storeFile file(aimengKeystorePath)
+                storePassword System.getenv("AIMENG_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("AIMENG_KEY_ALIAS")
+                keyPassword System.getenv("AIMENG_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         debug {
             // Keep the experimental AIMENG build installable alongside the existing
             // Ornith/MCNPU app; never replace the user's working app during testing.
             applicationIdSuffix ".aimengdebug"
             versionNameSuffix "-aimeng"
+            if (aimengKeystoreExists) signingConfig signingConfigs.aimengStable
         }
     }
     sourceSets { main { jniLibs.srcDirs = ["src/main/jniLibs"] } }
