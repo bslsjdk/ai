@@ -307,8 +307,8 @@ public final class SuperNeuronLabActivity extends Activity {
                                 + "输出 ID：%d（%s）\n模型池：4 个个体\n实际训练步数：%d / 10,000\n"
                                 + "训练平均交叉熵：%.5f\n独立尾段验证损失（前 -> 后）：%.5f -> %s\n"
                                 + "进化代数：%d\n最终 PSS：%.1f MiB\n最终 RSS：%.1f MiB\n"
-                                + "内存采样点：%d\n报告：files/super_neuron_memory_report.json\n"
-                                + "检查点：files/super_neuron_checkpoint.json\n\n"
+                                + "内存采样点：%d\n报告目录：%s\n"
+                                + "文件：super_neuron_memory_report.json / super_neuron_checkpoint.json\n\n"
                                 + "注意：单故事拟合不等于语言泛化；内存曲线来自本次 Android 运行。",
                         safetyStopped[0] || pool.wasStoppedEarly() ? "（安全停止）" : "完成",
                         allTokens.length, tokenizer.getVocabularySize(), prediction,
