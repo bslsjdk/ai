@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: real-text-baselines-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   benchmark:
