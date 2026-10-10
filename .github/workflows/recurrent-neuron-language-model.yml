@@ -108,7 +108,9 @@ jobs:
           for key in ("baseline_loss", "heldout_loss", "bits_per_char", "char_accuracy",
                       "wall_seconds", "ablation_delta_mean", "ablation_delta_max",
                       "best_validation_epoch", "best_validation_loss"):
-              aggregate["mean_" + key] = statistics.mean(r[key] for r in rows)
+              values = [r[key] for r in rows]
+              aggregate["mean_" + key] = statistics.mean(values)
+              aggregate["sample_stddev_" + key] = statistics.stdev(values) if len(values) > 1 else 0.0
           aggregate["parameter_count"] = rows[0]["parameter_count"]
           report = {"format": "aimeng-recurrent-neuron-lm-multiseed/v1",
                     "dataset": "Alice's Adventures in Wonderland, public-domain Project Gutenberg text",
