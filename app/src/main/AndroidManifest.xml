@@ -51,6 +51,11 @@
             android:enabled="true"
             android:exported="true"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+        <service android:name=".AimengNeuronService" android:exported="false"
+            android:foregroundServiceType="specialUse" android:stopWithTask="false">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User-enabled local AIMENG neuron runtime with checkpointed state; idle between explicit inference requests" />
+        </service>
         <service android:name=".NpuService" android:exported="false" android:foregroundServiceType="specialUse"
             android:stopWithTask="false">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
