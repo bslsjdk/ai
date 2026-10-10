@@ -168,7 +168,7 @@ public final class SparseDiffusionActivity extends Activity {
 
     private void learnFromInputText() {
         final String text = prompt.getText().toString();
-        if (text.length() < 2) {
+        if (text.codePointCount(0, text.length()) < 2) {
             status.setText("请在输入框放入至少两个字符的学习文本");
             return;
         }
