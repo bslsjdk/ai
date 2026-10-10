@@ -401,6 +401,8 @@ public final class NeuronIndividualManagerActivity extends Activity {
                     SelfOrganizingMazeTrainer.Result result =
                             SelfOrganizingMazeTrainer.run(target.graph, 25, seed, true);
                     target.lastTrainingResult = result.toDisplayString();
+                    target.lastValidationResult = "训练后需要重新验证";
+                    target.validationRate = -1.0;
                     writeIndividual(target);
                     completedCount++;
                     summary.append(target.name).append("：")
@@ -466,8 +468,11 @@ public final class NeuronIndividualManagerActivity extends Activity {
                     status.setText("任务失败；个体检查点未被标记为验证通过。");
                     return;
                 }
-                if (training) target.lastTrainingResult = completed.toDisplayString();
-                else {
+                if (training) {
+                    target.lastTrainingResult = completed.toDisplayString();
+                    target.lastValidationResult = "训练后需要重新验证";
+                    target.validationRate = -1.0;
+                } else {
                     target.lastValidationResult = completed.toDisplayString();
                     target.validationRate = completed.successRate;
                 }
