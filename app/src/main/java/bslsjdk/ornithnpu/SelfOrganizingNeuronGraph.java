@@ -22,7 +22,6 @@ public final class SelfOrganizingNeuronGraph {
     public static final int DEFAULT_MAX_NEURONS = 256;
     public static final int DEFAULT_MAX_EDGES = 4096;
     private static final double MAX_ABS_WEIGHT = 4.0;
-    private static final double MAX_ABS_STATE = 4.0;
 
     private final int maxNeurons;
     private final int maxEdges;
@@ -33,6 +32,8 @@ public final class SelfOrganizingNeuronGraph {
     private int edgeCount;
     private int inputCount;
     private int outputCount;
+    private final int[] inputOrder;
+    private int nextInputOrder;
     private final boolean[] enabled;
     private final boolean[] inputPort;
     private final boolean[] outputPort;
@@ -71,6 +72,8 @@ public final class SelfOrganizingNeuronGraph {
         this.random = new Random(seed);
         enabled = new boolean[maxNeurons];
         inputPort = new boolean[maxNeurons];
+        inputOrder = new int[maxNeurons];
+        Arrays.fill(inputOrder, -1);
         outputPort = new boolean[maxNeurons];
         bias = new double[maxNeurons];
         state = new double[maxNeurons];
@@ -83,6 +86,31 @@ public final class SelfOrganizingNeuronGraph {
         edgeTrace = new double[maxEdges];
         edgeUse = new double[maxEdges];
         edgeEnabled = new boolean[maxEdges];
+    }
+
+    /**
+     * Builds a reproducible starting graph. Output ports are readouts, not a
+     * separate layer. Random edges can connect any non-input nodes and form cycles.
+     */
+    public static SelfOrganizingNeuronGraph createRandomGraph(
+            int inputCount, int outputCount, int totalNeurons, int initialEdges, long seed) {
+        if (inputCount < 1 || outputCount < 1 || totalNeurons < inputCount + outputCount
+                || totalNeurons > 1000 || initialEdges < 0 || initialEdges > 16000)
+            throw new IllegalArgumentException("invalid graph shape");
+        int maxN = Math.min(1000, Math.max(totalNeurons, totalNeurons + Math.max(16, totalNeurons / 4)));
+        int maxE = Math.min(16000, Math.max(1, Math.max(initialEdges + 128, totalNeurons * 8)));
+        SelfOrganizingNeuronGraph g = new SelfOrganizingNeuronGraph(maxN, maxE, 0.90, seed);
+        for (int i = 0; i < totalNeurons; i++) g.addNeuron();
+        for (int i = 0; i < inputCount; i++) g.markInputPort(i);
+        for (int i = totalNeurons - outputCount; i < totalNeurons; i++) g.markOutputPort(i);
+        Random r = new Random(seed ^ 0x5DEECE66DL);
+        int added = 0, attempts = 0, maxAttempts = Math.max(100, initialEdges * 20);
+        while (added < initialEdges && attempts++ < maxAttempts && g.edgeCount < g.maxEdges) {
+            int from = r.nextInt(totalNeurons), to = r.nextInt(totalNeurons);
+            if (g.inputPort[to] || from == to) continue;
+            if (g.addConnection(from, to, (r.nextDouble() * 2.0 - 1.0) * 0.35)) added++;
+        }
+        return g;
     }
 
     /** Adds an ordinary graph node; it has no fixed layer or role. */
@@ -98,6 +126,7 @@ public final class SelfOrganizingNeuronGraph {
     public boolean markInputPort(int neuronId) {
         if (!validNeuron(neuronId) || inputPort[neuronId]) return false;
         inputPort[neuronId] = true;
+        inputOrder[nextInputOrder++] = neuronId;
         inputCount++;
         return true;
     }
@@ -155,7 +184,7 @@ public final class SelfOrganizingNeuronGraph {
 
     /**
      * One bounded synchronous propagation tick. The input array is ordered by
-     * input-port creation order. Every propagation round reads a snapshot, so
+     * markInputPort call order. Every propagation round reads a snapshot, so
      * results do not depend on Java loop ordering.
      */
     public double[] step(double[] inputs, int propagationRounds) {
@@ -166,10 +195,11 @@ public final class SelfOrganizingNeuronGraph {
         for (double v : inputs) if (!Double.isFinite(v))
             throw new IllegalArgumentException("input contains non-finite value");
 
-        int p = 0;
-        for (int i = 0; i < neuronCount; i++) {
-            previous[i] = state[i];
-            if (inputPort[i]) state[i] = clamp(inputs[p++], -1.0, 1.0);
+        System.arraycopy(state, 0, previous, 0, neuronCount);
+        for (int i = 0; i < neuronCount; i++) if (!enabled[i]) state[i] = 0.0;
+        for (int p = 0; p < inputCount; p++) {
+            int i = inputOrder[p];
+            state[i] = enabled[i] ? clamp(inputs[p], -1.0, 1.0) : 0.0;
         }
         for (int round = 0; round < propagationRounds; round++) {
             System.arraycopy(state, 0, previous, 0, neuronCount);
@@ -251,7 +281,9 @@ public final class SelfOrganizingNeuronGraph {
             int a = random.nextInt(neuronCount);
             int b = random.nextInt(neuronCount);
             if (a == b || !enabled[a] || !enabled[b]) continue;
+            if (inputPort[a] || outputPort[a] || inputPort[b] || outputPort[b]) continue;
             if (activityMean[a] < minimumActivity || activityMean[b] < minimumActivity) continue;
+            if (Math.abs(state[a] * state[b]) < minimumActivity * minimumActivity) continue;
             if (findEdge(a, b) >= 0) continue;
             return addConnection(a, b, initialWeight);
         }
