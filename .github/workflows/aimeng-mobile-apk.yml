@@ -61,11 +61,11 @@ jobs:
           if os.path.getsize(path) < 512:
               raise SystemExit("Decoded test keystore is unexpectedly small.")
           with open(os.environ["GITHUB_ENV"], "a") as f:
-              f.write("AIMENG_KEYSTORE_PATH=" + path + "\\n")
-              f.write("AIMENG_KEYSTORE_PASSWORD=" + bundle["keystore_password"] + "\\n")
-              f.write("AIMENG_KEY_ALIAS=" + bundle["key_alias"] + "\\n")
-              f.write("AIMENG_KEY_PASSWORD=" + bundle["key_password"] + "\\n")
-              f.write("AIMENG_STABLE_SIGNING=true\\n")
+              f.write("AIMENG_KEYSTORE_PATH=" + path + "\n")
+              f.write("AIMENG_KEYSTORE_PASSWORD=" + bundle["keystore_password"] + "\n")
+              f.write("AIMENG_KEY_ALIAS=" + bundle["key_alias"] + "\n")
+              f.write("AIMENG_KEY_PASSWORD=" + bundle["key_password"] + "\n")
+              f.write("AIMENG_STABLE_SIGNING=true\n")
           PY
           echo "Stable AIMENG test signing key loaded."
       - name: Build installable debug APK
@@ -81,7 +81,7 @@ jobs:
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -E "versionCode='[0-9]+' versionName='[^']+'"
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose "$APK"
           sha256sum "$APK" | tee app/build/outputs/apk/debug/app-debug.apk.sha256
-          printf 'stable_signing=%s\\nversion_code=%s\\n' "$AIMENG_STABLE_SIGNING" "${GITHUB_RUN_NUMBER}" > app/build/outputs/apk/debug/build-info.txt
+          printf 'stable_signing=%s\nversion_code=%s\n' "$AIMENG_STABLE_SIGNING" "${GITHUB_RUN_NUMBER}" > app/build/outputs/apk/debug/build-info.txt
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
