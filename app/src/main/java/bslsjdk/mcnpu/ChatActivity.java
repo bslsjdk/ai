@@ -87,6 +87,7 @@ public final class ChatActivity extends Activity {
 
         findViewById(R.id.send).setOnClickListener(v -> sendMessage());
         findViewById(R.id.importModel).setOnClickListener(v -> importOrnithModel());
+        findViewById(R.id.aimengModel).setOnClickListener(v -> startActivity(new Intent(this, SparseDiffusionActivity.class)));
         findViewById(R.id.emptyImport).setOnClickListener(v -> importOrnithModel());
         input.setOnEditorActionListener((v, actionId, event) -> {
             if (event != null && event.getKeyCode() == android.view.KeyEvent.KEYCODE_ENTER

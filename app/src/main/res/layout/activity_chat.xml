@@ -51,6 +51,18 @@
             android:paddingBottom="5dp" />
 
         <Button
+            android:id="@+id/aimengModel"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:minWidth="0dp"
+            android:text="神经元"
+            android:textSize="12sp"
+            android:textAllCaps="false"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:layout_marginStart="4dp" />
+
+        <Button
             android:id="@+id/importModel"
             android:layout_width="wrap_content"
             android:layout_height="44dp"

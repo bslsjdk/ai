@@ -18,7 +18,8 @@ set(MCNPU_SOURCES
     ornith15_executor.cpp
     ornith15_executor.h
     runtime_memory_budget.cpp
-    runtime_memory_budget.h)
+    runtime_memory_budget.h
+    aimeng_opencl_gpu.cpp)
 if(LLAMA_CPP_SRC)
     list(APPEND MCNPU_SOURCES mcnpu_ggml_backend.cpp)
 endif()
