@@ -35,7 +35,12 @@
         <receiver android:name=".TermuxCommandResultReceiver" android:exported="false" />
         <activity android:name=".CommandTerminalActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".GridWorldLabActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".NeuronIndividualManagerActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".NeuronIndividualManagerActivity" android:label="神经网络个体管理" android:exported="true" android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity android:name=".NeuronLabActivity" android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
