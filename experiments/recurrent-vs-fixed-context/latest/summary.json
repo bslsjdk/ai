@@ -21,7 +21,7 @@
       "mean_heldout_loss": 2.656622854277237,
       "mean_bits_per_char": 3.832696617378053,
       "mean_char_accuracy": 0.2762833367909089,
-      "mean_wall_seconds": 13.471333333333334
+      "mean_wall_seconds": 13.246666666666666
     },
     "fixed_context_width_3": {
       "runs": 3,
@@ -29,7 +29,7 @@
       "mean_heldout_loss": 2.514807323338599,
       "mean_bits_per_char": 3.6281000541718447,
       "mean_char_accuracy": 0.32143927344812484,
-      "mean_wall_seconds": 15.066333333333333
+      "mean_wall_seconds": 15.032333333333334
     }
   },
   "runs": [
@@ -40,7 +40,7 @@
       "loss": 2.6831277243601863,
       "bits_per_char": 3.8709350620061302,
       "accuracy": 0.2776433165064657,
-      "seconds": 13.368,
+      "seconds": 13.308,
       "baseline_loss": 3.170140011296197,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
     },
@@ -51,7 +51,7 @@
       "loss": 2.520259856386358,
       "bits_per_char": 3.63596639656013,
       "accuracy": 0.3254270105801812,
-      "seconds": 15.135,
+      "seconds": 15.049,
       "baseline_loss": 3.170140011296197,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
     },
@@ -62,7 +62,7 @@
       "loss": 2.6285895749944084,
       "bits_per_char": 3.7922531443768612,
       "accuracy": 0.27937210428047854,
-      "seconds": 13.489,
+      "seconds": 13.25,
       "baseline_loss": 3.170140011296197,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
     },
@@ -73,7 +73,7 @@
       "loss": 2.5095623594853453,
       "bits_per_char": 3.6205331708311137,
       "accuracy": 0.3163681626443538,
-      "seconds": 15.0,
+      "seconds": 14.998,
       "baseline_loss": 3.170140011296197,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
     },
@@ -84,7 +84,7 @@
       "loss": 2.6581512634771163,
       "bits_per_char": 3.834901645751168,
       "accuracy": 0.27183458958578244,
-      "seconds": 13.557,
+      "seconds": 13.182,
       "baseline_loss": 3.170140011296197,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
     },
@@ -95,7 +95,7 @@
       "loss": 2.5145997541440934,
       "bits_per_char": 3.6278005951242904,
       "accuracy": 0.3225226471198396,
-      "seconds": 15.064,
+      "seconds": 15.05,
       "baseline_loss": 3.170140011296197,
       "dataset_sha256": "e3917589f48b4e9f4b731a6b7e127cf9ddd6e1b3819c78be02a2702ee73bfdb1"
     }
