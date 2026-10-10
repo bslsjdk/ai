@@ -66,6 +66,7 @@ public final class SelfOrganizingMazeTrainer {
         double rewardSum = 0;
         double stepSum = 0;
         long beforeTicks = graph.getTicks();
+        long stepsTaken = 0;
 
         for (int ep = 0; ep < episodes; ep++) {
             MapData map = makeReachableMap(random);
@@ -74,7 +75,9 @@ public final class SelfOrganizingMazeTrainer {
             double episodeReward = 0;
             graph.resetEpisodeState();
 
+            int episodeSteps = 0;
             for (int step = 0; step < MAX_STEPS; step++) {
+                episodeSteps++;
                 double[] observation = observe(map, pos);
                 double[] outputs = graph.step(observation, 2);
                 int action = chooseAction(outputs, random, training ? 0.18 : 0.0);
@@ -103,7 +106,7 @@ public final class SelfOrganizingMazeTrainer {
                 if (previousAction < 0) throw new IllegalStateException("unreachable");
             }
             rewardSum += episodeReward;
-            stepSum += 1; // replaced below by bounded aggregate proxy, see note below
+            stepSum += episodeSteps;
         }
 
         // The trainer deliberately returns only bounded summary statistics; it does not
