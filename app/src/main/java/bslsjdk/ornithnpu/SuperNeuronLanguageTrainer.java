@@ -1,5 +1,9 @@
 package bslsjdk.ornithnpu;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.Random;
 
 /**
@@ -20,7 +24,7 @@ public final class SuperNeuronLanguageTrainer {
     private final double[] inputScratch;
     private final double[] outputScratch;
     private final double[] gradientScratch;
-    private final SuperNeuronV2 model;
+    private SuperNeuronV2 model;
     private long trainedTokenTargets;
 
     public SuperNeuronLanguageTrainer(
@@ -91,6 +95,123 @@ public final class SuperNeuronLanguageTrainer {
             }
         }
         return totalLoss / steps;
+    }
+
+    public interface StepListener {
+        /** Called after each target update. Return false to safely stop the run. */
+        boolean onStep(long completedStepsThisCall, double loss);
+    }
+
+    /**
+     * Run an exact number of next-character/token updates. Recurrent state and
+     * eligibility traces reset at each pass through the supplied sequence.
+     */
+    public double trainSequenceSteps(int[] tokenIds, long targetSteps, double learningRate,
+                                     StepListener listener) {
+        validateSequence(tokenIds);
+        if (targetSteps < 1 || targetSteps > MAX_TRAIN_STEPS_PER_CALL)
+            throw new IllegalArgumentException("targetSteps must be 1..2,000,000");
+        if (!Double.isFinite(learningRate) || learningRate <= 0.0 || learningRate > 0.05)
+            throw new IllegalArgumentException("learningRate must be in (0, 0.05]");
+        model.resetState();
+        long completed = 0;
+        double totalLoss = 0.0;
+        int pairs = tokenIds.length - 1;
+        while (completed < targetSteps) {
+            int position = (int) (completed % pairs);
+            if (position == 0) model.resetState();
+            int token = tokenIds[position];
+            int target = tokenIds[position + 1];
+            copyEmbedding(token, inputScratch);
+            model.forwardInto(inputScratch, outputScratch);
+            int prediction = argmax(outputScratch);
+            double loss = model.trainClass(target, learningRate);
+            model.copyLastInputGradient(gradientScratch);
+            int base = token * embeddingSize;
+            for (int d = 0; d < embeddingSize; d++) {
+                double grad = clamp(gradientScratch[d], -5.0, 5.0);
+                embeddings[base + d] = clamp(embeddings[base + d] - learningRate * grad,
+                        -MAX_ABS_EMBEDDING, MAX_ABS_EMBEDDING);
+            }
+            // A bounded local reward supplements the within-unit supervised update.
+            // No gradient is propagated across the population or across time steps.
+            model.applyReward(prediction == target ? 0.1 : -0.02,
+                    Math.min(0.002, learningRate * 0.1));
+            totalLoss += loss;
+            completed++;
+            trainedTokenTargets++;
+            if (listener != null && !listener.onStep(completed, loss)) break;
+        }
+        return completed == 0 ? 0.0 : totalLoss / completed;
+    }
+
+    private static int argmax(double[] values) {
+        int best = 0;
+        for (int i = 1; i < values.length; i++) if (values[i] > values[best]) best = i;
+        return best;
+    }
+
+    /** Full trainer checkpoint, including token embeddings and the local model. */
+    public JSONObject toJson() throws JSONException {
+        JSONObject root = new JSONObject();
+        root.put("format", "aimeng-language-trainer/v1");
+        root.put("vocabularySize", vocabularySize);
+        root.put("embeddingSize", embeddingSize);
+        root.put("hiddenSize", model.getHiddenSize());
+        root.put("trainedTokenTargets", trainedTokenTargets);
+        JSONArray values = new JSONArray();
+        for (double value : embeddings) values.put(value);
+        root.put("embeddings", values);
+        root.put("model", model.toJson());
+        return root;
+    }
+
+    public static SuperNeuronLanguageTrainer fromJson(JSONObject root, long seed) throws JSONException {
+        if (root == null || !"aimeng-language-trainer/v1".equals(root.optString("format", "")))
+            throw new IllegalArgumentException("unsupported trainer checkpoint format");
+        int vocab = root.getInt("vocabularySize");
+        int embedding = root.getInt("embeddingSize");
+        int hidden = root.getInt("hiddenSize");
+        SuperNeuronLanguageTrainer result = new SuperNeuronLanguageTrainer(vocab, embedding, hidden, seed);
+        JSONArray values = root.getJSONArray("embeddings");
+        if (values.length() != result.embeddings.length)
+            throw new IllegalArgumentException("embedding checkpoint size mismatch");
+        for (int i = 0; i < values.length(); i++) {
+            double value = values.getDouble(i);
+            if (!Double.isFinite(value) || Math.abs(value) > MAX_ABS_EMBEDDING)
+                throw new IllegalArgumentException("invalid embedding checkpoint value");
+            result.embeddings[i] = value;
+        }
+        SuperNeuronV2 restored = SuperNeuronV2.fromJson(root.getJSONObject("model"), seed ^ 0x5DEECE66DL);
+        if (restored.getInputCount() != embedding || restored.getHiddenSize() != hidden
+                || restored.getOutputCount() != vocab)
+            throw new IllegalArgumentException("model checkpoint dimensions mismatch");
+        result.model = restored;
+        result.trainedTokenTargets = Math.max(0L, root.optLong("trainedTokenTargets", 0L));
+        return result;
+    }
+
+    /** Produce an offspring from two elites using gene crossover plus bounded mutation. */
+    public SuperNeuronLanguageTrainer reproduceWith(SuperNeuronLanguageTrainer other, long seed,
+                                                      double mutationRate, double mutationSigma) {
+        if (other == null || vocabularySize != other.vocabularySize
+                || embeddingSize != other.embeddingSize || model.getHiddenSize() != other.model.getHiddenSize())
+            throw new IllegalArgumentException("parent shape mismatch");
+        if (!Double.isFinite(mutationRate) || mutationRate < 0.0 || mutationRate > 1.0
+                || !Double.isFinite(mutationSigma) || mutationSigma < 0.0 || mutationSigma > 1.0)
+            throw new IllegalArgumentException("invalid mutation settings");
+        Random random = new Random(seed);
+        SuperNeuronLanguageTrainer child = new SuperNeuronLanguageTrainer(
+                vocabularySize, embeddingSize, model.getHiddenSize(), seed);
+        for (int i = 0; i < embeddings.length; i++) {
+            double gene = random.nextBoolean() ? embeddings[i] : other.embeddings[i];
+            if (random.nextDouble() < mutationRate) gene += random.nextGaussian() * mutationSigma;
+            child.embeddings[i] = clamp(gene, -MAX_ABS_EMBEDDING, MAX_ABS_EMBEDDING);
+        }
+        child.model.copyLearnedParametersFrom(model);
+        child.model.crossoverWith(other.model, random);
+        child.model.mutateParameters(random, mutationRate, mutationSigma);
+        return child;
     }
 
     /** Mean next-token cross-entropy without updating any learned parameters. */
