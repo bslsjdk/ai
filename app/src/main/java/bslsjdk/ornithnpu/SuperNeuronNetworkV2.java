@@ -122,14 +122,15 @@ public final class SuperNeuronNetworkV2 {
     public int getChannelCount() { return channels; }
     public int getLastActiveCount() { return activeCount; }
     public long getStepCount() { return steps; }
-    public long getParameterCount() { return (long) n * 2 + edges + channels * 2L; }
+    public long getParameterCount() { return (long) n + edges + channels * 2L; }
     public long estimatedStorageBytes() {
         long ints = (long) head.length + to.length + channel.length + next.length
                 + pendingStamp.length + currentStamp.length + pendingTouched.length
                 + currentTouched.length + top.length + lastActive.length;
         long doubles = (long) bias.length + state.length + activation.length
                 + sharedWeight.length + sharedBias.length + edgeWeight.length
-                + pending.length + current.length + score.length;
+                + pending.length + current.length + score.length
+                + edgeEligibility.length + neuronEligibility.length;
         return ints * 4L + doubles * 8L;
     }
     public void resetState() {
