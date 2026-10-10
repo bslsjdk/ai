@@ -586,23 +586,25 @@ public final class GridWorldLabActivity extends Activity {
 
     private EvolutionScore scoreEvo16(EvoNet16 candidate, List<MapData> maps) {
         int wins = 0, fastWins = 0;
-        long stepsTotal = 0L, shapedProgress = 0L;
+        long actualStepsTotal = 0L, penalizedStepsTotal = 0L, shapedProgress = 0L;
         for (MapData map : maps) {
             Evo16EpisodeResult result = runEvo16Episode(candidate, map);
             int shortest = shortestDistance(map);
             shapedProgress += result.potentialDelta;
+            actualStepsTotal += result.steps;
             if (result.success) {
                 wins++;
-                stepsTotal += result.steps;
+                penalizedStepsTotal += result.steps;
                 if (result.steps <= shortest * FAST_STEP_FACTOR + FAST_STEP_ALLOWANCE) fastWins++;
             } else {
-                stepsTotal += MAX_STEPS;
+                // Penalize failed candidates as a full episode, without falsifying actual-work metrics.
+                penalizedStepsTotal += MAX_STEPS;
             }
         }
         // BFS distance-delta shaping gives non-winning candidates a graded signal;
         // it is not an action label and never supplies a teacher action.
-        long score = wins * 100000L + fastWins * 1000L + shapedProgress * 10L - stepsTotal;
-        return new EvolutionScore(score, wins, fastWins, stepsTotal);
+        long score = wins * 100000L + fastWins * 1000L + shapedProgress * 10L - penalizedStepsTotal;
+        return new EvolutionScore(score, wins, fastWins, actualStepsTotal);
     }
 
     private void addEvo16BankCandidate(EvoNet16 candidate, double candidateScore) {
