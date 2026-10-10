@@ -243,6 +243,7 @@ public final class NeuronWorkspace {
     private double[] trainingOutputDeltaScratch;
     private float[] trainingGpuInputScratch;
     private float[] trainingGpuWeightScratch;
+    private double[] mseOutputScratch;
 
     public NeuronWorkspace(int inputs, int hidden, int outputs) {
         validateArchitecture(inputs, hidden, outputs);
@@ -542,13 +543,15 @@ public final class NeuronWorkspace {
         // belongs to the training epoch so tiny validation subsets cannot select a backend.
         double[][] hiddenBatch = skippedNeuron < 0 && trainingHybridDecisionMade && useHybridTraining
                 && data.size() >= 256 ? buildEpochHiddenActivations(data) : null;
+        if (mseOutputScratch == null || mseOutputScratch.length != outputCount)
+            mseOutputScratch = new double[outputCount];
+        double[] out = mseOutputScratch;
         double sum = 0;
         long count = 0;
         for (int i = 0; i < data.size(); i++) {
             Sample sample = data.get(i);
-            double[] out = hiddenBatch == null
-                    ? predictOutputOnly(sample.input, skippedNeuron)
-                    : predictOutputOnlyFromHidden(hiddenBatch[i]);
+            if (hiddenBatch == null) predictOutputOnlyInto(sample.input, skippedNeuron, out);
+            else predictOutputOnlyFromHiddenInto(hiddenBatch[i], out);
             for (int o = 0; o < outputCount; o++) {
                 double d = out[o] - sample.output[o];
                 sum += d * d;
@@ -558,20 +561,19 @@ public final class NeuronWorkspace {
         return count == 0 ? Double.NaN : sum / count;
     }
 
-    private double[] predictOutputOnlyFromHidden(double[] hidden) {
-        double[] output = outputBias.clone();
+    private void predictOutputOnlyFromHiddenInto(double[] hidden, double[] output) {
+        System.arraycopy(outputBias, 0, output, 0, outputCount);
         for (int i = 0; i < neurons.size(); i++) {
             double activation = hidden[i];
             if (activation == 0.0) continue;
             double[] weights = neurons.get(i).outputWeights;
             for (int o = 0; o < outputCount; o++) output[o] += activation * weights[o];
         }
-        return output;
     }
 
-    /** Minimal-allocation inference path for loss/evaluation loops. */
-    private double[] predictOutputOnly(double[] input, int skippedNeuron) {
-        double[] output = outputBias.clone();
+    /** Allocation-free inference path for loss/evaluation loops. */
+    private void predictOutputOnlyInto(double[] input, int skippedNeuron, double[] output) {
+        System.arraycopy(outputBias, 0, output, 0, outputCount);
         for (int i = 0; i < neurons.size(); i++) {
             if (i == skippedNeuron) continue;
             Neuron n = neurons.get(i);
@@ -582,7 +584,6 @@ public final class NeuronWorkspace {
             if (activation == 0.0) continue;
             for (int o = 0; o < outputCount; o++) output[o] += activation * n.outputWeights[o];
         }
-        return output;
     }
 
     public synchronized void scoreNeurons() {
