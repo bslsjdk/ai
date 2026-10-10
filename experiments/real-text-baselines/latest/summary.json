@@ -6,51 +6,53 @@
     "train_fraction": 0.85,
     "validation_fraction": 0.05,
     "test_fraction": 0.1,
+    "test_target_alignment": "same 64-character chunk targets as the recurrent model; incomplete final chunk omitted",
     "train_characters": 123663,
     "validation_characters": 7274,
     "test_characters": 14549,
+    "test_characters_scored": 14528,
     "vocabulary_size": 85
   },
   "ngram": {
     "smoothing": "recursive Dirichlet interpolation; unigram base uses additive smoothing",
     "alpha": 0.1,
-    "wall_seconds": 13.1,
+    "wall_seconds": 14.172,
     "orders": {
       "2": {
         "order": 2,
         "context_characters": 1,
         "alpha": 0.1,
-        "test_characters": 14549,
-        "test_loss": 2.4272079178357266,
-        "test_bits_per_char": 3.5017208262680297,
-        "test_char_accuracy": 0.30551927967557907
+        "test_characters_scored": 14528,
+        "test_loss": 2.425518106838914,
+        "test_bits_per_char": 3.4992829443228883,
+        "test_char_accuracy": 0.30561674008810574
       },
       "3": {
         "order": 3,
         "context_characters": 2,
         "alpha": 0.1,
-        "test_characters": 14549,
-        "test_loss": 1.9692877844848058,
-        "test_bits_per_char": 2.841081720759443,
-        "test_char_accuracy": 0.44264210598666576
+        "test_characters_scored": 14528,
+        "test_loss": 1.9666884592259866,
+        "test_bits_per_char": 2.8373316870988874,
+        "test_char_accuracy": 0.44293777533039647
       },
       "4": {
         "order": 4,
         "context_characters": 3,
         "alpha": 0.1,
-        "test_characters": 14549,
-        "test_loss": 1.893714152952401,
-        "test_bits_per_char": 2.7320520173256733,
-        "test_char_accuracy": 0.5353632552065434
+        "test_characters_scored": 14528,
+        "test_loss": 1.8897546588280556,
+        "test_bits_per_char": 2.726339674788051,
+        "test_char_accuracy": 0.5357241189427313
       },
       "5": {
         "order": 5,
         "context_characters": 4,
         "alpha": 0.1,
-        "test_characters": 14549,
-        "test_loss": 2.18999644725643,
-        "test_bits_per_char": 3.1594970140213,
-        "test_char_accuracy": 0.5703484775585951
+        "test_characters_scored": 14528,
+        "test_loss": 2.185786392987541,
+        "test_bits_per_char": 3.1534231896057006,
+        "test_char_accuracy": 0.5707599118942731
       }
     }
   },
@@ -71,16 +73,16 @@
     },
     "aggregate_test": {
       "loss": {
-        "mean": 1.94721980353501,
-        "sample_stddev": 0.0044683979620267445
+        "mean": 1.9436290477691067,
+        "sample_stddev": 0.0045693870753260885
       },
       "bits_per_char": {
-        "mean": 2.8092443540807404,
-        "sample_stddev": 0.006446535580534328
+        "mean": 2.8040639885442284,
+        "sample_stddev": 0.006592232073475061
       },
       "char_accuracy": {
-        "mean": 0.4514628725914725,
-        "sample_stddev": 0.002302649237611254
+        "mean": 0.45195484581497797,
+        "sample_stddev": 0.0023271119912413193
       }
     },
     "runs": [
@@ -92,12 +94,12 @@
         "best_validation_epoch": 12,
         "best_validation_loss": 1.8517192539553868,
         "test": {
-          "loss": 1.9519354688956554,
-          "bits_per_char": 2.8160476211110357,
-          "char_accuracy": 0.45006529658395766,
-          "characters": 14549
+          "loss": 1.9486049828550365,
+          "bits_per_char": 2.8112427454164846,
+          "char_accuracy": 0.4505093612334802,
+          "characters": 14528
         },
-        "wall_seconds": 21.469,
+        "wall_seconds": 27.094,
         "epochs": [
           {
             "seed": 20261010,
@@ -205,12 +207,12 @@
         "best_validation_epoch": 12,
         "best_validation_loss": 1.85128359601889,
         "test": {
-          "loss": 1.9466753807647326,
-          "bits_per_char": 2.808458918049914,
-          "char_accuracy": 0.4502027630765001,
-          "characters": 14549
+          "loss": 1.9426607350420846,
+          "bits_per_char": 2.802667008574924,
+          "char_accuracy": 0.450715859030837,
+          "characters": 14528
         },
-        "wall_seconds": 21.362,
+        "wall_seconds": 26.612,
         "epochs": [
           {
             "seed": 20261011,
@@ -318,12 +320,12 @@
         "best_validation_epoch": 12,
         "best_validation_loss": 1.8389568040421418,
         "test": {
-          "loss": 1.9430485609446417,
-          "bits_per_char": 2.8032265230812716,
-          "char_accuracy": 0.45412055811395974,
-          "characters": 14549
+          "loss": 1.9396214254101993,
+          "bits_per_char": 2.798282211641277,
+          "char_accuracy": 0.45463931718061673,
+          "characters": 14528
         },
-        "wall_seconds": 21.272,
+        "wall_seconds": 26.584,
         "epochs": [
           {
             "seed": 20261012,
