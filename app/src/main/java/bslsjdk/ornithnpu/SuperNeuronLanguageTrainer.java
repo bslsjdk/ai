@@ -11,7 +11,7 @@ import java.util.Random;
  */
 public final class SuperNeuronLanguageTrainer {
     private static final long MAX_TRAIN_STEPS_PER_CALL = 2_000_000L;
-    private static final long MAX_TOTAL_ESTIMATED_BYTES = 64L * 1024L * 1024L;
+    private static final long MAX_TOTAL_ESTIMATED_BYTES = 16L * 1024L * 1024L;
     private static final double MAX_ABS_EMBEDDING = 4.0;
 
     private final int vocabularySize;
@@ -39,7 +39,7 @@ public final class SuperNeuronLanguageTrainer {
         long estimated = embeddingBytes + model.estimatedStorageBytes()
                 + (long) (embeddingSize + vocabularySize) * Double.BYTES;
         if (estimated > MAX_TOTAL_ESTIMATED_BYTES)
-            throw new IllegalArgumentException("estimated model storage exceeds 64 MiB budget");
+            throw new IllegalArgumentException("estimated model storage exceeds 16 MiB budget");
 
         embeddings = new double[vocabularySize * embeddingSize];
         inputScratch = new double[embeddingSize];
