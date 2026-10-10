@@ -6,6 +6,8 @@ import org.json.JSONObject;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.io.FileOutputStream;
+import java.util.Iterator;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,12 +25,27 @@ public final class SparseDiffusionMobileModel {
     private String[] itos;
     private int neurons, width, activeK, fanout, maxSteps, contextLength;
     private boolean loaded;
+    private float[] lastPooled;
+    private float[] lastLogits;
+    private int lastChosen = -1;
+    private java.util.List<LearningTrace> lastTrace = new java.util.ArrayList<>();
+    private long learningUpdates = 0;
+    private String baseDecoderHash = "";
+
+    private static final class LearningTrace {
+        final float[] pooled;
+        final float[] probabilities;
+        final int chosen;
+        LearningTrace(float[] pooled, float[] probabilities, int chosen) {
+            this.pooled = pooled; this.probabilities = probabilities; this.chosen = chosen;
+        }
+    }
 
     public synchronized void load(File file) throws Exception {
         if (file == null || !file.isFile() || file.length() <= 0) {
             throw new IllegalArgumentException("portable model file missing");
         }
-        JSONObject root = new JSONObject(Files.readString(file.toPath(), StandardCharsets.UTF_8));
+        JSONObject root = new JSONObject(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
         if (!"aimeng-mobile-diffusion-json-v1".equals(root.optString("format"))) {
             throw new IllegalArgumentException("unsupported mobile model format");
         }
@@ -46,7 +63,9 @@ public final class SparseDiffusionMobileModel {
         weights.clear();
         shapes.clear();
         JSONObject ts = root.getJSONObject("tensors");
-        for (String key : ts.keySet()) {
+        Iterator<String> tensorKeys = ts.keys();
+        while (tensorKeys.hasNext()) {
+            String key = tensorKeys.next();
             JSONObject t = ts.getJSONObject(key);
             JSONArray shapeJson = t.getJSONArray("shape");
             int[] shape = new int[shapeJson.length()];
@@ -69,7 +88,8 @@ public final class SparseDiffusionMobileModel {
         }
         stoi.clear();
         JSONObject vocab = root.getJSONObject("stoi");
-        for (String ch : vocab.keySet()) stoi.put(ch, vocab.getInt(ch));
+        Iterator<String> vocabKeys = vocab.keys();
+        while (vocabKeys.hasNext()) { String ch = vocabKeys.next(); stoi.put(ch, vocab.getInt(ch)); }
         JSONArray tokens = root.getJSONArray("itos");
         itos = new String[tokens.length()];
         for (int i = 0; i < itos.length; i++) itos[i] = tokens.getString(i);
@@ -79,6 +99,8 @@ public final class SparseDiffusionMobileModel {
         require("gate.bias"); require("decoder.weight"); require("decoder.bias");
         require("halt_head.weight"); require("halt_head.bias");
         loaded = true;
+        baseDecoderHash = decoderFingerprint();
+        lastTrace.clear();
     }
 
     public synchronized boolean isLoaded() { return loaded; }
@@ -88,6 +110,7 @@ public final class SparseDiffusionMobileModel {
         if (prompt == null || prompt.isEmpty()) throw new IllegalArgumentException("empty prompt");
         if (count < 0 || count > 200) throw new IllegalArgumentException("count must be 0..200");
         StringBuilder out = new StringBuilder(prompt);
+        lastTrace = new java.util.ArrayList<>();
         Random rng = new Random();
         for (int i = 0; i < count; i++) {
             int from = Math.max(0, out.length() - contextLength);
@@ -99,7 +122,11 @@ public final class SparseDiffusionMobileModel {
             }
             float[] logits = forward(ids);
             int next = sample(logits, 0.8f, rng);
-            if (next >= 0 && next < itos.length) out.append(itos[next]);
+            if (next >= 0 && next < itos.length) {
+                lastTrace.add(new LearningTrace(lastPooled.clone(), probabilities(logits, 0.8f), next));
+                lastChosen = next;
+                out.append(itos[next]);
+            }
         }
         return out.toString();
     }
@@ -145,6 +172,7 @@ public final class SparseDiffusionMobileModel {
             for (int e = 0; e < fanout; e++) edgeWeights[n * fanout + e] /= Math.max(sum, 1e-20f);
         }
         float[] lastLogits = null;
+        float[] pooledForLearning = new float[width];
         float[] survivalMix = new float[vocab];
         float survival = 1f;
         float[] neighbors = w("neighbors");
@@ -190,6 +218,7 @@ public final class SparseDiffusionMobileModel {
                     for (int j = 0; j < width; j++) pooled[j] += state[n][j] * energy[n] / energySum;
             }
             lastLogits = linear(pooled, "decoder.weight", "decoder.bias");
+            pooledForLearning = pooled.clone();
             float halt = sigmoidScalar(linear(pooled, "halt_head.weight", "halt_head.bias")[0]);
             if (step == 0) halt = 0f;
             for (int v = 0; v < vocab; v++) survivalMix[v] += survival * halt * lastLogits[v];
@@ -197,7 +226,115 @@ public final class SparseDiffusionMobileModel {
         }
         if (lastLogits == null) throw new IllegalStateException("model produced no diffusion steps");
         for (int v = 0; v < vocab; v++) survivalMix[v] += survival * lastLogits[v];
+        lastPooled = pooledForLearning;
+        lastLogits = survivalMix;
         return survivalMix;
+    }
+
+
+    /** Applies a bounded REINFORCE-style update to the decoder from explicit user feedback.
+     * Positive reward reinforces sampled characters; negative reward suppresses them.
+     * The first on-device learning stage intentionally updates only the decoder head.
+     */
+    public synchronized int applyFeedback(float reward, File stateFile) throws Exception {
+        if (!loaded) throw new IllegalStateException("model not loaded");
+        if (lastTrace.isEmpty()) throw new IllegalStateException("generate text before giving feedback");
+        reward = Math.max(-1f, Math.min(1f, reward));
+        if (Math.abs(reward) < 0.01f) return 0;
+        float[] matrix = w("decoder.weight");
+        float[] bias = w("decoder.bias");
+        int vocab = itos.length;
+        int[] shape = shapes.get("decoder.weight");
+        if (shape == null || shape.length != 2 || shape[0] != vocab || shape[1] != width)
+            throw new IllegalStateException("decoder shape mismatch");
+        float lr = 0.02f / Math.max(1, lastTrace.size());
+        int changed = 0;
+        for (LearningTrace trace : lastTrace) {
+            for (int o = 0; o < vocab; o++) {
+                float grad = ((o == trace.chosen ? 1f : 0f) - trace.probabilities[o]) * reward;
+                grad = Math.max(-0.05f, Math.min(0.05f, grad));
+                if (Math.abs(grad) < 1e-8f) continue;
+                bias[o] += lr * grad;
+                int base = o * width;
+                for (int j = 0; j < width; j++) {
+                    float delta = lr * grad * trace.pooled[j];
+                    delta = Math.max(-0.005f, Math.min(0.005f, delta));
+                    matrix[base + j] += delta;
+                }
+                changed++;
+            }
+        }
+        learningUpdates++;
+        if (stateFile != null) saveLearningState(stateFile);
+        lastTrace.clear();
+        return changed;
+    }
+
+    public synchronized long getLearningUpdates() { return learningUpdates; }
+    public synchronized boolean canGiveFeedback() { return loaded && !lastTrace.isEmpty(); }
+
+    public synchronized void loadLearningState(File stateFile) throws Exception {
+        if (!loaded || stateFile == null || !stateFile.isFile()) return;
+        JSONObject state = new JSONObject(new String(Files.readAllBytes(stateFile.toPath()), StandardCharsets.UTF_8));
+        if (!"aimeng-mobile-learning-v1".equals(state.optString("format"))
+                || !baseDecoderHash.equals(state.optString("base_decoder_hash"))
+                || state.optInt("vocab", -1) != itos.length
+                || state.optInt("width", -1) != width) return;
+        JSONArray savedW = state.getJSONArray("decoder_weight");
+        JSONArray savedB = state.getJSONArray("decoder_bias");
+        float[] matrix = w("decoder.weight");
+        float[] bias = w("decoder.bias");
+        if (savedW.length() != matrix.length || savedB.length() != bias.length) return;
+        for (int i = 0; i < matrix.length; i++) matrix[i] = (float) savedW.getDouble(i);
+        for (int i = 0; i < bias.length; i++) bias[i] = (float) savedB.getDouble(i);
+        learningUpdates = state.optLong("updates", 0);
+    }
+
+    private void saveLearningState(File stateFile) throws Exception {
+        JSONObject root = new JSONObject();
+        root.put("format", "aimeng-mobile-learning-v1");
+        root.put("base_decoder_hash", baseDecoderHash);
+        root.put("vocab", itos.length);
+        root.put("width", width);
+        root.put("updates", learningUpdates);
+        JSONArray savedW = new JSONArray();
+        for (float x : w("decoder.weight")) savedW.put((double) x);
+        JSONArray savedB = new JSONArray();
+        for (float x : w("decoder.bias")) savedB.put((double) x);
+        root.put("decoder_weight", savedW);
+        root.put("decoder_bias", savedB);
+        File parent = stateFile.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs()) throw new java.io.IOException("cannot create learning-state directory");
+        File temp = new File(stateFile.getParentFile(), stateFile.getName() + ".tmp");
+        try (FileOutputStream out = new FileOutputStream(temp)) {
+            out.write(root.toString().getBytes(StandardCharsets.UTF_8));
+            out.getFD().sync();
+        }
+        if (stateFile.exists() && !stateFile.delete()) throw new java.io.IOException("cannot replace learning state");
+        if (!temp.renameTo(stateFile)) throw new java.io.IOException("cannot commit learning state");
+    }
+
+    private String decoderFingerprint() {
+        int h = Arrays.hashCode(w("decoder.weight"));
+        h = 31 * h + Arrays.hashCode(w("decoder.bias"));
+        return Integer.toHexString(h) + ":" + itos.length + ":" + width;
+    }
+
+    private static float[] probabilities(float[] logits, float temperature) {
+        float max = -Float.MAX_VALUE;
+        for (float x : logits) max = Math.max(max, x);
+        float[] p = new float[logits.length];
+        double sum = 0;
+        for (int i = 0; i < logits.length; i++) {
+            p[i] = (float) Math.exp((logits[i] - max) / Math.max(0.05f, temperature));
+            sum += p[i];
+        }
+        if (!(sum > 0) || Double.isInfinite(sum) || Double.isNaN(sum)) {
+            Arrays.fill(p, 1f / Math.max(1, p.length));
+            return p;
+        }
+        for (int i = 0; i < p.length; i++) p[i] /= (float) sum;
+        return p;
     }
 
     private float[] linear(float[] input, String weightName, String biasName) {
