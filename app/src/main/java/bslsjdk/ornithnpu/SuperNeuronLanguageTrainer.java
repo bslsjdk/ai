@@ -34,12 +34,17 @@ public final class SuperNeuronLanguageTrainer {
 
         this.vocabularySize = vocabularySize;
         this.embeddingSize = embeddingSize;
-        long embeddingBytes = (long) vocabularySize * embeddingSize * Double.BYTES;
-        this.model = new SuperNeuronV2(embeddingSize, hiddenSize, vocabularySize, seed ^ 0x5DEECE66DL);
-        long estimated = embeddingBytes + model.estimatedStorageBytes()
-                + (long) (embeddingSize + vocabularySize) * Double.BYTES;
+        // Estimate the full parameter + state + scratch footprint before allocating
+        // the large vocabulary matrices. This prevents an over-budget configuration
+        // from briefly allocating the model and only then rejecting it.
+        long rank = Math.min(32, hiddenSize);
+        long e = embeddingSize, h = hiddenSize, v = vocabularySize;
+        long estimatedDoubles = v * e + e * h + 8L * e + 5L * h
+                + h * rank + v * rank + 3L * v + 3L * rank;
+        long estimated = estimatedDoubles * Double.BYTES;
         if (estimated > MAX_TOTAL_ESTIMATED_BYTES)
             throw new IllegalArgumentException("estimated model storage exceeds 16 MiB budget");
+        this.model = new SuperNeuronV2(embeddingSize, hiddenSize, vocabularySize, seed ^ 0x5DEECE66DL);
 
         embeddings = new double[vocabularySize * embeddingSize];
         inputScratch = new double[embeddingSize];
