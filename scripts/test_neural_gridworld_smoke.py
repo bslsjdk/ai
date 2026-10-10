@@ -7,9 +7,13 @@ spec = importlib.util.spec_from_file_location("gridworld", path)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
+baseline = module.TinyQNetwork(seed=1234)
 net, report = module.train(episodes=1000, seed=1234)
 assert report["finalEvaluation"]["episodes"] == len(module.valid_starts())
-assert report["finalEvaluation"]["success_rate"] >= 0.0
+assert report["finalEvaluation"]["success_rate"] > report["initialEvaluation"]["success_rate"], \
+    "training must improve deterministic evaluation, not merely finish without errors"
+assert any(a != b for old_row, new_row in zip(baseline.w1, net.w1)
+           for a, b in zip(old_row, new_row)), "training must update network parameters"
 assert len(net.w1) == 16 and len(net.w2) == 4
 assert all(len(row) == 8 for row in net.w1)
 assert all(len(row) == 16 for row in net.w2)
