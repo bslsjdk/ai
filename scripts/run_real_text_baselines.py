@@ -31,13 +31,32 @@ def make_examples(all_ids, start, end, context):
     return make_examples_at_positions(all_ids, targets, context)
 
 
-def make_examples_at_positions(all_ids, targets, context):
+def make_examples_at_positions(all_ids, targets, context, context_starts=None, pad_id=0):
     targets = np.asarray(targets, dtype=np.int32)
-    x = np.stack([all_ids[t-context:t] for t in targets])
+    if context_starts is None:
+        x = np.stack([all_ids[t-context:t] for t in targets])
+        return x, all_ids[targets]
+    context_starts = np.asarray(context_starts, dtype=np.int32)
+    if len(context_starts) != len(targets):
+        raise ValueError("context_starts must align one-to-one with target positions")
+    x = np.full((len(targets), context), int(pad_id), dtype=np.int32)
+    for i, (target, floor) in enumerate(zip(targets, context_starts)):
+        values = all_ids[max(int(floor), int(target)-context):int(target)]
+        if len(values):
+            x[i, -len(values):] = values
     return x, all_ids[targets]
 
 
-def ngram_baselines(train_ids, all_ids, validation_positions, test_positions, vocab_size,
+def chunked_evaluation_positions(segment_start, segment_length, context=64):
+    positions, starts = [], []
+    for offset in range(0, segment_length-context, context):
+        positions.extend(range(segment_start+offset+1, segment_start+offset+context+1))
+        starts.extend([segment_start+offset] * context)
+    return np.asarray(positions, dtype=np.int32), np.asarray(starts, dtype=np.int32)
+
+
+def ngram_baselines(train_ids, all_ids, validation_positions, validation_context_starts,
+                    test_positions, test_context_starts, vocab_size,
                     orders=(2, 3, 4, 5), alphas=(0.001, 0.01, 0.1, 1.0, 10.0)):
     counts_by_order, totals_by_order = {}, {}
     for order in orders:
@@ -69,9 +88,9 @@ def ngram_baselines(train_ids, all_ids, validation_positions, test_positions, vo
         for alpha in alphas:
             prob = probability_fn(alpha)
             total_loss = 0.0
-            for t, token_value in zip(validation_positions, val_ids):
-                t, token = int(t), int(token_value)
-                context = all_ids[max(0, t-order+1):t]
+            for t, token_value, floor in zip(validation_positions, val_ids, validation_context_starts):
+                t, token, floor = int(t), int(token_value), int(floor)
+                context = all_ids[max(floor, t-order+1):t]
                 total_loss -= math.log(max(prob(token, context, order), 1e-300))
             val_loss = total_loss / max(len(val_ids), 1)
             if val_loss < best_val_loss:
@@ -79,9 +98,9 @@ def ngram_baselines(train_ids, all_ids, validation_positions, test_positions, vo
 
         prob = probability_fn(selected_alpha)
         total_loss, correct = 0.0, 0
-        for t, token_value in zip(test_positions, test_ids):
-            t, token = int(t), int(token_value)
-            context = all_ids[max(0, t-order+1):t]
+        for t, token_value, floor in zip(test_positions, test_ids, test_context_starts):
+            t, token, floor = int(t), int(token_value), int(floor)
+            context = all_ids[max(floor, t-order+1):t]
             total_loss -= math.log(max(prob(token, context, order), 1e-300))
             best_token, best_p = 0, -1.0
             for candidate in range(vocab_size):
@@ -102,11 +121,15 @@ def ngram_baselines(train_ids, all_ids, validation_positions, test_positions, vo
 
 
 class FixedWindowLM:
-    def __init__(self, vocab_size, context, hidden, seed):
+    def __init__(self, vocab_size, context, hidden, seed, pad_id=None):
         self.vocab_size, self.context, self.hidden = vocab_size, context, hidden
         rng = np.random.default_rng(seed)
         self.wx = (rng.standard_normal((context, vocab_size, hidden)) /
                    math.sqrt(context * vocab_size)).astype(np.float32)
+        if pad_id is not None:
+            # The unknown token doubles as left padding at chunk boundaries.
+            # Its embedding is exactly zero and receives no gradient in training.
+            self.wx[:, int(pad_id), :] = 0.0
         self.bh = np.zeros(hidden, np.float32)
         self.wy = (rng.standard_normal((hidden, vocab_size)) /
                    math.sqrt(hidden)).astype(np.float32)
@@ -188,16 +211,22 @@ def main():
     all_ids = encode(text, vocab)
     train_end, val_end = len(train_text), len(train_text)+len(val_text)
     train_ids = all_ids[:train_end]
-    val_x, val_y = make_examples(all_ids, train_end, val_end, args.context)
-    # Match the recurrent model's test-target protocol: 64-character chunks,
-    # each predicts the next 64 characters, omitting the incomplete tail.
+    # Match the recurrent model's exact evaluation chunks and reset context at
+    # every 64-character boundary. The final incomplete chunk is omitted.
     recurrent_context = 64
-    test_positions = np.concatenate([
-        np.arange(val_end + start + 1, val_end + start + recurrent_context + 1, dtype=np.int32)
-        for start in range(0, len(test_text) - recurrent_context, recurrent_context)
-    ])
-    test_x, test_y = make_examples_at_positions(all_ids, test_positions, args.context)
-    validation_positions = np.arange(train_end, val_end, dtype=np.int32)
+    validation_positions, validation_context_starts = chunked_evaluation_positions(
+        train_end, len(val_text), recurrent_context)
+    test_positions, test_context_starts = chunked_evaluation_positions(
+        val_end, len(test_text), recurrent_context)
+    pad_id = vocab["\\ufffd"]
+    val_x, val_y = make_examples_at_positions(
+        all_ids, validation_positions, args.context,
+        context_starts=validation_context_starts, pad_id=pad_id)
+    test_x, test_y = make_examples_at_positions(
+        all_ids, test_positions, args.context,
+        context_starts=test_context_starts, pad_id=pad_id)
+    if len(validation_positions) != 7168 or len(test_positions) != 14400:
+        raise SystemExit("evaluation target counts do not match the recurrent chunk protocol")
     train_positions = np.arange(args.context, train_end, dtype=np.int32)
     data_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
     if args.expected_dataset_sha256 and data_hash != args.expected_dataset_sha256:
@@ -207,7 +236,8 @@ def main():
                                      "train":len(train_text),"validation":len(val_text),
                                      "test":len(test_text)},sort_keys=True),flush=True)
     ngram_started = time.perf_counter()
-    ngram = ngram_baselines(train_ids, all_ids, validation_positions, test_positions, len(vocab))
+    ngram = ngram_baselines(train_ids, all_ids, validation_positions, validation_context_starts,
+                            test_positions, test_context_starts, len(vocab))
     ngram_seconds = time.perf_counter()-ngram_started
     for order, row in ngram.items():
         print("NGRAM_RESULT "+json.dumps(row,sort_keys=True),flush=True)
@@ -215,7 +245,7 @@ def main():
     run_rows = []
     curve_rows = []
     for seed in args.seeds:
-        model = FixedWindowLM(len(vocab), args.context, args.hidden, seed)
+        model = FixedWindowLM(len(vocab), args.context, args.hidden, seed, pad_id=pad_id)
         rng = np.random.default_rng(seed+1)
         best_val = float("inf")
         best_epoch = 0
@@ -282,7 +312,8 @@ def main():
         "validation_curves":curve_rows,
         "limitations":["Single-book character prediction; no claim about chat or reasoning.",
                        "N-gram models use only preceding characters and smoothed counts; no neural training.",
-                       "Fixed-window model is trained for the recorded update/target budget, which is not FLOP-identical to the recurrent model.",
+                       "Fixed-window model uses zeroed left-padding embeddings when its 16-character context is shorter than the current 64-character evaluation chunk.",
+                        "Fixed-window model is trained for the recorded update/target budget, which is not FLOP-identical to the recurrent model.",
                        "Metrics must only be compared when the exact dataset hash and test target positions match."]
     }
     args.output_dir.mkdir(parents=True,exist_ok=True)
