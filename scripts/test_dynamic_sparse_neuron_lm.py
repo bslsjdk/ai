@@ -28,6 +28,8 @@ def dynamic_train(model, x_train, y_train, x_test, y_test, args, seed):
         order = rng.permutation(len(y_train))
         gx = np.zeros_like(model.wx)
         gy = np.zeros_like(model.wy)
+        signed_gx = np.zeros_like(model.wx)
+        signed_gy = np.zeros_like(model.wy)
         batches = 0
         for begin in range(0, len(order), args.batch_size):
             ix = order[begin:begin + args.batch_size]
@@ -52,11 +54,14 @@ def dynamic_train(model, x_train, y_train, x_test, y_test, args, seed):
             model.bo -= args.learning_rate * dbo
             gx += np.abs(grad_x_full)
             gy += np.abs(grad_y_full)
+            signed_gx += grad_x_full
+            signed_gy += grad_y_full
             batches += 1
 
         if epoch >= args.rewire_start and epoch % args.rewire_every == 0:
             rewire(model, gx / max(1, batches), gy / max(1, batches),
-                   args.rewire_fraction, args.learning_rate, rng)
+                   signed_gx / max(1, batches), signed_gy / max(1, batches),
+                   args.rewire_fraction, args.learning_rate)
         loss, acc = model.evaluate(x_test, y_test)
         history.append({"epoch": epoch, "heldout_loss": loss, "heldout_accuracy": acc})
         print("DYNAMIC_SPARSE_EPOCH " + json.dumps({
@@ -71,7 +76,7 @@ def dynamic_train(model, x_train, y_train, x_test, y_test, args, seed):
             "heldout_accuracy": acc, "history": history}
 
 
-def rewire(model, grad_x, grad_y, fraction, learning_rate, rng):
+def rewire(model, grad_x, grad_y, signed_x, signed_y, fraction, learning_rate):
     """Per unit, replace low-magnitude active edges with high-gradient inactive edges."""
     for j in range(model.hidden):
         active = np.flatnonzero(model.mx[:, j])
@@ -83,8 +88,7 @@ def rewire(model, grad_x, grad_y, fraction, learning_rate, rng):
             model.mx[drop, j] = 0
             model.wx[drop, j] = 0
             model.mx[grow, j] = 1
-            signs = rng.choice(np.array([-1.0, 1.0]), size=count)
-            model.wx[grow, j] = signs * max(1e-3, learning_rate * float(np.mean(grad_x[grow, j])))
+            model.wx[grow, j] = -learning_rate * signed_x[grow, j]
         active_out = np.flatnonzero(model.my[j])
         inactive_out = np.flatnonzero(model.my[j] == 0)
         count_out = min(max(1, int(round(len(active_out) * fraction))),
@@ -95,8 +99,7 @@ def rewire(model, grad_x, grad_y, fraction, learning_rate, rng):
             model.my[j, drop] = 0
             model.wy[j, drop] = 0
             model.my[j, grow] = 1
-            signs = rng.choice(np.array([-1.0, 1.0]), size=count_out)
-            model.wy[j, grow] = signs * max(1e-3, learning_rate * float(np.mean(grad_y[j, grow])))
+            model.wy[j, grow] = -learning_rate * signed_y[j, grow]
 
 
 def mean(values):
