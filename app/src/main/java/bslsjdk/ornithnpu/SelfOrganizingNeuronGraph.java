@@ -125,11 +125,24 @@ public final class SelfOrganizingNeuronGraph {
         for (int i = 0; i < inputCount; i++) g.markInputPort(i);
         for (int i = totalNeurons - outputCount; i < totalNeurons; i++) g.markOutputPort(i);
         Random r = new Random(seed ^ 0x5DEECE66DL);
+        int randomEdgeTarget = Math.max(0, initialEdges - outputCount);
         int added = 0, attempts = 0, maxAttempts = Math.max(100, initialEdges * 20);
-        while (added < initialEdges && attempts++ < maxAttempts && g.edgeCount < g.maxEdges) {
+        while (added < randomEdgeTarget && attempts++ < maxAttempts && g.edgeCount < g.maxEdges) {
             int from = r.nextInt(totalNeurons), to = r.nextInt(totalNeurons);
             if (g.inputPort[to] || from == to) continue;
             if (g.addConnection(from, to, (r.nextDouble() * 2.0 - 1.0) * 0.35)) added++;
+        }
+        // Guarantee every readout is reachable directly from a sensor. These edges
+        // are inserted last, so the outgoing adjacency visits them early under a
+        // small active-neuron budget instead of starving all action ports.
+        for (int o = totalNeurons - outputCount; o < totalNeurons; o++) {
+            boolean connected = false;
+            for (int p = 0; p < inputCount; p++) {
+                int source = g.inputOrder[p];
+                if (g.findEdge(source, o) >= 0) { connected = true; break; }
+            }
+            if (!connected) g.addConnection(g.inputOrder[0], o,
+                    (r.nextDouble() * 2.0 - 1.0) * 0.2);
         }
         return g;
     }
