@@ -291,3 +291,25 @@ Ornith-1.5-9B-MLX-4bit：
 - 64 GiB? 不正确：本阶段工作区预算是 64 **MiB**。4 GiB 绝不可全部分配给神经元，应用还有 native runtime、QNN staging、界面和服务的额外占用。
 - CPU 负责学习、评分、拓扑进化和调度；QNN/HTP 只做独立矩阵诊断，GPU 后端尚未实现。不能说当前神经网络训练已使用 NPU/GPU。
 - 应检查独立 feature 分支的真实 Actions run 和产出的带签名 APK。main 上的成功构建/旧 release 不能证明 feature 分支代码已打包成功。保留 applicationId \`bslsjdk.ornithnpu\` 和原 signing key/cache，不得生成新密钥。
+
+
+## 2026-10-10 当前优先级：移动端训练提速（不得虚报加速）
+
+用户明确要求优先解决神经元训练过慢的问题。唯一工作仓库仍是 `bslsjdk/ai`，当前分支 `feat/mobile-neuron-unit-runtime`；禁止操作独立仓库 `bslsjdk/mcnpu`。
+
+### 当前执行事实
+- 当前分支最新训练优化提交：`153e087f484fe29d667e6912a8ea3e2e0fc6fb05`（Reduce mobile training allocation and GC overhead）。
+- `NeuronWorkspace.applyAdamEpoch` 之前每个 epoch 分配整套梯度矩阵，每个样本又分配输出数组、delta 数组和 `ForwardResult`。现已改为跨 epoch 复用梯度矩阵、输出暂存和输出 delta 暂存；每轮先清零梯度缓冲，保证不累积上一轮梯度。
+- GPU 混合训练输入与转置权重 staging 数组现在按尺寸复用，避免每个 epoch 重复分配。
+- 数值计算顺序和 full-batch Adam 更新时机保持不变；当前改动主要降低 Java 分配与 GC 压力，尚无真机测速，不能声称已经提速多少。
+- `NeuronWorkspace` 的 GLES 3.1 路径只计算隐藏层输入投影的一部分；输出投影、反向传播、梯度累计与 Adam 更新仍在 CPU。只有训练样本数、输入维度、隐藏神经元数量、工作集上限满足条件，且数值误差合格、实测至少快 10% 时才启用 GPU。
+- 小数据/低输入维度时 GPU dispatch 和数据搬运可能比 CPU 更慢，必须保留 CPU 回退，不能为了显示“GPU”而强制使用。
+- `GridWorldLabActivity.QNet` 的 TD/BPTT 训练仍然是 Java CPU 路径；不要把 `HeterogeneousNeuronRuntime` 的神经元池路由 GPU/NPU 测试误报成该 QNet 的训练加速。
+- GitHub Actions 对上述提交已触发，当前需检查 run `38028622751`；在完成前不能声称 CI 已通过。
+- 运行时内存硬上限仍为 4 GiB。所有后续训练优化必须有界、可取消，并避免为 GPU staging 或 batch 训练制造无界缓存。
+
+### 下一步
+1. 检查提交 `153e087` 的 Android Java 编译和现有训练 fixture/网格世界 smoke tests。
+2. 对比优化前后分配次数/GC 与同一数据集的 epoch/s、样本/s、最终 MSE；没有真机数据时明确标注未测。
+3. 继续分析 epoch 热路径：训练/验证 MSE 的重复前向、CPU/GPU 校准开销、可复用的 GPU 输出 staging；仅在误差与速度对照通过时扩大 GPU 覆盖范围。
+4. 如需加速 GridWorld QNet，必须单独实现并验证该模型的真实执行路径；独立路由基准或 NPU MatMul probe 不构成训练加速证据。
