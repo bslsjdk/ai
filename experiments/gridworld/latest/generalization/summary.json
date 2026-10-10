@@ -1,0 +1,99 @@
+{
+  "aggregate": {
+    "finalSuccessRateMax": 0.874,
+    "finalSuccessRateMean": 0.8366666666666667,
+    "finalSuccessRateMin": 0.806,
+    "finalSuccessRateStdev": 0.028158282775923818,
+    "initialSuccessRateMean": 0.016,
+    "seedCount": 3,
+    "seedsImproved": 3
+  },
+  "algorithm": "8-16-4 ReLU MLP neural Q-learning, epsilon-greedy, TD(0)",
+  "bfsOracle": {
+    "episodes": 500,
+    "mean_steps_success": 4.504,
+    "note": "BFS oracle upper bound; not a learned model",
+    "success_rate": 1.0,
+    "successes": 500
+  },
+  "elapsedSeconds": 17.93,
+  "episodesPerSeed": 5000,
+  "evaluation": "100 fixed-seed held-out maps, 5 starts per map, exploration disabled",
+  "format": "aimeng-gridworld-heldout-map-report/v1",
+  "limitations": [
+    "Only a 5x5 local-observation navigation task; not a language-model benchmark.",
+    "The held-out maps are fixed for reproducibility; training maps are freshly generated.",
+    "A few seeds are an engineering smoke test, not a statistical proof of superiority."
+  ],
+  "parameterCount": 212,
+  "perSeed": [
+    {
+      "episodesTrained": 5000,
+      "finalEvaluation": {
+        "episodes": 500,
+        "mean_optimality_ratio": 0.9989829646580218,
+        "mean_steps_success": 4.224256292906179,
+        "success_rate": 0.874,
+        "successes": 437
+      },
+      "initialEvaluation": {
+        "episodes": 500,
+        "mean_optimality_ratio": 1.0,
+        "mean_steps_success": 1.125,
+        "success_rate": 0.048,
+        "successes": 24
+      },
+      "seconds": 5.978,
+      "seed": 20262001,
+      "successDelta": 0.826
+    },
+    {
+      "episodesTrained": 5000,
+      "finalEvaluation": {
+        "episodes": 500,
+        "mean_optimality_ratio": 0.9988282326992004,
+        "mean_steps_success": 4.136476426799008,
+        "success_rate": 0.806,
+        "successes": 403
+      },
+      "initialEvaluation": {
+        "episodes": 500,
+        "mean_optimality_ratio": 0.0,
+        "mean_steps_success": 0.0,
+        "success_rate": 0.0,
+        "successes": 0
+      },
+      "seconds": 6.042,
+      "seed": 20262002,
+      "successDelta": 0.806
+    },
+    {
+      "episodesTrained": 5000,
+      "finalEvaluation": {
+        "episodes": 500,
+        "mean_optimality_ratio": 0.9971887550200803,
+        "mean_steps_success": 4.142168674698795,
+        "success_rate": 0.83,
+        "successes": 415
+      },
+      "initialEvaluation": {
+        "episodes": 500,
+        "mean_optimality_ratio": 0.0,
+        "mean_steps_success": 0.0,
+        "success_rate": 0.0,
+        "successes": 0
+      },
+      "seconds": 5.886,
+      "seed": 20262003,
+      "successDelta": 0.83
+    }
+  ],
+  "randomBaseline": {
+    "episodes": 500,
+    "mean_steps_success": 17.02906976744186,
+    "success_rate": 0.344,
+    "successes": 172
+  },
+  "seedCount": 3,
+  "trainingDistribution": "random connected 5x5 maps with 18% candidate wall probability"
+}
