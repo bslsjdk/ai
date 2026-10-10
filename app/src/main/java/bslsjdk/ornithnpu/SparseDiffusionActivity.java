@@ -17,7 +17,7 @@ public final class SparseDiffusionActivity extends Activity {
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private EditText prompt, count;
     private TextView status, result;
-    private Button run, rewardButton, punishButton;
+    private Button run, rewardButton, punishButton, learnTextButton;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -63,6 +63,11 @@ public final class SparseDiffusionActivity extends Activity {
         punishButton.setEnabled(false);
         punishButton.setOnClickListener(v -> giveFeedback(-1f));
         root.addView(punishButton);
+        learnTextButton = new Button(this);
+        learnTextButton.setText("从输入文字学习（最多 512 字符）");
+        learnTextButton.setEnabled(false);
+        learnTextButton.setOnClickListener(v -> learnFromInputText());
+        root.addView(learnTextButton);
         ScrollView scroll = new ScrollView(this);
         result = new TextView(this);
         result.setTextIsSelectable(true);
@@ -92,7 +97,7 @@ public final class SparseDiffusionActivity extends Activity {
                 }
                 model.load(file);
                 model.loadLearningState(new File(getFilesDir(), "aimeng-learning-state.json"));
-                runOnUiThread(() -> { status.setText("模型已加载 · 本地学习记录 " + model.getLearningUpdates() + " 次"); run.setEnabled(true); });
+                runOnUiThread(() -> { status.setText("模型已加载 · 本地学习记录 " + model.getLearningUpdates() + " 次"); run.setEnabled(true); learnTextButton.setEnabled(true); });
             } catch (Throwable e) {
                 runOnUiThread(() -> status.setText("加载失败：" + e.getClass().getSimpleName() + ": " + e.getMessage()));
             }
@@ -123,6 +128,31 @@ public final class SparseDiffusionActivity extends Activity {
                 });
             } catch (Throwable e) {
                 runOnUiThread(() -> { status.setText("推理失败：" + e.getClass().getSimpleName() + ": " + e.getMessage()); run.setEnabled(true); });
+            }
+        });
+    }
+
+    private void learnFromInputText() {
+        final String text = prompt.getText().toString();
+        if (text.length() < 2) {
+            status.setText("请在输入框放入至少两个字符的学习文本");
+            return;
+        }
+        learnTextButton.setEnabled(false);
+        rewardButton.setEnabled(false);
+        punishButton.setEnabled(false);
+        worker.execute(() -> {
+            try {
+                int examples = model.learnFromText(text, new File(getFilesDir(), "aimeng-learning-state.json"));
+                runOnUiThread(() -> {
+                    status.setText("手机本地学习完成 · 样本 " + examples + " 个 · 累计学习 " + model.getLearningUpdates() + " 次 · 已保存");
+                    learnTextButton.setEnabled(true);
+                });
+            } catch (Throwable e) {
+                runOnUiThread(() -> {
+                    status.setText("本地学习失败：" + e.getClass().getSimpleName() + ": " + e.getMessage());
+                    learnTextButton.setEnabled(true);
+                });
             }
         });
     }
