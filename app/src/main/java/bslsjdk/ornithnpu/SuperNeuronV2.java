@@ -38,6 +38,7 @@ public final class SuperNeuronV2 {
     private final double[] lastLatent;
     private final double[] latentGradient;
     private final double[] hiddenGradient;
+    private final double[] gateGradientScratch;
     private final double[] outputBias;
     private final double[] state;
 
@@ -71,6 +72,7 @@ public final class SuperNeuronV2 {
         lastLatent = new double[outputRank];
         latentGradient = new double[outputRank];
         hiddenGradient = new double[hiddenSize];
+        gateGradientScratch = new double[inputCount];
         outputBias = new double[outputCount];
         state = new double[hiddenSize];
         lastInput = new double[inputCount];
@@ -195,6 +197,17 @@ public final class SuperNeuronV2 {
             }
         }
 
+        // Compute gate gradients before changing inputProjection, so this step
+        // uses the same parameter snapshot as the forward pass.
+        for (int p = 0; p < inputCount; p++) {
+            double dGate = 0.0;
+            for (int h = 0; h < hiddenSize; h++) {
+                double preGradient = hiddenGradient[h] * (1.0 - lastHidden[h] * lastHidden[h]);
+                dGate += preGradient * inputProjection[p * hiddenSize + h] * lastInput[p];
+            }
+            gateGradientScratch[p] = dGate * lastGate[p] * (1.0 - lastGate[p]);
+        }
+
         for (int h = 0; h < hiddenSize; h++) {
             double preGradient = hiddenGradient[h] * (1.0 - lastHidden[h] * lastHidden[h]);
             recurrentScale[h] = clamp(recurrentScale[h]
@@ -208,14 +221,8 @@ public final class SuperNeuronV2 {
             }
         }
 
-        // Gate gradients are local to each port; no optimizer history is retained.
         for (int p = 0; p < inputCount; p++) {
-            double dGate = 0.0;
-            for (int h = 0; h < hiddenSize; h++) {
-                double preGradient = hiddenGradient[h] * (1.0 - lastHidden[h] * lastHidden[h]);
-                dGate += preGradient * inputProjection[p * hiddenSize + h] * lastInput[p];
-            }
-            double gateGradient = dGate * lastGate[p] * (1.0 - lastGate[p]);
+            double gateGradient = gateGradientScratch[p];
             gateWeight[p] = clamp(gateWeight[p] - learningRate * gateGradient * lastInput[p],
                     -MAX_ABS_PARAMETER, MAX_ABS_PARAMETER);
             gateBias[p] = clamp(gateBias[p] - learningRate * gateGradient,
