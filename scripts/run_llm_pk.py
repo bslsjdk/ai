@@ -114,8 +114,7 @@ def matches(category, expected, output):
         m = re.search(r"[-+]?\d+", out)
         return bool(m) and m.group(0) == exp and not re.search(r"[-+]?\d+\s*[/x*+]\s*[-+]?\d+", out)
     if category == "deduction":
-        m = re.search(r"\b(yes|no)\b", out)
-        return bool(m) and m.group(1) == exp
+        return out.strip(" .,!?:;") == exp
     return out.strip(" .,!?:;") == exp.strip(" .,!?:;")
 
 
