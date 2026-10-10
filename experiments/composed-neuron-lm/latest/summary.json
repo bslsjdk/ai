@@ -9,7 +9,7 @@
       "heldout_loss": 0.7596349120140076,
       "heldout_accuracy": 0.807791095890411,
       "improvement": 2.342697274489269,
-      "wall_seconds": 4.167
+      "wall_seconds": 2.3024
     },
     {
       "seed": 20261011,
@@ -19,7 +19,7 @@
       "heldout_loss": 0.7534420490264893,
       "heldout_accuracy": 0.806292808219178,
       "improvement": 2.348890137476787,
-      "wall_seconds": 4.0848
+      "wall_seconds": 2.1648
     },
     {
       "seed": 20261012,
@@ -29,13 +29,13 @@
       "heldout_loss": 0.748577356338501,
       "heldout_accuracy": 0.8073630136986302,
       "improvement": 2.3537548301647755,
-      "wall_seconds": 4.1019
+      "wall_seconds": 2.1799
     }
   ],
   "mean_heldout_loss": 0.7538847724596659,
   "mean_heldout_accuracy": 0.8071489726027398,
   "mean_loss_improvement": 2.3484474140436107,
-  "mean_wall_seconds": 4.1179,
+  "mean_wall_seconds": 2.2157,
   "success_check": "mean held-out loss must be lower than mean unigram baseline",
   "limitations": "Synthetic character-level arithmetic-format corpus; not a direct benchmark against pretrained chat LLMs."
 }
