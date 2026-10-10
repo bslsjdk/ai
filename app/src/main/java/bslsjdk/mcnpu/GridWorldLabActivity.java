@@ -873,6 +873,10 @@ public final class GridWorldLabActivity extends Activity {
             JSONObject checkpoint = net.toJson();
             checkpoint.put("episodesTrained", episodesDone);
             checkpoint.put("rewardVersion", REWARD_VERSION);
+            checkpoint.put("trainingAlgorithm", lastTrainingAlgorithm);
+            checkpoint.put("evolutionEvaluations", lastEvolutionEvaluations);
+            checkpoint.put("evolutionGenerations", lastEvolutionGenerations);
+            checkpoint.put("evolutionMutationSigma", lastMutationSigma);
             checkpoint.put("rewardShaping", "BFS shortest-distance delta: +0.10 closer, -0.10 farther; base rewards retained");
             checkpoint.put("savedAt", System.currentTimeMillis());
             writeAtomic(new File(dir, "q_network.json"), checkpoint.toString(2));
@@ -882,7 +886,9 @@ public final class GridWorldLabActivity extends Activity {
             report.put("mapSize", SIZE);
             report.put("inputSize", INPUT_SIZE);
             report.put("inputFeatures", "8 local features + 144 wall-map cells + last 8 positions (x,y)");
-            report.put("executionBackend", "CPU Java forward/backprop; NPU/GPU not yet wired into this QNet");
+            report.put("executionBackend", lastTrainingAlgorithm.equals("neuroevolution_mutation_selection")
+                    ? "CPU Java policy evaluation and weight mutation; NPU/GPU not wired into this QNet"
+                    : "CPU Java recurrent forward/backprop; NPU/GPU not yet wired into this QNet");
             report.put("shortTermMemory", "last 8 positions per episode; repeated-visit penalty=-0.08 during training");
             report.put("longTermMemory", "trained weights in q_network.json plus persistent sampled experience replay in replay_memory.bin");
             // Report configured per-episode history, not the unrelated current UI path length.
