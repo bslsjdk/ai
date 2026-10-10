@@ -254,10 +254,11 @@ public final class SparseDiffusionActivity extends Activity {
             status.setText("尚未导入模型。优先选择 AIMENG 导出的 .aimg；旧版 mobile_diffusion.json 也兼容。");
             return;
         }
+        final File selectedFile = file;
         setBusy(true, "正在恢复本机 AIMENG 模型和学习记录…");
         worker.execute(() -> {
             try {
-                model.load(file);
+                model.load(selectedFile);
                 model.loadLearningState(learningFile());
                 boolean restoredResidual = model.loadRuntimeState(runtimeStateFile());
                 long pssMiB = Debug.getPss() / 1024L;
