@@ -1,0 +1,22 @@
+name: Evaluation harness checks
+on:
+  push:
+    branches: ["eval/**"]
+  pull_request:
+    paths:
+      - "eval/**"
+      - ".github/workflows/eval-harness.yml"
+permissions:
+  contents: read
+jobs:
+  python-checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile harness
+        run: python -m py_compile eval/run_llama_baseline.py eval/test_run_llama_baseline.py
+      - name: Run offline unit tests
+        run: python -m unittest discover -s eval -p "test_*.py" -v
