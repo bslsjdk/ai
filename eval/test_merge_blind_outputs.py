@@ -62,9 +62,9 @@ class BlindMergeTests(unittest.TestCase):
     def test_rejects_task_missing_from_every_candidate_output(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "a.jsonl").write_text('{"blind_id":"A1","answer_text":"a"}\\n', encoding="utf-8")
+            (root / "a.jsonl").write_text('{"blind_id":"A1","answer_text":"a"}\n', encoding="utf-8")
             (root / "a.map").write_text('{"A1":{"task_id":"T1"},"A2":{"task_id":"T2"}}', encoding="utf-8")
-            (root / "b.jsonl").write_text('{"blind_id":"B1","answer_text":"b"}\\n', encoding="utf-8")
+            (root / "b.jsonl").write_text('{"blind_id":"B1","answer_text":"b"}\n', encoding="utf-8")
             (root / "b.map").write_text('{"B1":{"task_id":"T1"},"B2":{"task_id":"T2"}}', encoding="utf-8")
             old_argv = sys.argv
             try:
