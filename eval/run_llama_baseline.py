@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 PROMPT_TEMPLATE = (
     "You are completing an evaluation task. Answer the user's task directly. "
     "Do not claim to have used tools or external sources unless they were provided.\n\n"
+    "MODE_INSTRUCTION:\n{thinking_instruction}\n\n"
     "TASK:\n{prompt}\n\nANSWER:"
 )
 SMOKE_TASK = {
@@ -44,14 +45,36 @@ def read_proc_status(pid):
     result = {}
     try:
         text = Path(f"/proc/{pid}/status").read_text(errors="replace")
-        for key in ("VmRSS", "VmHWM", "VmPeak", "VmSize"):
+        for key in ("VmRSS", "VmHWM", "VmPeak", "VmSize", "VmSwap"):
             m = re.search(rf"^{key}:\s+(\d+)\s+kB", text, re.M)
             if m:
                 result[key + "_kib"] = int(m.group(1))
     except (OSError, ValueError):
         pass
+    try:
+        text = Path(f"/proc/{pid}/smaps_rollup").read_text(errors="replace")
+        for key in ("Rss", "Pss", "Pss_Anon", "Pss_File", "Private_Clean",
+                    "Private_Dirty", "SwapPss"):
+            m = re.search(rf"^{key}:\s+(\d+)\s+kB", text, re.M)
+            if m:
+                result[key.lower() + "_kib"] = int(m.group(1))
+    except (OSError, ValueError):
+        result["smaps_rollup_unavailable"] = True
     return result
 
+
+def read_system_memory():
+    result = {}
+    try:
+        text = Path("/proc/meminfo").read_text(errors="replace")
+        for key in ("MemTotal", "MemAvailable", "MemFree", "Buffers", "Cached",
+                    "SwapTotal", "SwapFree"):
+            m = re.search(rf"^{key}:\s+(\d+)\s+kB", text, re.M)
+            if m:
+                result[key.lower() + "_kib"] = int(m.group(1))
+    except (OSError, ValueError):
+        result["available"] = False
+    return result
 
 def thermal_snapshot():
     readings = []
