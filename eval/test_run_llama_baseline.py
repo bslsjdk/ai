@@ -1,5 +1,8 @@
+import contextlib
 import importlib.util
+import io
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -49,6 +52,62 @@ class EvalHarnessTests(unittest.TestCase):
         self.addCleanup(lambda: Path(tmp.name).unlink(missing_ok=True))
         with self.assertRaisesRegex(ValueError, "empty"):
             MODULE.load_tasks(tmp.name)
+
+
+    def test_smoke_writes_blind_answer_and_server_timing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model = root / "model.gguf"
+            model.write_bytes(b"test-model")
+            result_path = root / "result.json"
+            blind_path = root / "blind.jsonl"
+            mapping_path = root / "mapping.json"
+            old_argv = sys.argv
+            original = {
+                "verify_offline": MODULE.verify_offline,
+                "fetch_server_properties": MODULE.fetch_server_properties,
+                "request_completion": MODULE.request_completion,
+                "read_proc_status": MODULE.read_proc_status,
+                "read_system_memory": MODULE.read_system_memory,
+                "thermal_snapshot": MODULE.thermal_snapshot,
+            }
+            try:
+                sys.argv = [
+                    "run_llama_baseline.py",
+                    "--url", "http://127.0.0.1:8080",
+                    "--server-pid", "123",
+                    "--model-file", str(model),
+                    "--out", str(result_path),
+                    "--blind-out", str(blind_path),
+                    "--mapping-out", str(mapping_path),
+                    "--offline-confirmed",
+                    "--smoke",
+                ]
+                MODULE.verify_offline = lambda: {"passed": True, "attempts": []}
+                MODULE.fetch_server_properties = lambda url, timeout: {"available": True}
+                MODULE.request_completion = lambda *args: {
+                    "content": "<think>visible reasoning</think>LOCAL_INFERENCE_OK",
+                    "timings": {"predicted_n": 12, "predicted_per_second": 6.5},
+                }
+                MODULE.read_proc_status = lambda pid: {"VmRSS_kib": 100}
+                MODULE.read_system_memory = lambda: {"memavailable_kib": 1000}
+                MODULE.thermal_snapshot = lambda: []
+                with contextlib.redirect_stdout(io.StringIO()):
+                    exit_code = MODULE.main()
+                self.assertEqual(exit_code, 0)
+                result = json.loads(result_path.read_text(encoding="utf-8"))
+                self.assertEqual(result["status"], "smoke_only")
+                self.assertTrue(result["smoke_expected_marker_found"])
+                self.assertEqual(result["tasks"][0]["server_generated_tokens_per_second"], 6.5)
+                self.assertEqual(result["tasks"][0]["process_before"]["VmRSS_kib"], 100)
+                blind_rows = [json.loads(line) for line in blind_path.read_text(encoding="utf-8").splitlines()]
+                self.assertEqual(len(blind_rows), 1)
+                self.assertEqual(blind_rows[0]["thinking_text"], "visible reasoning")
+                self.assertEqual(blind_rows[0]["answer_text"], "LOCAL_INFERENCE_OK")
+            finally:
+                sys.argv = old_argv
+                for name, value in original.items():
+                    setattr(MODULE, name, value)
 
     def test_prompt_template_records_thinking_instruction(self):
         prompt = MODULE.PROMPT_TEMPLATE.format(
