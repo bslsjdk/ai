@@ -58,9 +58,14 @@ def main():
         ap.error("At least two independent model/run outputs are required for meaningful blinding")
 
     by_task = {}
+    expected_task_ids = set()
     seen = set()
     for label, blind_path in inputs.items():
         mapping = read_mapping(mappings[label])
+        for entry in mapping.values():
+            if not isinstance(entry, dict) or not str(entry.get("task_id", "")):
+                raise ValueError(f"{label}: every mapping entry must contain a task_id")
+            expected_task_ids.add(str(entry["task_id"]))
         rows = read_jsonl(blind_path)
         for row in rows:
             blind_id = row["blind_id"]
@@ -76,10 +81,17 @@ def main():
             by_task.setdefault(task_id, []).append({"label": label, "answer_text": row["answer_text"]})
 
     labels = set(inputs)
-    for task_id, candidates in by_task.items():
+    # The per-run mapping includes attempted tasks even when inference failed.
+    # Validate against it so a task missing from every blind output cannot vanish
+    # silently from the scored corpus.
+    for task_id in sorted(expected_task_ids):
+        candidates = by_task.get(task_id, [])
         found = {x["label"] for x in candidates}
         if found != labels:
-            raise ValueError(f"Task {task_id} is not present for every candidate: {sorted(found)}")
+            raise ValueError(
+                f"Task {task_id} is not present for every candidate: {sorted(found)}; "
+                "check failed/incomplete runs before scoring"
+            )
 
     rng = random.Random(args.seed)
     task_ids = list(by_task)
