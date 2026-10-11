@@ -3,15 +3,12 @@
 import argparse
 import hashlib
 import json
-import os
 import platform
 import random
 import re
 import subprocess
 import sys
-import threading
 import time
-import urllib.error
 import urllib.request
 import uuid
 from datetime import datetime, timezone
@@ -117,8 +114,12 @@ def load_tasks(path):
             raise ValueError(f"Invalid JSONL at line {lineno}: {e}") from e
         if not isinstance(obj, dict) or not obj.get("task_id") or not obj.get("prompt"):
             raise ValueError(f"Line {lineno} must contain non-empty task_id and prompt")
-        if "reference" in obj or "rubric" in obj or "expected_answer" in obj:
-            raise ValueError(f"Line {lineno} contains scoring material; keep it sealed from the model")
+        allowed = {"task_id", "category", "prompt"}
+        extra = set(obj) - allowed
+        if extra:
+            raise ValueError(
+                f"Line {lineno} has unsupported fields {sorted(extra)}; keep all scoring material sealed"
+            )
         tasks.append(obj)
     if not tasks:
         raise ValueError("Task corpus is empty")
@@ -126,6 +127,17 @@ def load_tasks(path):
     if len(ids) != len(set(ids)):
         raise ValueError("task_id values must be unique")
     return raw, tasks
+
+
+def fetch_server_properties(url, timeout):
+    """Best-effort capture of llama-server effective model/context properties."""
+    req = urllib.request.Request(url.rstrip("/") + "/props", method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=min(timeout, 15)) as response:
+            return {"available": True, "http_status": response.status,
+                    "body": json.loads(response.read().decode("utf-8"))}
+    except Exception as exc:
+        return {"available": False, "error": repr(exc)}
 
 
 def main():
@@ -157,8 +169,10 @@ def main():
     if not args.smoke and not args.tasks:
         ap.error("--tasks is required unless --smoke is set")
 
+    started_utc = datetime.now(timezone.utc).isoformat()
     # Hash before timed inference; this may read several GB and warm the filesystem cache.
     model_hash = sha256_file(model_path)
+    server_properties = fetch_server_properties(args.url, args.timeout)
     if args.smoke:
         tasks = [SMOKE_TASK]
         corpus_bytes = json.dumps(SMOKE_TASK, ensure_ascii=False, sort_keys=True).encode("utf-8")
@@ -258,9 +272,16 @@ def main():
     result = {
         "schema": "mobile-llama-cpp-baseline/v1",
         "run_id": run_id,
-        "started_utc": datetime.now(timezone.utc).isoformat(),
-        "status": "smoke_only" if args.smoke else ("complete" if not errors else "partial_with_errors"),
+        "started_utc": started_utc,
+        "finished_utc": datetime.now(timezone.utc).isoformat(),
+        "status": ("smoke_only" if args.smoke and not errors else
+                   "smoke_failed" if args.smoke and errors else
+                   "complete" if not errors else "partial_with_errors"),
         "non_scoring_smoke": bool(args.smoke),
+        "smoke_expected_marker_found": (
+            any("LOCAL_INFERENCE_OK" in row.get("output", "") for row in blind_rows)
+            if args.smoke else None
+        ),
         "offline_operator_attestation": True,
         "offline_verification_method": "operator-confirmed airplane mode/no network; loopback-only endpoint; not firewall-enforced by harness",
         "runtime": {
@@ -273,6 +294,7 @@ def main():
             "timeout_seconds": args.timeout,
             "python": sys.version,
             "platform": platform.platform(),
+            "llama_server_properties": server_properties,
         },
         "model": {
             "path": str(model_path),
@@ -317,6 +339,8 @@ def main():
         "blind_outputs": args.blind_out,
         "private_mapping": args.mapping_out,
     }, ensure_ascii=False, indent=2))
+    if args.smoke and not result["smoke_expected_marker_found"]:
+        return 2
     return 0 if not errors else 2
 
 
