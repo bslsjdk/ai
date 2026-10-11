@@ -15,6 +15,13 @@ SPEC.loader.exec_module(MODULE)
 
 
 class EvalHarnessTests(unittest.TestCase):
+    def test_smoke_status_requires_expected_marker(self):
+        self.assertEqual(MODULE.determine_run_status(True, [], True), "smoke_only")
+        self.assertEqual(MODULE.determine_run_status(True, [], False), "smoke_failed")
+        self.assertEqual(MODULE.determine_run_status(True, ["request error"], True), "smoke_failed")
+        self.assertEqual(MODULE.determine_run_status(False, [], None), "complete")
+        self.assertEqual(MODULE.determine_run_status(False, ["request error"], None), "partial_with_errors")
+
     def write_jsonl(self, rows):
         tmp = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False)
         for row in rows:
