@@ -43,7 +43,7 @@ def read_proc_status(pid):
     try:
         text = Path(f"/proc/{pid}/status").read_text(errors="replace")
         for key in ("VmRSS", "VmHWM", "VmPeak", "VmSize", "VmSwap"):
-            m = re.search(rf"^{key}:\\s+(\\d+)\\s+kB", text, re.M)
+            m = re.search(rf"^{key}:\s+(\d+)\s+kB", text, re.M)
             if m:
                 result[key + "_kib"] = int(m.group(1))
     except (OSError, ValueError):
@@ -52,7 +52,7 @@ def read_proc_status(pid):
         text = Path(f"/proc/{pid}/smaps_rollup").read_text(errors="replace")
         for key in ("Rss", "Pss", "Pss_Anon", "Pss_File", "Private_Clean",
                     "Private_Dirty", "SwapPss"):
-            m = re.search(rf"^{key}:\\s+(\\d+)\\s+kB", text, re.M)
+            m = re.search(rf"^{key}:\s+(\d+)\s+kB", text, re.M)
             if m:
                 result[key.lower() + "_kib"] = int(m.group(1))
     except (OSError, ValueError):
@@ -66,7 +66,7 @@ def read_system_memory():
         text = Path("/proc/meminfo").read_text(errors="replace")
         for key in ("MemTotal", "MemAvailable", "MemFree", "Buffers", "Cached",
                     "SwapTotal", "SwapFree"):
-            m = re.search(rf"^{key}:\\s+(\\d+)\\s+kB", text, re.M)
+            m = re.search(rf"^{key}:\s+(\d+)\s+kB", text, re.M)
             if m:
                 result[key.lower() + "_kib"] = int(m.group(1))
     except (OSError, ValueError):
@@ -93,7 +93,7 @@ def verify_offline(timeout=2.0):
 def process_cmdline(pid):
     try:
         raw = Path(f"/proc/{pid}/cmdline").read_bytes()
-        return [part.decode("utf-8", errors="replace") for part in raw.split(b"\\0") if part]
+        return [part.decode("utf-8", errors="replace") for part in raw.split(b"\0") if part]
     except OSError:
         return None
 
