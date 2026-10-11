@@ -260,6 +260,13 @@ def is_output_cap_reached(finish_reason, completion_tokens, predicted_tokens, ca
     )
 
 
+def determine_run_status(smoke, errors, smoke_marker_found):
+    """A smoke run passes only when inference succeeds and the expected marker is present."""
+    if smoke:
+        return "smoke_only" if not errors and smoke_marker_found else "smoke_failed"
+    return "complete" if not errors else "partial_with_errors"
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--url", required=True, help="Loopback llama-server URL, e.g. http://127.0.0.1:8080")
@@ -431,18 +438,18 @@ def main():
         default=None,
     )
     cap_count = sum(1 for x in measurements if x.get("output_cap_reached"))
+    smoke_marker_found = (
+        any("LOCAL_INFERENCE_OK" in row["answer_text"] for row in blind_rows)
+        if args.smoke else None
+    )
     result = {
         "schema": "mobile-llama-cpp-chat-baseline/v2",
         "run_id": run_id,
         "started_utc": started_utc,
         "finished_utc": datetime.now(timezone.utc).isoformat(),
-        "status": ("smoke_only" if args.smoke and not errors else
-                   "smoke_failed" if args.smoke and errors else
-                   "complete" if not errors else "partial_with_errors"),
+        "status": determine_run_status(args.smoke, errors, smoke_marker_found),
         "non_scoring_smoke": bool(args.smoke),
-        "smoke_expected_marker_found": (
-            any("LOCAL_INFERENCE_OK" in row["answer_text"] for row in blind_rows) if args.smoke else None
-        ),
+        "smoke_expected_marker_found": smoke_marker_found,
         "offline_operator_attestation": True,
         "offline_external_probe": offline_probe,
         "offline_verification_method": "operator confirmation plus failed outbound TCP probes to 1.1.1.1:443 and 8.8.8.8:443; this does not prove all network paths are blocked",
