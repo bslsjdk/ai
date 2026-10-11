@@ -142,6 +142,7 @@ class EvalHarnessTests(unittest.TestCase):
                 "read_proc_status": MODULE.read_proc_status,
                 "read_system_memory": MODULE.read_system_memory,
                 "thermal_snapshot": MODULE.thermal_snapshot,
+                "battery_snapshot": MODULE.battery_snapshot,
                 "sample_during_request": MODULE.sample_during_request,
             }
             try:
@@ -169,9 +170,11 @@ class EvalHarnessTests(unittest.TestCase):
                 }
                 MODULE.read_system_memory = lambda: {"memavailable_kib": 1000}
                 MODULE.thermal_snapshot = lambda: []
+                MODULE.battery_snapshot = lambda: [{"capacity": "80", "status": "Not charging"}]
                 MODULE.sample_during_request = lambda pid, stop, samples, interval=0.5: samples.append({
                     "timestamp_unix": 1, "process": {"VmRSS_kib": 120, "pss_kib": 90, "VmHWM_kib": 130},
                     "system": {"memavailable_kib": 900}, "thermal": [],
+                    "battery": [{"capacity": "80", "status": "Not charging"}],
                 })
                 with contextlib.redirect_stdout(io.StringIO()):
                     exit_code = MODULE.main()
