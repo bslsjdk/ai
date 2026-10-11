@@ -6,6 +6,7 @@ import json
 import platform
 import random
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -149,8 +150,10 @@ def main():
     ap.add_argument("--out", default="baseline_result.json")
     ap.add_argument("--blind-out", default="blind_outputs.jsonl")
     ap.add_argument("--mapping-out", default="blind_mapping.json")
-    ap.add_argument("--offline-confirmed", action="store_true", help="Operator confirms airplane mode and no network")
+    ap.add_argument("--offline-confirmed", action="store_true", help="Operator confirms airplane mode; external probes must also fail")
     ap.add_argument("--smoke", action="store_true", help="Run only a non-scoring smoke prompt")
+    ap.add_argument("--thinking-mode", choices=("off", "on", "model-default"), default="off",
+                    help="Fixed visible-thinking protocol for all candidates; recorded in result")
     ap.add_argument("--n-predict", type=int, default=512)
     ap.add_argument("--seed", type=int, default=20261011)
     ap.add_argument("--timeout", type=int, default=600)
@@ -161,6 +164,9 @@ def main():
         ap.error("Only an HTTP loopback URL is accepted; bind llama-server to localhost")
     if not args.offline_confirmed:
         ap.error("Refusing to run until --offline-confirmed is supplied after disabling network access")
+    offline_probe = verify_offline()
+    if not offline_probe["passed"]:
+        ap.error("External TCP reachability detected; refusing to score. Disable all network access and retry.")
     if args.n_predict < 1 or args.timeout < 1:
         ap.error("--n-predict and --timeout must be positive")
     model_path = Path(args.model_file)
@@ -204,8 +210,16 @@ def main():
     for index, task in enumerate(tasks):
         blind_id = "CAND-" + uuid.uuid4().hex[:10].upper()
         id_map[blind_id] = {"task_id": str(task["task_id"]), "run_id": run_id}
-        prompt = PROMPT_TEMPLATE.format(prompt=str(task["prompt"]))
+        thinking_instruction = {
+            "off": "Do not emit a reasoning trace or <think> block. Return only the final answer.",
+            "on": "If you emit visible reasoning, place it in <think>...</think>, then give the final answer after </think>.",
+            "model-default": "Use the configured model default thinking behavior."
+        }[args.thinking_mode]
+        prompt = PROMPT_TEMPLATE.format(
+            prompt=str(task["prompt"]), thinking_instruction=thinking_instruction
+        )
         before = read_proc_status(args.server_pid)
+        system_before = read_system_memory()
         temps_before = thermal_snapshot()
         started = time.perf_counter()
         try:
@@ -227,6 +241,7 @@ def main():
             }
             blind_rows.append(row)
             after = read_proc_status(args.server_pid)
+            system_after = read_system_memory()
             temps_after = thermal_snapshot()
             for snap in (before, after):
                 max_rss = max(max_rss, snap.get("VmRSS_kib", 0))
@@ -238,12 +253,15 @@ def main():
                 "status": "ok",
                 "wall_time_seconds": round(elapsed, 4),
                 "output_chars": chars,
-                "output_words_whitespace_approx": words,
-                "approx_words_per_second": round(words_per_second, 4) if words_per_second is not None else None,
+                "thinking_chars": len(thinking_text),
+                "answer_chars": len(answer_text),
                 "llama_cpp_predicted_tokens": predicted_tokens,
+                "server_generated_tokens_per_second": server_tokens_per_second,
                 "llama_cpp_timings": timings,
                 "process_before": before,
                 "process_after": after,
+                "system_memory_before": system_before,
+                "system_memory_after": system_after,
                 "thermal_before": temps_before,
                 "thermal_after": temps_after,
                 "output_sha256": row["output_sha256"],
@@ -257,6 +275,7 @@ def main():
                 "status": "error",
                 "wall_time_seconds": round(elapsed, 4),
                 "process_before": before,
+                "system_memory_before": system_before,
                 "error": repr(exc),
             })
 
@@ -283,12 +302,15 @@ def main():
             if args.smoke else None
         ),
         "offline_operator_attestation": True,
-        "offline_verification_method": "operator-confirmed airplane mode/no network; loopback-only endpoint; not firewall-enforced by harness",
+        "offline_external_probe": offline_probe,
+        "offline_verification_method": "operator confirmation plus failed outbound TCP probes to 1.1.1.1:443 and 8.8.8.8:443; reachability check, not proof every network path is blocked",
         "runtime": {
             "endpoint": args.url,
             "server_pid": args.server_pid,
             "n_predict": args.n_predict,
             "temperature": 0.0,
+            "thinking_mode": args.thinking_mode,
+            "n_predict_output_cap": args.n_predict,
             "seed_base": args.seed,
             "seed_policy": "seed_base + zero-based task index",
             "timeout_seconds": args.timeout,
@@ -313,9 +335,10 @@ def main():
         "instrumentation": {
             "max_sampled_server_rss_kib": max_rss or None,
             "max_sampled_server_hwm_kib": max_hwm or None,
+            "last_system_memory_snapshot": read_system_memory(),
             "thermal_readings_collected": len(temp_samples),
             "thermal_readings_celsius": temp_samples,
-            "note": "Sampling occurs before/after each request, not continuously. RSS is server process only and may omit other model owners."
+            "note": "Process RSS/PSS/HWM and system memory are sampled before/after each request, not continuously. System memory includes other processes; process PSS is proportional attribution. Thermal readings depend on Android sysfs permissions."
         },
         "summary": {
             "ok_tasks": sum(1 for x in measurements if x["status"] == "ok"),
