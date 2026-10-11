@@ -108,9 +108,9 @@ class EvalHarnessTests(unittest.TestCase):
     def test_proc_metrics_regex_parses_realistic_procfs_lines(self):
         def fake_read_text(path, *args, **kwargs):
             if str(path).endswith("/status"):
-                return "VmRSS: 123 kB\\nVmHWM: 456 kB\\n"
+                return "VmRSS: 123 kB\nVmHWM: 456 kB\n"
             if str(path).endswith("/smaps_rollup"):
-                return "Rss: 120 kB\\nPss: 80 kB\\nPss_Anon: 60 kB\\n"
+                return "Rss: 120 kB\nPss: 80 kB\nPss_Anon: 60 kB\n"
             raise AssertionError(f"Unexpected proc path: {path}")
 
         with mock.patch.object(Path, "read_text", autospec=True, side_effect=fake_read_text):
@@ -121,7 +121,7 @@ class EvalHarnessTests(unittest.TestCase):
         self.assertEqual(result["pss_anon_kib"], 60)
 
     def test_process_cmdline_splits_nul_delimited_arguments(self):
-        with mock.patch.object(Path, "read_bytes", return_value=b"llama-server\\0-m\\0model.gguf\\0"):
+        with mock.patch.object(Path, "read_bytes", return_value=b"llama-server\0-m\0model.gguf\0"):
             self.assertEqual(MODULE.process_cmdline(123), ["llama-server", "-m", "model.gguf"])
 
     def test_server_model_path_must_match_exact_resolved_file(self):
