@@ -223,6 +223,15 @@ def split_visible_thinking(output):
     return thinking, answer
 
 
+def is_output_cap_reached(finish_reason, completion_tokens, predicted_tokens, cap):
+    """Use the server finish reason first, with token counts as fallback signals."""
+    return (
+        finish_reason == "length"
+        or (isinstance(completion_tokens, (int, float)) and completion_tokens >= cap)
+        or (isinstance(predicted_tokens, (int, float)) and predicted_tokens >= cap)
+    )
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--url", required=True, help="Loopback llama-server URL, e.g. http://127.0.0.1:8080")
@@ -330,10 +339,8 @@ def main():
             timings = response.get("timings") if isinstance(response.get("timings"), dict) else {}
             predicted_tokens = timings.get("predicted_n", completion_tokens)
             tokens_per_second = timings.get("predicted_per_second")
-            cap_reached = (
-                finish_reason == "length"
-                or (isinstance(completion_tokens, int) and completion_tokens >= args.n_predict)
-                or (isinstance(predicted_tokens, (int, float)) and predicted_tokens >= args.n_predict)
+            cap_reached = is_output_cap_reached(
+                finish_reason, completion_tokens, predicted_tokens, args.n_predict
             )
             # The blind file intentionally contains answer text only, with no tags,
             # token counts, lengths, timing, model name, or run metadata.
