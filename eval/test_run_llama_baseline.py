@@ -50,10 +50,25 @@ class EvalHarnessTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "empty"):
             MODULE.load_tasks(tmp.name)
 
-    def test_prompt_template_keeps_task_at_end(self):
-        prompt = MODULE.PROMPT_TEMPLATE.format(prompt="TEST_MARKER")
+    def test_prompt_template_records_thinking_instruction(self):
+        prompt = MODULE.PROMPT_TEMPLATE.format(
+            prompt="TEST_MARKER", thinking_instruction="THINKING_OFF"
+        )
         self.assertTrue(prompt.endswith("ANSWER:"))
         self.assertIn("TEST_MARKER", prompt)
+        self.assertIn("THINKING_OFF", prompt)
+
+    def test_separates_explicit_visible_thinking(self):
+        thinking, answer = MODULE.split_visible_thinking(
+            "<think>private visible trace</think>Final answer"
+        )
+        self.assertEqual(thinking, "private visible trace")
+        self.assertEqual(answer, "Final answer")
+
+    def test_no_think_tags_keeps_whole_output_as_answer(self):
+        thinking, answer = MODULE.split_visible_thinking("Plain answer")
+        self.assertEqual(thinking, "")
+        self.assertEqual(answer, "Plain answer")
 
 
 if __name__ == "__main__":
