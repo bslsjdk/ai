@@ -76,6 +76,28 @@ def read_system_memory():
         result["available"] = False
     return result
 
+
+def verify_offline(timeout=2.0):
+    """Abort scoring if either direct external TCP probe succeeds."""
+    endpoints = [("1.1.1.1", 443), ("8.8.8.8", 443)]
+    attempts = []
+    for host, port in endpoints:
+        started = time.perf_counter()
+        try:
+            with socket.create_connection((host, port), timeout=timeout):
+                attempts.append({
+                    "host": host, "port": port, "reachable": True,
+                    "elapsed_seconds": round(time.perf_counter() - started, 4)
+                })
+        except OSError as exc:
+            attempts.append({
+                "host": host, "port": port, "reachable": False,
+                "error": repr(exc),
+                "elapsed_seconds": round(time.perf_counter() - started, 4)
+            })
+    return {"passed": all(not item["reachable"] for item in attempts), "attempts": attempts}
+
+
 def thermal_snapshot():
     readings = []
     roots = [Path("/sys/class/thermal"), Path("/sys/class/power_supply")]
@@ -262,18 +284,22 @@ def main():
             output = str(response.get("content", ""))
             timings = response.get("timings") if isinstance(response.get("timings"), dict) else {}
             predicted_tokens = timings.get("predicted_n")
-            if not isinstance(predicted_tokens, (int, float)) or predicted_tokens <= 0:
+            server_tokens_per_second = timings.get("predicted_per_second")
+            if not isinstance(predicted_tokens, (int, float)) or predicted_tokens < 0:
                 predicted_tokens = None
-            words = len(re.findall(r"\S+", output))
+            if not isinstance(server_tokens_per_second, (int, float)) or server_tokens_per_second < 0:
+                server_tokens_per_second = None
+            thinking_text, answer_text = split_visible_thinking(output)
             chars = len(output)
-            words_per_second = words / elapsed if elapsed > 0 else None
             row = {
                 "blind_id": blind_id,
                 "category": str(task.get("category", "unspecified")),
+                "thinking_text": thinking_text,
+                "answer_text": answer_text,
                 "output": output,
                 "output_sha256": sha256_bytes(output.encode("utf-8")),
             }
-            blind_rows.append(row)
+
             after = read_proc_status(args.server_pid)
             system_after = read_system_memory()
             temps_after = thermal_snapshot()
