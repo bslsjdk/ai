@@ -90,6 +90,33 @@ def verify_offline(timeout=2.0):
     return {"passed": all(not x["reachable"] for x in attempts), "attempts": attempts}
 
 
+def process_cmdline(pid):
+    try:
+        raw = Path(f"/proc/{pid}/cmdline").read_bytes()
+        return [part.decode("utf-8", errors="replace") for part in raw.split(b"\\0") if part]
+    except OSError:
+        return None
+
+
+def battery_snapshot():
+    readings = []
+    root = Path("/sys/class/power_supply")
+    try:
+        for device in root.iterdir():
+            row = {"source": str(device)}
+            for field in ("capacity", "status", "voltage_now", "current_now", "temp"):
+                try:
+                    value = (device / field).read_text().strip()
+                    row[field] = value
+                except OSError:
+                    continue
+            if len(row) > 1:
+                readings.append(row)
+    except OSError:
+        pass
+    return readings
+
+
 def thermal_snapshot():
     readings = []
     for root in (Path("/sys/class/thermal"), Path("/sys/class/power_supply")):
@@ -124,6 +151,7 @@ def sample_during_request(pid, stop_event, samples, interval=0.5):
             "process": read_proc_status(pid),
             "system": read_system_memory(),
             "thermal": thermal_snapshot(),
+            "battery": battery_snapshot(),
         })
         stop_event.wait(interval)
 
@@ -237,6 +265,10 @@ def main():
     ap.add_argument("--url", required=True, help="Loopback llama-server URL, e.g. http://127.0.0.1:8080")
     ap.add_argument("--server-pid", type=int, required=True, help="llama-server PID for memory sampling")
     ap.add_argument("--model-file", required=True, help="Exact local model file, normally GGUF")
+    ap.add_argument("--model-source", default="ornith-ai/Ornith-1.5-9B-GGUF",
+                    help="Declared model repository/source for provenance")
+    ap.add_argument("--model-revision", default="9a5e9dc",
+                    help="Declared immutable source revision used to obtain the file")
     ap.add_argument("--tasks", help="Private JSONL task set; omitted in smoke mode")
     ap.add_argument("--out", default="baseline_result.json")
     ap.add_argument("--blind-out", default="blind_outputs.jsonl")
@@ -313,6 +345,7 @@ def main():
         before = read_proc_status(args.server_pid)
         system_before = read_system_memory()
         thermal_before = thermal_snapshot()
+        battery_before = battery_snapshot()
         started = time.perf_counter()
         sampler.start()
         try:
@@ -363,6 +396,7 @@ def main():
                 "process_before": before, "process_after": after,
                 "system_memory_before": system_before, "system_memory_after": system_after,
                 "thermal_before": thermal_before, "thermal_after": thermal_after,
+                "battery_before": battery_before, "battery_after": battery_snapshot(),
                 "sample_count_during_request": len(samples),
             })
         except Exception as exc:
@@ -374,7 +408,8 @@ def main():
             measurements.append({
                 "task_id": str(task["task_id"]), "blind_id": blind_id, "status": "error",
                 "wall_time_seconds": round(elapsed, 4), "process_before": before,
-                "system_memory_before": system_before, "sample_count_during_request": len(samples),
+                "system_memory_before": system_before, "battery_before": battery_before,
+                "sample_count_during_request": len(samples),
                 "error": repr(exc),
             })
 
@@ -413,6 +448,7 @@ def main():
         "offline_verification_method": "operator confirmation plus failed outbound TCP probes to 1.1.1.1:443 and 8.8.8.8:443; this does not prove all network paths are blocked",
         "runtime": {
             "endpoint": args.url, "server_pid": args.server_pid,
+            "server_process_cmdline": process_cmdline(args.server_pid),
             "n_predict": args.n_predict, "temperature": 0.0,
             "thinking_mode": args.thinking_mode,
             "chat_api": "/v1/chat/completions",
@@ -425,6 +461,8 @@ def main():
         "model": {
             "path": str(model_path), "file_size_bytes": model_path.stat().st_size,
             "sha256": model_hash, "format": model_path.suffix.lower().lstrip("."),
+            "declared_source": args.model_source,
+            "declared_revision": args.model_revision,
             "identity_warning": "The hash identifies this local file; provenance/revision/quantization must also be recorded.",
         },
         "corpus": {
@@ -441,6 +479,7 @@ def main():
             "max_sampled_server_pss_kib": max_pss,
             "min_sampled_system_memavailable_kib": max_system_mem_available,
             "last_system_memory_snapshot": read_system_memory(),
+            "battery_snapshot_at_end": battery_snapshot(),
             "samples": all_samples,
             "note": "Process metrics are sampled every ~0.5s during requests plus before/after. Sampling can miss shorter peaks; process PSS is not total app memory if buffers are owned elsewhere.",
         },
