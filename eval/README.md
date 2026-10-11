@@ -6,6 +6,8 @@ This directory contains a reproducible measurement harness. It does **not** clai
 
 **Ornith-1.5-9B is the primary reference opponent, not an optional afterthought.** The current RNN/MGU public-dataset experiment is a separate architecture diagnostic; its loss numbers do not establish that a small model beats Ornith on tasks. Until the same phone task set has been run and scored for both sides, the PK result is **not yet measured**.
 
+The detailed preregistered rules for internal A-vs-B self-baselines, task-specific checklist scoring, held-out separation, blinding, and decision labels are in [PK_PROTOCOL.md](PK_PROTOCOL.md). This protocol can be used while the reference model is still downloading; it does not claim a model run has occurred.
+
 The comparison is deliberately staged:
 
 1. **Reference feasibility:** run the non-scoring smoke test on the exact Q4_K_M artifact below. Record whether it loads and completes inference, plus model hash, server/build settings, latency, peak sampled memory, thermal and battery observations. If it cannot run, preserve the failure as a reference result; do not quietly replace the model or call a smaller model the winner.
@@ -56,8 +58,7 @@ The server's `/props` must report a model path matching `--model-file` after pat
 8. After each model/run, use `merge_blind_outputs.py` to join answers by task and shuffle candidate IDs. Give only the merged scoring JSONL to the scorer. Keep the merged private map sealed until scoring is locked. The merged file intentionally contains task IDs and answer text, not model/run labels.
 9. The harness does not grade correctness. Keep the rubric/answer key separate. Report cap-reached/incomplete answers separately from wrong answers.
 10. Randomize model run order across repeated rounds and document starting battery/temperature, thermal state, and time between runs. Do not compare a cold first run against a thermally throttled last run without reporting it.
-11. Before each round, record starting battery percentage, charging status, battery/device temperature, and cooldown duration. The runner records battery/thermal snapshots where permissions allow. Randomize candidate model order separately for each repeat round; do not always run the same candidate first.
-12. Failed/incomplete runs remain in the record. Do not silently drop them or call a winner without preregistered criteria.
+11. Failed/incomplete runs remain in the record. Do not silently drop them or call a winner without preregistered criteria.
 12. The harness cannot enforce Android-wide network isolation. Offline status must be independently checked by the operator.
 
 ## Requirements
