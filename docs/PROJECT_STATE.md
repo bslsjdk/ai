@@ -35,7 +35,7 @@ Last updated: 2026-10-11
 - Protocol: `eval/README.md`
 - Tests: `eval/test_run_llama_baseline.py`
 - CI: `.github/workflows/eval-harness.yml`
-- Latest branch CI passed: https://github.com/bslsjdk/ai/actions/runs/38119432489 (Python compile and unit tests).
+- Latest branch CI passed: https://github.com/bslsjdk/ai/actions/runs/38119525840 (Python compile and 8 unit/integration tests, including a mocked end-to-end smoke run).
 - No on-device smoke run or scored phone baseline has been recorded yet.
 
 ## Frozen seven-seed RNN vs MGU protocol
@@ -88,7 +88,7 @@ Read `pk_public_data/README.md` in `bslsjdk/mengxi_lab` before changing or inter
 - Located and reread the canonical PK README.
 - Completed and archived the seven-seed context-128 run; computed the preregistered paired decision.
 - Added first version of mobile evaluation harness in an isolated draft PR.
-- Added PSS/system memory, server-side generation speed, visible-thinking separation, and external TCP offline probes to the harness branch.
+- Added PSS/system memory, server-side generation speed, visible-thinking separation, external TCP offline probes, and a mocked end-to-end smoke test to the harness branch.
 
 ### Next
 1. Verify latest GitHub Actions result for the updated PR branch.
