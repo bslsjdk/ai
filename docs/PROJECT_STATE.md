@@ -35,7 +35,7 @@ Last updated: 2026-10-11
 - Protocol: `eval/README.md`
 - Tests: `eval/test_run_llama_baseline.py`
 - CI: `.github/workflows/eval-harness.yml`
-- CI passed before the latest instrumentation edits; re-check the latest branch workflow before treating those edits as validated.
+- Latest branch CI passed: https://github.com/bslsjdk/ai/actions/runs/38119432489 (Python compile and unit tests).
 - No on-device smoke run or scored phone baseline has been recorded yet.
 
 ## Frozen seven-seed RNN vs MGU protocol
@@ -69,7 +69,7 @@ Read `pk_public_data/README.md` in `bslsjdk/mengxi_lab` before changing or inter
 - Reference opponent: Ornith-1.5-9B.
 - Do not conflate MLX/Safetensors with GGUF. Before a phone baseline, freeze one exact model source, conversion/release, quantization level, and file SHA-256.
 - Third-party GGUF/mobile variants are candidate artifacts, not interchangeable model identities. Report the exact source and quantization.
-- Available prior device diagnostics indicate about 15,665,944 kB total RAM (~14.94 GiB); exact retail phone model has not been verified from user-provided details. Candidate runtime still has the hard <4 GiB limit.
+- Device identifier RMX3852 maps to the realme GT Neo6 (Snapdragon 8s Gen 3, Adreno 735); prior Android shell diagnostics report 15,665,944 kB total RAM (~14.94 GiB), consistent with the 16 GB variant. Public specs list 12 GB and 16 GB variants, so the exact retail memory SKU should still be checked on-device. Sources: https://github.com/MobileGL-Dev/MobileGlues-release/blob/main/DeviceReports/RMX3852.md and https://fo.gsmarena.com/realme_gt_neo6-12991.php. Candidate runtime still has the hard <4 GiB limit.
 - NPU availability does not prove inference uses the NPU; record the actual execution backend.
 
 ## Evaluation protocol requirements
