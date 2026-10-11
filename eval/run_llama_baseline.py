@@ -164,6 +164,17 @@ def fetch_server_properties(url, timeout):
         return {"available": False, "error": repr(exc)}
 
 
+
+def split_visible_thinking(output):
+    """Separate only explicit visible <think>...</think> text; hidden reasoning is not observable."""
+    match = re.search(r"<think>(.*?)</think>", output, flags=re.I | re.S)
+    if not match:
+        return "", output.strip()
+    thinking = match.group(1).strip()
+    answer = (output[:match.start()] + output[match.end():]).strip()
+    return thinking, answer
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--url", required=True, help="Loopback llama-server URL, e.g. http://127.0.0.1:8080")
