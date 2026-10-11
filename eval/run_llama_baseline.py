@@ -299,6 +299,7 @@ def main():
                 "output": output,
                 "output_sha256": sha256_bytes(output.encode("utf-8")),
             }
+            blind_rows.append(row)
 
             after = read_proc_status(args.server_pid)
             system_after = read_system_memory()
