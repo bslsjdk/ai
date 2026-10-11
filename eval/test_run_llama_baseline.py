@@ -107,10 +107,12 @@ class EvalHarnessTests(unittest.TestCase):
         self.assertEqual(MODULE.normalize_path("/tmp/../tmp/model.gguf"),
                          MODULE.normalize_path("/tmp/model.gguf"))
 
-    def test_cap_reached_detection_fields_are_preserved_in_measurement_logic(self):
-        # API finish_reason=length is the strongest explicit signal.
-        self.assertEqual("length", "length")
-        self.assertTrue(2048 >= 2048)
+    def test_output_cap_detection_distinguishes_stop_from_truncation(self):
+        self.assertTrue(MODULE.is_output_cap_reached("length", 2048, 2048, 2048))
+        self.assertTrue(MODULE.is_output_cap_reached(None, 2048, None, 2048))
+        self.assertTrue(MODULE.is_output_cap_reached(None, None, 2048, 2048))
+        self.assertFalse(MODULE.is_output_cap_reached("stop", 210, 210, 2048))
+        self.assertFalse(MODULE.is_output_cap_reached(None, None, None, 2048))
 
     def test_separates_explicit_visible_thinking(self):
         thinking, answer = MODULE.split_visible_thinking(
