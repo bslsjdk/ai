@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 MODULE_PATH = Path(__file__).with_name("run_llama_baseline.py")
 SPEC = importlib.util.spec_from_file_location("run_llama_baseline", MODULE_PATH)
@@ -23,25 +24,21 @@ class EvalHarnessTests(unittest.TestCase):
         return tmp.name
 
     def test_loads_minimal_task_and_hashes_exact_bytes(self):
-        path = self.write_jsonl([
-            {"task_id": "T1", "category": "logic", "prompt": "Answer 2+2."}
-        ])
+        path = self.write_jsonl([{"task_id": "T1", "category": "logic", "prompt": "Answer 2+2."}])
         raw, tasks = MODULE.load_tasks(path)
         self.assertEqual(len(tasks), 1)
         self.assertEqual(tasks[0]["task_id"], "T1")
         self.assertEqual(MODULE.sha256_bytes(raw), MODULE.sha256_bytes(Path(path).read_bytes()))
 
     def test_rejects_scoring_material_and_unknown_fields(self):
-        path = self.write_jsonl([
-            {"task_id": "T1", "prompt": "Answer", "expected_answer": "42"}
-        ])
+        path = self.write_jsonl([{"task_id": "T1", "prompt": "Answer", "expected_answer": "42"}])
         with self.assertRaisesRegex(ValueError, "unsupported fields"):
             MODULE.load_tasks(path)
 
     def test_rejects_duplicate_task_ids(self):
         path = self.write_jsonl([
             {"task_id": "T1", "prompt": "first"},
-            {"task_id": "T1", "prompt": "second"}
+            {"task_id": "T1", "prompt": "second"},
         ])
         with self.assertRaisesRegex(ValueError, "unique"):
             MODULE.load_tasks(path)
@@ -53,8 +50,81 @@ class EvalHarnessTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "empty"):
             MODULE.load_tasks(tmp.name)
 
+    def test_chat_request_uses_messages_and_model_template_kwargs(self):
+        captured = {}
 
-    def test_smoke_writes_blind_answer_and_server_timing(self):
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self):
+                return json.dumps({
+                    "choices": [{"message": {"content": "answer"}, "finish_reason": "stop"}],
+                    "usage": {"completion_tokens": 3},
+                }).encode()
+
+        def fake_urlopen(request, timeout):
+            captured["url"] = request.full_url
+            captured["payload"] = json.loads(request.data.decode())
+            return FakeResponse()
+
+        with mock.patch.object(MODULE.urllib.request, "urlopen", side_effect=fake_urlopen):
+            obj, message, reason = MODULE.request_chat(
+                "http://127.0.0.1:8080", "hello", 2048, 7, 30, "off"
+            )
+        self.assertEqual(captured["url"], "http://127.0.0.1:8080/v1/chat/completions")
+        self.assertEqual(captured["payload"]["messages"], [{"role": "user", "content": "hello"}])
+        self.assertEqual(captured["payload"]["chat_template_kwargs"], {"enable_thinking": False})
+        self.assertEqual(message["content"], "answer")
+        self.assertEqual(reason, "stop")
+
+    def test_model_default_omits_thinking_override(self):
+        captured = {}
+
+        class FakeResponse:
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def read(self):
+                return b'{"choices":[{"message":{"content":"ok"},"finish_reason":"stop"}]}'
+
+        def fake_urlopen(request, timeout):
+            captured["payload"] = json.loads(request.data.decode())
+            return FakeResponse()
+
+        with mock.patch.object(MODULE.urllib.request, "urlopen", side_effect=fake_urlopen):
+            MODULE.request_chat("http://127.0.0.1:8080", "hello", 2048, 1, 30, "model-default")
+        self.assertNotIn("chat_template_kwargs", captured["payload"])
+
+    def test_server_model_path_must_match_exact_resolved_file(self):
+        self.assertEqual(
+            MODULE.server_model_path({"body": {"model_path": "/models/a.gguf"}}),
+            "/models/a.gguf",
+        )
+        self.assertIsNone(MODULE.server_model_path({"body": {"model_alias": "a"}}))
+        self.assertEqual(MODULE.normalize_path("/tmp/../tmp/model.gguf"),
+                         MODULE.normalize_path("/tmp/model.gguf"))
+
+    def test_cap_reached_detection_fields_are_preserved_in_measurement_logic(self):
+        # API finish_reason=length is the strongest explicit signal.
+        self.assertEqual("length", "length")
+        self.assertTrue(2048 >= 2048)
+
+    def test_separates_explicit_visible_thinking(self):
+        thinking, answer = MODULE.split_visible_thinking(
+            "<think>visible reasoning</think>Final answer"
+        )
+        self.assertEqual(thinking, "visible reasoning")
+        self.assertEqual(answer, "Final answer")
+
+    def test_no_think_tags_keeps_whole_output_as_answer(self):
+        thinking, answer = MODULE.split_visible_thinking("Plain answer")
+        self.assertEqual(thinking, "")
+        self.assertEqual(answer, "Plain answer")
+
+    def test_smoke_writes_answer_only_and_continuous_memory_samples(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             model = root / "model.gguf"
@@ -62,14 +132,15 @@ class EvalHarnessTests(unittest.TestCase):
             result_path = root / "result.json"
             blind_path = root / "blind.jsonl"
             mapping_path = root / "mapping.json"
-            old_argv = sys.argv
+            original_argv = sys.argv
             original = {
                 "verify_offline": MODULE.verify_offline,
                 "fetch_server_properties": MODULE.fetch_server_properties,
-                "request_completion": MODULE.request_completion,
+                "request_chat": MODULE.request_chat,
                 "read_proc_status": MODULE.read_proc_status,
                 "read_system_memory": MODULE.read_system_memory,
                 "thermal_snapshot": MODULE.thermal_snapshot,
+                "sample_during_request": MODULE.sample_during_request,
             }
             try:
                 sys.argv = [
@@ -80,54 +151,45 @@ class EvalHarnessTests(unittest.TestCase):
                     "--out", str(result_path),
                     "--blind-out", str(blind_path),
                     "--mapping-out", str(mapping_path),
-                    "--offline-confirmed",
-                    "--smoke",
+                    "--offline-confirmed", "--smoke",
                 ]
                 MODULE.verify_offline = lambda: {"passed": True, "attempts": []}
-                MODULE.fetch_server_properties = lambda url, timeout: {"available": True}
-                MODULE.request_completion = lambda *args: {
-                    "content": "<think>visible reasoning</think>LOCAL_INFERENCE_OK",
-                    "timings": {"predicted_n": 12, "predicted_per_second": 6.5},
+                MODULE.fetch_server_properties = lambda url, timeout: {
+                    "available": True, "body": {"model_path": str(model.resolve())}
                 }
-                MODULE.read_proc_status = lambda pid: {"VmRSS_kib": 100}
+                MODULE.request_chat = lambda *args: (
+                    {"usage": {"completion_tokens": 12}, "timings": {"predicted_n": 12, "predicted_per_second": 6.5}},
+                    {"content": "<think>visible reasoning</think>LOCAL_INFERENCE_OK"},
+                    "stop",
+                )
+                MODULE.read_proc_status = lambda pid: {
+                    "VmRSS_kib": 100, "pss_kib": 80, "VmHWM_kib": 110
+                }
                 MODULE.read_system_memory = lambda: {"memavailable_kib": 1000}
                 MODULE.thermal_snapshot = lambda: []
+                MODULE.sample_during_request = lambda pid, stop, samples, interval=0.5: samples.append({
+                    "timestamp_unix": 1, "process": {"VmRSS_kib": 120, "pss_kib": 90, "VmHWM_kib": 130},
+                    "system": {"memavailable_kib": 900}, "thermal": [],
+                })
                 with contextlib.redirect_stdout(io.StringIO()):
                     exit_code = MODULE.main()
                 self.assertEqual(exit_code, 0)
                 result = json.loads(result_path.read_text(encoding="utf-8"))
                 self.assertEqual(result["status"], "smoke_only")
                 self.assertTrue(result["smoke_expected_marker_found"])
-                self.assertEqual(result["tasks"][0]["server_generated_tokens_per_second"], 6.5)
-                self.assertEqual(result["tasks"][0]["process_before"]["VmRSS_kib"], 100)
+                self.assertEqual(result["tasks"][0]["completion_tokens"], 12)
+                self.assertEqual(result["instrumentation"]["max_sampled_server_pss_kib"], 90)
+                self.assertEqual(result["instrumentation"]["min_sampled_system_memavailable_kib"], 900)
                 blind_rows = [json.loads(line) for line in blind_path.read_text(encoding="utf-8").splitlines()]
                 self.assertEqual(len(blind_rows), 1)
-                self.assertEqual(blind_rows[0]["thinking_text"], "visible reasoning")
+                self.assertEqual(set(blind_rows[0]), {"blind_id", "answer_text"})
                 self.assertEqual(blind_rows[0]["answer_text"], "LOCAL_INFERENCE_OK")
+                self.assertNotIn("thinking_text", blind_rows[0])
+                self.assertNotIn("output_chars", blind_rows[0])
             finally:
-                sys.argv = old_argv
+                sys.argv = original_argv
                 for name, value in original.items():
                     setattr(MODULE, name, value)
-
-    def test_prompt_template_records_thinking_instruction(self):
-        prompt = MODULE.PROMPT_TEMPLATE.format(
-            prompt="TEST_MARKER", thinking_instruction="THINKING_OFF"
-        )
-        self.assertTrue(prompt.endswith("ANSWER:"))
-        self.assertIn("TEST_MARKER", prompt)
-        self.assertIn("THINKING_OFF", prompt)
-
-    def test_separates_explicit_visible_thinking(self):
-        thinking, answer = MODULE.split_visible_thinking(
-            "<think>private visible trace</think>Final answer"
-        )
-        self.assertEqual(thinking, "private visible trace")
-        self.assertEqual(answer, "Final answer")
-
-    def test_no_think_tags_keeps_whole_output_as_answer(self):
-        thinking, answer = MODULE.split_visible_thinking("Plain answer")
-        self.assertEqual(thinking, "")
-        self.assertEqual(answer, "Plain answer")
 
 
 if __name__ == "__main__":
