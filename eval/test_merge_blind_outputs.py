@@ -59,6 +59,26 @@ class BlindMergeTests(unittest.TestCase):
             self.assertEqual(len(private["candidate_map"]), 4)
             self.assertEqual({x["source_label"] for x in private["candidate_map"].values()}, {"A", "B"})
 
+    def test_rejects_task_missing_from_every_candidate_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "a.jsonl").write_text('{"blind_id":"A1","answer_text":"a"}\\n', encoding="utf-8")
+            (root / "a.map").write_text('{"A1":{"task_id":"T1"},"A2":{"task_id":"T2"}}', encoding="utf-8")
+            (root / "b.jsonl").write_text('{"blind_id":"B1","answer_text":"b"}\\n', encoding="utf-8")
+            (root / "b.map").write_text('{"B1":{"task_id":"T1"},"B2":{"task_id":"T2"}}', encoding="utf-8")
+            old_argv = sys.argv
+            try:
+                sys.argv = [
+                    "merge_blind_outputs.py",
+                    "--input", f"A={root / 'a.jsonl'}", "--mapping", f"A={root / 'a.map'}",
+                    "--input", f"B={root / 'b.jsonl'}", "--mapping", f"B={root / 'b.map'}",
+                    "--out", str(root / "out.jsonl"), "--private-map-out", str(root / "private.json"),
+                ]
+                with self.assertRaisesRegex(ValueError, "T2 is not present for every candidate"):
+                    MODULE.main()
+            finally:
+                sys.argv = old_argv
+
     def test_rejects_missing_candidate_for_task(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
