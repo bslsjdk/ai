@@ -2,6 +2,20 @@
 
 This directory contains a reproducible measurement harness. It does **not** claim a phone run has occurred until a real device result JSON is saved and reviewed.
 
+## Primary comparator: Ornith-1.5-9B
+
+**Ornith-1.5-9B is the primary reference opponent, not an optional afterthought.** The current RNN/MGU public-dataset experiment is a separate architecture diagnostic; its loss numbers do not establish that a small model beats Ornith on tasks. Until the same phone task set has been run and scored for both sides, the PK result is **not yet measured**.
+
+The comparison is deliberately staged:
+
+1. **Reference feasibility:** run the non-scoring smoke test on the exact Q4_K_M artifact below. Record whether it loads and completes inference, plus model hash, server/build settings, latency, peak sampled memory, thermal and battery observations. If it cannot run, preserve the failure as a reference result; do not quietly replace the model or call a smaller model the winner.
+2. **Freeze the shared task set and rubric:** include held-out tasks that test instruction following, multi-step reasoning, state tracking/memory, planning, and recovery from a wrong turn. Keep prompts identical, task order frozen, scoring key sealed, and task set SHA-256 recorded. Do not train on the held-out tasks.
+3. **Run both sides:** score Ornith and each candidate small model on that exact task set. Use blind answer files and a sealed model map. Keep failed tasks, incomplete outputs, and cap-hit outputs visible in the report.
+4. **Report a vector, not a single vanity score:** task success/quality, failure rate, latency (including median and p95), model/runtime memory, stability, and parameter/file size. The candidate model must stay within the project's 4 GiB runtime-RAM budget. Ornith is the reference and is measured honestly; do not assume its runtime will fit the candidate budget.
+5. **Tune only after the baseline:** architecture or decoding changes must be evaluated on a development split first. Re-run the frozen held-out comparison after selecting changes; never tune against the sealed answers.
+
+The exact model build, quantization, context length, GPU/offload settings, thread count, prompt format, and any unsupported sampling options must be recorded. Where the two models cannot use identical runtime settings because of different templates or backends, disclose the difference rather than pretending the runs are perfectly identical.
+
 ## Frozen reference artifact
 
 Use this exact official GGUF artifact for the first smoke test:
